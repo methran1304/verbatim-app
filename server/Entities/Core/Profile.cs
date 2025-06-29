@@ -27,5 +27,24 @@ namespace server.Entities
 
         [BsonElement("drills_participated")]
         public int DrillsParticipated { get; set; } = 0;
+
+        // Competitive stats
+        [BsonElement("competitive_points")]
+        public int CompetitivePoints { get; set; } = 0;
+
+        [BsonElement("competitive_drills")]
+        public int CompetitiveDrills { get; set; } = 0;
+
+        [BsonElement("wins")]
+        public int Wins { get; set; } = 0;
+
+        [BsonElement("losses")]
+        public int Losses { get; set; } = 0;
+
+        [BsonElement("max_competitive_wpm")]
+        public double MaxCompetitiveWpm { get; set; } = 0;
+
+        [BsonElement("avg_competitive_accuracy")]
+        public double AvgCompetitiveAccuracy { get; set; } = 0;
     }
 }

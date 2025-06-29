@@ -66,3 +66,9 @@
 /Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 /Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/Microsoft.IdentityModel.Tokens.dll
 /Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/System.IdentityModel.Tokens.Jwt.dll
+/Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/DnsClient.dll
+/Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/MongoDB.Bson.dll
+/Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/MongoDB.Driver.dll
+/Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/SharpCompress.dll
+/Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/Snappier.dll
+/Users/methran/core/projects/verbatim/server/bin/Debug/net9.0/ZstdSharp.dll

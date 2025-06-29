@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using server.Entities.Enums;
 
 namespace server.Entities
 {
@@ -22,7 +23,7 @@ namespace server.Entities
         public string Username { get; set; } = null!;
 
         [BsonElement("auth_provider")]
-        public string AuthProvider { get; set; } = "local";
+        public AuthenticationProviders AuthProvider { get; set; }
 
         [BsonElement("profile_picture_url")]
         public string? ProfilePictureUrl { get; set; }

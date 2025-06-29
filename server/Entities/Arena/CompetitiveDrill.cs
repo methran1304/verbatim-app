@@ -26,7 +26,7 @@ namespace server.Entities
         public string CreatedBy { get; set; } = null!;
 
         [BsonElement("players")]
-        public List<CompetitiveDrillPlayer> CompetitiveDrillPlayers { get; set; } = new();
+        public List<CompetitiveDrillPlayer> Players { get; set; } = new();
     }
 
     public class CompetitiveDrillPlayer
