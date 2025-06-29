@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/methran/Dock/projects/verbatim/server/server.csproj": {}
+    "/Users/methran/core/projects/verbatim/server/server.csproj": {}
   },
   "projects": {
-    "/Users/methran/Dock/projects/verbatim/server/server.csproj": {
+    "/Users/methran/core/projects/verbatim/server/server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/methran/Dock/projects/verbatim/server/server.csproj",
+        "projectUniqueName": "/Users/methran/core/projects/verbatim/server/server.csproj",
         "projectName": "server",
-        "projectPath": "/Users/methran/Dock/projects/verbatim/server/server.csproj",
+        "projectPath": "/Users/methran/core/projects/verbatim/server/server.csproj",
         "packagesPath": "/Users/methran/.nuget/packages/",
-        "outputPath": "/Users/methran/Dock/projects/verbatim/server/obj/",
+        "outputPath": "/Users/methran/core/projects/verbatim/server/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/methran/.nuget/NuGet/NuGet.Config"
@@ -44,9 +44,25 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[9.0.6, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[9.0.5, )"
+            },
+            "MongoDB.Driver": {
+              "target": "Package",
+              "version": "[3.4.0, )"
+            },
+            "Scalar.AspNetCore": {
+              "target": "Package",
+              "version": "[2.5.3, )"
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[8.12.1, )"
             }
           },
           "imports": [
