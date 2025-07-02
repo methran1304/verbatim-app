@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -13,83 +9,114 @@ using server.Entities.Models;
 using server.Entities.Enums;
 using server.Services.Interfaces;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 
 namespace server.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
-    {
-        private readonly IUserService _userService;
-        private readonly IConfiguration _configuration;
+	[ApiController]
+	[Route("api/[controller]")]
+	public class AuthController : ControllerBase
+	{
+		private readonly IUserService _userService;
+		private readonly IProfileService _profileService;
+		private readonly IConfiguration _configuration;
 
-        public AuthController(IConfiguration configuration, IUserService userService)
-        {
-            _configuration = configuration;
-            _userService = userService;
-        }
+		public AuthController(
+			IConfiguration configuration,
+			IUserService userService,
+			IProfileService profileService)
+		{
+			_configuration = configuration;
+			_userService = userService;
+			_profileService = profileService;
+		}
 
-        [HttpPost("register")]
-        public async Task<ActionResult<User>> Register([FromBody] UserDTO request)
-        {
-            User user = new()
-            {
-                EmailAddress = request.EmailAddress,
-                IsAdmin = false,
-                AuthProvider = AuthenticationProviders.Local,
-                ProfilePictureUrl = string.Empty
-            };
+		[HttpPost("register")]
+		public async Task<ActionResult> Register([FromBody] RegisterRequestDTO request)
+		{
+			if (await _userService.UserExists(request.Username, request.EmailAddress))
+			{
+				return Conflict("User already exists");
+			}
 
-            var hashedPassword = new PasswordHasher<User>()
-                .HashPassword(user, request.Password);
+			string generatedUserId = ObjectId.GenerateNewId().ToString();
 
-            user.Username = request.Username;
-            user.PasswordHash = hashedPassword;
+			User user = new()
+			{
+				UserId = generatedUserId,
+				EmailAddress = request.EmailAddress,
+				IsAdmin = false,
+				AuthProvider = AuthenticationProviders.Local,
+				ProfilePictureUrl = string.Empty
+			};
 
-            await _userService.CreateAsync(user);
-            return Ok(user);
-        }
+			var hashedPassword = new PasswordHasher<User>()
+				.HashPassword(user, request.Password);
 
-        // [HttpPost("login")]
-        // public ActionResult<string> Login([FromBody] UserDTO request)
-        // {
-        //     if (user.Username != request.Username)
-        //     {
-        //         return BadRequest("User not found!");
-        //     }
+			user.Username = request.Username;
+			user.PasswordHash = hashedPassword;
 
-        //     if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
-        //     {
-        //         return BadRequest("Incorrect password!");
-        //     }
+			await _userService.CreateAsync(user);
 
-        //     string token = CreateToken(user);
+			// Create user profile (maintaining 1-1 relationship)
+			Profile userProfile = new()
+			{
+				ProfileId = generatedUserId,
+			};
 
-        //     return Ok(new { token });
-        // }
+			await _profileService.CreateProfileAsync(userProfile);
 
-        private string CreateToken(User user)
-        {
-            var claims = new List<Claim>
-            {
-                new(ClaimTypes.Name, user.Username)
-            };
+			return Ok(new { user, userProfile });
+		}
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:Token")!)
-            );
+		[HttpPost("login")]
+		public async Task<ActionResult<string>> Login([FromBody] LoginRequestDTO request)
+		{
+			var user = await _userService.GetByEmailAsync(request.EmailAddress);
 
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
+			if (user is null)
+			{
+				return Unauthorized("User not found!");
+			}
 
-            var tokenDescriptor = new JwtSecurityToken(
-                issuer: _configuration.GetValue<string>("AppSettings:Issuer"),
-                audience: _configuration.GetValue<string>("AppSettings:Audience"),
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(1),
-                signingCredentials: creds
-            );
+			if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
+			{
+				return Unauthorized("Incorrect password!");
+			}
 
-            return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
-        }
-    }
+			string token = CreateToken(user);
+
+			return Ok(new { token });
+		}
+
+		[HttpGet("dummy")]
+		public async Task Dummy()
+		{
+			await Task.FromResult(false);
+		}
+
+		private string CreateToken(User user)
+		{
+			var claims = new List<Claim>
+			{
+				new(ClaimTypes.Name, user.Username)
+			};
+
+			var key = new SymmetricSecurityKey(
+				Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:Token")!)
+			);
+
+			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
+
+			var tokenDescriptor = new JwtSecurityToken(
+				issuer: _configuration.GetValue<string>("AppSettings:Issuer"),
+				audience: _configuration.GetValue<string>("AppSettings:Audience"),
+				claims: claims,
+				expires: DateTime.UtcNow.AddDays(1),
+				signingCredentials: creds
+			);
+
+			return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
+		}
+	}
 }

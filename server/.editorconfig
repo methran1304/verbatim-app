@@ -1,0 +1,11 @@
+# .editorconfig
+root = true
+
+[*.cs]
+indent_style = tab
+tab_width = 4
+insert_final_newline = true
+charset = utf-8
+
+# Optional: remove trailing spaces
+trim_trailing_whitespace = true

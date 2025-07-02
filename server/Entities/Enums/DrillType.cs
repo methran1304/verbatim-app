@@ -1,11 +1,11 @@
 namespace server.Entities.Enums
 {
-    public enum DrillType
-    {
-        Timed,
-        Adaptive,
-        Memory,
-        Classics,
-        Competitive
-    }
+	public enum DrillType
+	{
+		Timed,
+		Adaptive,
+		MemoryMode,
+		Classics,
+		Competitive
+	}
 }

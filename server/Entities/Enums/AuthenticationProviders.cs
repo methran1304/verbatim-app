@@ -1,8 +1,8 @@
 namespace server.Entities.Enums
 {
-    public enum AuthenticationProviders
-    {
-        Local,
-        Google
-    }
+	public enum AuthenticationProviders
+	{
+		Local,
+		Google
+	}
 }
