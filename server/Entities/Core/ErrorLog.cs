@@ -11,7 +11,7 @@ namespace server.Entities.Core
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        public string Id { get; set; } = null!;
 
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 

@@ -21,6 +21,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<IDrillInputService, DrillInputService>();
 builder.Services.AddScoped<IDrillSourceTextService, DrillSourceTextService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 builder.Services.AddControllers()
@@ -45,7 +46,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 			ValidAudience = builder.Configuration["AppSettings:Audience"],
 			ValidateLifetime = true,
 			IssuerSigningKey = new SymmetricSecurityKey(
-				Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"])
+				Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"]!)
 			),
 			ValidateIssuerSigningKey = true
 		};

@@ -31,5 +31,11 @@ namespace server.Entities
 
 		[BsonElement("email_address")]
 		public string EmailAddress { get; set; } = null!;
+
+		[BsonElement("refresh_token")]
+		public string? RefreshToken { get; set; }
+
+		[BsonElement("refresh_token_expiry_time")]
+		public DateTime? RefreshTokenExpiryTime { get; set; }
 	}
 }

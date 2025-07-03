@@ -10,6 +10,8 @@ using server.Entities.Enums;
 using server.Services.Interfaces;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using System.Security.Cryptography;
+using MongoDB.Driver;
 
 namespace server.Controllers
 {
@@ -17,107 +19,48 @@ namespace server.Controllers
 	[Route("api/[controller]")]
 	public class AuthController : ControllerBase
 	{
-		private readonly IUserService _userService;
-		private readonly IProfileService _profileService;
-		private readonly IConfiguration _configuration;
+		private readonly IAuthService _authService;
 
-		public AuthController(
-			IConfiguration configuration,
-			IUserService userService,
-			IProfileService profileService)
+		public AuthController(IAuthService authService)
 		{
-			_configuration = configuration;
-			_userService = userService;
-			_profileService = profileService;
+			_authService = authService;
 		}
 
 		[HttpPost("register")]
 		public async Task<ActionResult> Register([FromBody] RegisterRequestDTO request)
 		{
-			if (await _userService.UserExists(request.Username, request.EmailAddress))
-			{
-				return Conflict("User already exists");
-			}
+			var user = await _authService.RegisterAsync(request);
 
-			string generatedUserId = ObjectId.GenerateNewId().ToString();
+			if (user is null)
+				return BadRequest("User already exists.");
 
-			User user = new()
-			{
-				UserId = generatedUserId,
-				EmailAddress = request.EmailAddress,
-				IsAdmin = false,
-				AuthProvider = AuthenticationProviders.Local,
-				ProfilePictureUrl = string.Empty
-			};
-
-			var hashedPassword = new PasswordHasher<User>()
-				.HashPassword(user, request.Password);
-
-			user.Username = request.Username;
-			user.PasswordHash = hashedPassword;
-
-			await _userService.CreateAsync(user);
-
-			// Create user profile (maintaining 1-1 relationship)
-			Profile userProfile = new()
-			{
-				ProfileId = generatedUserId,
-			};
-
-			await _profileService.CreateProfileAsync(userProfile);
-
-			return Ok(new { user, userProfile });
+			return Ok(user);
 		}
 
 		[HttpPost("login")]
-		public async Task<ActionResult<string>> Login([FromBody] LoginRequestDTO request)
+		public async Task<ActionResult<TokenResponseDTO>> Login([FromBody] LoginRequestDTO request)
 		{
-			var user = await _userService.GetByEmailAsync(request.EmailAddress);
+			var result = await _authService.LoginAsync(request);
 
-			if (user is null)
+			if (result is null)
+				return Unauthorized("Invalid username or password.");
+
+			return Ok(result);
+		}
+
+		[HttpPost("refresh-token")]
+		public async Task<ActionResult<TokenResponseDTO>> RefreshToken(RefreshTokenRequestDTO request)
+		{
+			var result = await _authService.RefreshTokensAsync(request);
+
+			if (result is null || result.AccessToken is null || result.RefreshToken is null)
 			{
-				return Unauthorized("User not found!");
+				return Unauthorized("Invalid refresh token or user id.");
 			}
 
-			if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
-			{
-				return Unauthorized("Incorrect password!");
-			}
-
-			string token = CreateToken(user);
-
-			return Ok(new { token });
+			return Ok(result);
 		}
 
-		[HttpGet("dummy")]
-		public async Task Dummy()
-		{
-			await Task.FromResult(false);
-		}
-
-		private string CreateToken(User user)
-		{
-			var claims = new List<Claim>
-			{
-				new(ClaimTypes.Name, user.Username),
-				new(ClaimTypes.NameIdentifier, user.UserId)
-			};
-
-			var key = new SymmetricSecurityKey(
-				Encoding.UTF8.GetBytes(_configuration.GetValue<string>("AppSettings:Token")!)
-			);
-
-			var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
-
-			var tokenDescriptor = new JwtSecurityToken(
-				issuer: _configuration.GetValue<string>("AppSettings:Issuer"),
-				audience: _configuration.GetValue<string>("AppSettings:Audience"),
-				claims: claims,
-				expires: DateTime.UtcNow.AddDays(1),
-				signingCredentials: creds
-			);
-
-			return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
-		}
+		
 	}
 }
