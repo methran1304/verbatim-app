@@ -17,32 +17,22 @@ namespace server.Controllers
     [Authorize]
     [ApiController]
     [Route("/api/[controller]")]
-    public class DrillController : ControllerBase
+    public class DrillController(
+		IConfiguration configuration,
+		IUserService userService,
+		IProfileService profileService,
+		IDrillService drillService,
+		IDrillInputService drillInputService,
+		IDrillSourceTextService drillSourceTextService) : ControllerBase
     {
-        private readonly IConfiguration _configuration;
-        private readonly IUserService _userService;
-        private readonly IProfileService _profileService;
-        private readonly IDrillService _drillService;
-        private readonly IDrillInputService _drillInputService;
-        private readonly IDrillSourceTextService _drillSourceTextService;
+        private readonly IConfiguration _configuration = configuration;
+        private readonly IUserService _userService = userService;
+        private readonly IProfileService _profileService = profileService;
+        private readonly IDrillService _drillService = drillService;
+        private readonly IDrillInputService _drillInputService = drillInputService;
+        private readonly IDrillSourceTextService _drillSourceTextService = drillSourceTextService;
 
-        public DrillController(
-            IConfiguration configuration,
-            IUserService userService,
-            IProfileService profileService,
-            IDrillService drillService,
-            IDrillInputService drillInputService,
-            IDrillSourceTextService drillSourceTextService)
-        {
-            _configuration = configuration;
-            _userService = userService;
-            _profileService = profileService;
-            _drillService = drillService;
-            _drillInputService = drillInputService;
-            _drillSourceTextService = drillSourceTextService;
-        }
-
-        [HttpPost("submit")]
+		[HttpPost("submit")]
         public async Task<IActionResult> SubmitDrill([FromBody] DrillSubmissionDTO submission)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

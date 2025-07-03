@@ -50,16 +50,14 @@ namespace server.Services
 
 			var today = DateTime.UtcNow.ToString(DrillConstants.ActivityDateFormat);
 
-			currentProfile.DrillsParticipated.TryGetValue(completedDrill.DrillType, out var drillCount);
-
 			var newAvgWPM = currentProfile.AvgWPM + (
 				(completedDrill.WPM - currentProfile.AvgWPM) /
-				(drillCount + 1)
+				(currentProfile.TotalDrillsParticipated + 1)
 			);
 
 			var newAvgAcc = currentProfile.AvgAccuracy + (
 				(completedDrill.Accuracy - currentProfile.AvgAccuracy) /
-				(drillCount + 1)
+				(currentProfile.TotalDrillsParticipated + 1)
 			);
 
 
@@ -70,6 +68,7 @@ namespace server.Services
 				.Set(p => p.AvgAccuracy, newAvgAcc)
 				.Set(p => p.AvgWPM, newAvgWPM)
 				.Inc($"drills_participated.{completedDrill.DrillType}", 1)
+				.Inc("total_drills_participated", 1)
 				.Inc("casual_points", completedDrill.PointsGained)
 				.Push($"activity.{today}", completedDrill.DrillId);
 

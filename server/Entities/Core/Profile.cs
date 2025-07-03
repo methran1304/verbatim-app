@@ -45,5 +45,8 @@ namespace server.Entities
 		[BsonElement("drills_participated")]
 		[BsonRepresentation(BsonType.String)]
 		public Dictionary<DrillType, int> DrillsParticipated { get; set; } = new();
+
+		[BsonElement("total_drills_participated")]
+		public int TotalDrillsParticipated { get; set; } = 0;
 	}
 }

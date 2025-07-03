@@ -23,6 +23,7 @@ namespace server.Entities
 		public string Username { get; set; } = null!;
 
 		[BsonElement("auth_provider")]
+		[BsonRepresentation(BsonType.String)]
 		public AuthenticationProviders AuthProvider { get; set; }
 
 		[BsonElement("profile_picture_url")]

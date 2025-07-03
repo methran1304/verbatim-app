@@ -99,7 +99,8 @@ namespace server.Controllers
 		{
 			var claims = new List<Claim>
 			{
-				new(ClaimTypes.Name, user.Username)
+				new(ClaimTypes.Name, user.Username),
+				new(ClaimTypes.NameIdentifier, user.UserId)
 			};
 
 			var key = new SymmetricSecurityKey(
