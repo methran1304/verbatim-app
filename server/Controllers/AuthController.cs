@@ -1,17 +1,18 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using server.Entities;
-using server.Entities.Models;
-using server.Entities.Enums;
-using server.Services.Interfaces;
-using System.Threading.Tasks;
 using MongoDB.Bson;
-using System.Security.Cryptography;
 using MongoDB.Driver;
+using server.Entities;
+using server.Entities.Enums;
+using server.Entities.Models;
+using server.Services.Interfaces;
 
 namespace server.Controllers
 {
@@ -49,7 +50,7 @@ namespace server.Controllers
 		}
 
 		[HttpPost("refresh-token")]
-		public async Task<ActionResult<TokenResponseDTO>> RefreshToken(RefreshTokenRequestDTO request)
+		public async Task<ActionResult<TokenResponseDTO>> RefreshToken([FromBody] RefreshTokenRequestDTO request)
 		{
 			var result = await _authService.RefreshTokensAsync(request);
 
@@ -61,6 +62,19 @@ namespace server.Controllers
 			return Ok(result);
 		}
 
-		
+		// TODO
+		[HttpPost("forgot-password")]
+		public async Task<ActionResult<Object>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+		{
+			await Task.FromResult(false);
+			return Ok();
+		}
+
+		[HttpPost("reset-password")]
+		public async Task<ActionResult<Object>> ForgotPassword([FromBody] ResetPasswordRequest request)
+		{
+			await Task.FromResult(false);
+			return Ok();
+		}
 	}
 }

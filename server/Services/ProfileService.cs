@@ -26,17 +26,7 @@ namespace server.Services
 
 			return await _profiles.Find(filter).FirstOrDefaultAsync();
 		}
-
-		/*
-			profile:
-				max_wpm: current wpm > max /
-				max_acc: current_acc > max /
-				avg_wpm: avg_wpm + (new_wpm - avg_wpm) / total_drill
-				avg_acc: avg_acc + (new_acc - avg_acc) / total_drill
-				activity[]: <- drill_id
-				casual_points: +points_gained
-				drills_participated: +1
-		*/
+		
 		public async Task<bool> UpdateProfilePostDrill(string userId, Drill completedDrill)
 		{
 			var userFilter = Builders<Profile>
