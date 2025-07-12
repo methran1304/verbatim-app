@@ -1,0 +1,29 @@
+.drill-text {
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 1.25rem;
+    line-height: 1.5;
+}
+
+.word {
+    display: inline-flex;
+    margin-right: 0.5rem;
+    white-space: nowrap;
+}
+
+.word span {
+    display: inline;
+    padding: 0 0.05rem;
+}
+
+.letter-correct {
+    color: green;
+}
+
+.letter-incorrect {
+    color: red;
+}
+
+.letter-active {
+    border-bottom: 2px solid blue;
+}

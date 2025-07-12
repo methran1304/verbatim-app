@@ -1,5 +1,10 @@
-<div>
-    <app-drill-text></app-drill-text>
-  
-    <app-drill-input></app-drill-input>
-  </div>
+<div class="drill-container">
+  <app-drill-text
+    [sourceText]="sourceText"
+    [typedInput]="typedText"
+    [currentWordIndex]="currentWordIndex"
+    [currentCharIndex]="currentCharIndex"
+  ></app-drill-text>
+
+  <app-drill-input (keyTyped)="onKeyTyped($event)"></app-drill-input>
+</div>

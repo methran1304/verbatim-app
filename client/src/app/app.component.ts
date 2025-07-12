@@ -3,11 +3,11 @@ import { RouterOutlet } from '@angular/router';
 import { DrillEngineComponent } from './features/drill-engine/drill-engine.component';
 
 @Component({
-  selector: 'app-root',
-  imports: [DrillEngineComponent, RouterOutlet],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+    selector: 'app-root',
+    imports: [DrillEngineComponent, RouterOutlet],
+    templateUrl: './app.component.html',
+    styleUrl: './app.component.scss',
 })
 export class AppComponent {
-  title = 'verbatim.app';
+    title = 'verbatim.app';
 }

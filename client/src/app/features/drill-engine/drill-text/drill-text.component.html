@@ -1,0 +1,11 @@
+<div class="drill-text">
+  <ng-container *ngFor="let word of sourceText; let wi = index">
+    <span class="word">
+      <ng-container *ngFor="let char of word; let ci = index">
+        <span [ngClass]="getLetterClass(wi, ci)">
+          {{ char === " " ? "␣" : char }}
+        </span>
+      </ng-container>
+    </span>
+  </ng-container>
+</div>
