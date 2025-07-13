@@ -1,4 +1,11 @@
-import { Component, Input } from '@angular/core';
+import {
+    Component,
+    Input,
+    ElementRef,
+    QueryList,
+    ViewChildren,
+    AfterViewChecked,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { KeyStroke } from '../../../models/interfaces/typed-char.interface';
 
@@ -9,11 +16,26 @@ import { KeyStroke } from '../../../models/interfaces/typed-char.interface';
     templateUrl: './drill-text.component.html',
     styleUrl: './drill-text.component.scss',
 })
-export class DrillTextComponent {
+export class DrillTextComponent implements AfterViewChecked {
     @Input() sourceText: string[][] = [];
     @Input() typedInput: (KeyStroke | undefined)[][] = [];
     @Input() currentWordIndex: number = 0;
     @Input() currentCharIndex: number = 0;
+
+    @ViewChildren('wordRef') wordElements!: QueryList<
+        ElementRef<HTMLSpanElement>
+    >;
+
+    ngAfterViewChecked(): void {
+        const active = this.wordElements.get(this.currentWordIndex);
+        if (active) {
+            active.nativeElement.scrollIntoView({
+                behavior: 'smooth',
+                inline: 'center',
+                block: 'nearest',
+            });
+        }
+    }
 
     getLetterClass(wordIdx: number, charIdx: number): string {
         const stroke = this.typedInput[wordIdx]?.[charIdx];
@@ -26,5 +48,17 @@ export class DrillTextComponent {
         }
 
         return stroke.correct ? 'letter-correct' : 'letter-incorrect';
+    }
+
+    getWordClass(wordIdx: number): string {
+        if (wordIdx === this.currentWordIndex) return 'word-active';
+
+        const typed = this.typedInput[wordIdx];
+        const source = this.sourceText[wordIdx];
+
+        if (!typed || typed.every((k) => !k)) return '';
+
+        const isCorrect = typed.every((k, i) => k?.key === source[i]);
+        return isCorrect ? 'word-correct' : 'word-incorrect';
     }
 }

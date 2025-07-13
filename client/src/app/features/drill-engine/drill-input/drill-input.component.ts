@@ -25,11 +25,13 @@ export class DrillInputComponent implements AfterViewInit {
     onKeyDown(event: KeyboardEvent): void {
         const key = event.key;
 
-        // ctrl or cmd + Backspace
-        const isCtrlOrCmdBackspace =
-            key === 'Backspace' && (event.ctrlKey || event.metaKey);
+        console.log(key);
 
-        if (isCtrlOrCmdBackspace) {
+        // ctrl or cmd + Backspace
+        const isCtrlOrAltBackspace =
+            key === 'Backspace' && (event.ctrlKey || event.altKey);
+
+        if (isCtrlOrAltBackspace) {
             this.keyTyped.emit('CTRL_BACKSPACE');
             event.preventDefault();
             return;

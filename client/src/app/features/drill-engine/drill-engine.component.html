@@ -1,4 +1,10 @@
-<div class="drill-container">
+<div class="drill-engine-wrapper">
+  <div class="drill-metrics">
+    <span>WPM: {{ wpm }}</span>
+    <span>Accuracy: {{ accuracy }}%</span>
+    <span>Time: {{ elapsedTime }}</span>
+  </div>
+
   <app-drill-text
     [sourceText]="sourceText"
     [typedInput]="typedText"
@@ -6,5 +12,7 @@
     [currentCharIndex]="currentCharIndex"
   ></app-drill-text>
 
-  <app-drill-input (keyTyped)="onKeyTyped($event)"></app-drill-input>
+  @if (isDrillActive) {
+    <app-drill-input (keyTyped)="onKeyTyped($event)"></app-drill-input>
+  }
 </div>

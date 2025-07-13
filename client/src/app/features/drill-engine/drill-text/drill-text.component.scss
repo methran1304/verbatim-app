@@ -1,14 +1,22 @@
 .drill-text {
     display: flex;
     flex-wrap: wrap;
+    padding: 1rem;
     font-size: 1.25rem;
-    line-height: 1.5;
+    font-family: monospace;
+    max-width: 100%;
+    border: 1px solid #ddd;
+    line-height: 1.8rem;
 }
 
 .word {
     display: inline-flex;
     margin-right: 0.5rem;
-    white-space: nowrap;
+    margin-bottom: 0.5rem;
+    padding: 0.1rem 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.25s ease;
+    min-height: 2rem; // ✅ prevents line jump
 }
 
 .word span {
@@ -16,6 +24,7 @@
     padding: 0 0.05rem;
 }
 
+// Letter-level styling
 .letter-correct {
     color: green;
 }
@@ -25,5 +34,19 @@
 }
 
 .letter-active {
-    border-bottom: 2px solid blue;
+    border-bottom: 0.125rem solid blue;
+}
+
+// Word-level background states
+.word-active {
+    background-color: rgba(0, 120, 255, 0.1);
+    box-shadow: 0 0 0 2px rgba(0, 120, 255, 0.3);
+}
+
+.word-correct {
+    background-color: rgba(0, 200, 0, 0.1);
+}
+
+.word-incorrect {
+    background-color: rgba(255, 0, 0, 0.1);
 }
