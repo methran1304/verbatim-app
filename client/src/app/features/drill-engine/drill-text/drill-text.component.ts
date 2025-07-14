@@ -21,6 +21,7 @@ export class DrillTextComponent implements AfterViewChecked {
     @Input() typedInput: (KeyStroke | undefined)[][] = [];
     @Input() currentWordIndex: number = 0;
     @Input() currentCharIndex: number = 0;
+    @Input() isFocused: boolean = true;
 
     @ViewChildren('wordRef') wordElements!: QueryList<
         ElementRef<HTMLSpanElement>
@@ -51,14 +52,19 @@ export class DrillTextComponent implements AfterViewChecked {
     }
 
     getWordClass(wordIdx: number): string {
-        if (wordIdx === this.currentWordIndex) return 'word-active';
+        if (this.isActive(wordIdx)) {
+            return this.isFocused ? 'word-active' : 'word-active-blur';
+        }
 
-        const typed = this.typedInput[wordIdx];
+        const strokes = this.typedInput[wordIdx];
         const source = this.sourceText[wordIdx];
+        if (!strokes || strokes.every((k) => !k)) return '';
 
-        if (!typed || typed.every((k) => !k)) return '';
-
-        const isCorrect = typed.every((k, i) => k?.key === source[i]);
+        const isCorrect = strokes.every((k, i) => k?.key === source[i]);
         return isCorrect ? 'word-correct' : 'word-incorrect';
+    }
+
+    isActive(wordIdx: number): boolean {
+        return wordIdx === this.currentWordIndex;
     }
 }

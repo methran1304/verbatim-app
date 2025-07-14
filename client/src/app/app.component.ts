@@ -4,7 +4,7 @@ import { DrillEngineComponent } from './features/drill-engine/drill-engine.compo
 
 @Component({
     selector: 'app-root',
-    imports: [DrillEngineComponent, RouterOutlet],
+    imports: [RouterOutlet],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss',
 })

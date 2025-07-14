@@ -12,6 +12,19 @@ using server.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+	options.AddDefaultPolicy(
+		policy =>
+		{
+			policy.WithOrigins("http://localhost:4200")
+			.AllowAnyHeader()
+			.AllowAnyMethod();
+		}
+	);
+});
+
+
 builder.Services.Configure<MongoDbSettings>(
 	builder.Configuration.GetSection("MongoDbSettings"));
 
@@ -26,12 +39,12 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddControllers()
 	.AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(
-            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false)
-        );
-    });
-	
+	{
+		options.JsonSerializerOptions.Converters.Add(
+			new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false)
+		);
+	});
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -63,6 +76,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors();
 
 app.UseAuthorization();
 

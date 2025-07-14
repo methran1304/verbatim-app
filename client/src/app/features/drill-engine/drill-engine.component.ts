@@ -1,5 +1,5 @@
 // === drill-engine.component.ts ===
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
 import { DrillTextComponent } from './drill-text/drill-text.component';
 import { DrillInputComponent } from './drill-input/drill-input.component';
 import { DrillTextService } from '../../services/drill-text.service';
@@ -7,8 +7,8 @@ import { KeyStroke } from '../../models/interfaces/typed-char.interface';
 import { SpecialKeys } from '../../core/constants/keys.constant';
 import { DrillDifficulty } from '../../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../../models/enums/drill-length.enum';
-import { RouterUpgradeInitializer } from '@angular/router/upgrade';
 import { DrillStats } from '../../models/interfaces/drill-stats.interface';
+import { DrillStatsComponent } from './drill-stats/drill-stats.component';
 
 @Component({
     selector: 'app-drill-engine',
@@ -28,14 +28,21 @@ export class DrillEngineComponent implements OnInit {
     currentCharIndex: number = 0;
 
     startTime: number = 0;
-    elapsedTime: string = '00:00';
+    totalTimeInSeconds: number = 60; 
+    remainingTime: string = '01:00';
+    private endTime: number = 0;
     timerInterval!: any;
 
     wpm: number = 0;
     accuracy: number = 100;
     drillStats!: DrillStats;
 
-    constructor(private drillTextService: DrillTextService) {}
+    isInputFocused: boolean = true;
+
+    constructor(
+        private drillTextService: DrillTextService,
+        private ngZone: NgZone
+    ) {}
 
     ngOnInit(): void {
         this.startDrill();
@@ -55,8 +62,8 @@ export class DrillEngineComponent implements OnInit {
         };
 
         const words = this.drillTextService.getRandomDrillText(
-            DrillDifficulty.Beginner,
-            DrillLength.Short,
+            DrillDifficulty.Advanced,
+            DrillLength.Short
         );
 
         // add space for every word except last
@@ -67,7 +74,7 @@ export class DrillEngineComponent implements OnInit {
 
         // create undefined 2d array with same source text structure
         this.typedText = this.sourceText.map((word) =>
-            new Array(word.length).fill(undefined),
+            new Array(word.length).fill(undefined)
         );
 
         this.wordLocked = this.sourceText.map(() => false);
@@ -86,10 +93,16 @@ export class DrillEngineComponent implements OnInit {
         this.drillStats.accuracy = this.accuracy;
     }
 
+    resumeDrill(): void {
+        this.focusInput(); // refocus the hidden input
+    }
+
     onKeyTyped(value: string): void {
-        console.log(this.drillStats.errorMap);
         if (value === 'CTRL_BACKSPACE') {
             this.clearCurrentWord();
+            return;
+        } else if (value === 'ESCAPE') {
+            this.drillInputComponent.blurInput();
             return;
         }
 
@@ -127,9 +140,10 @@ export class DrillEngineComponent implements OnInit {
 
         // word complete
         if (this.currentCharIndex === currentWord.length) {
+            console.log(this.drillStats);
             const isWordCorrect = this.typedText[this.currentWordIndex].every(
                 (stroke, i) =>
-                    stroke?.key === this.sourceText[this.currentWordIndex][i],
+                    stroke?.key === this.sourceText[this.currentWordIndex][i]
             );
 
             // build word error map
@@ -178,7 +192,7 @@ export class DrillEngineComponent implements OnInit {
 
         // clear typed state for current word
         this.typedText[this.currentWordIndex] = new Array(wordLength).fill(
-            undefined,
+            undefined
         );
 
         this.currentCharIndex = 0;
@@ -205,7 +219,7 @@ export class DrillEngineComponent implements OnInit {
     }
 
     updateWPMAndAccuracy(): void {
-        // Only count actual typed characters
+        // only count actual typed characters
         const flattened = this.typedText.flat();
         const typedChars = flattened.filter((k) => k !== undefined);
         const correctChars = typedChars.filter((k) => k?.correct).length;
@@ -222,15 +236,21 @@ export class DrillEngineComponent implements OnInit {
 
     startTimer(): void {
         this.startTime = Date.now();
+        this.endTime = this.startTime + this.totalTimeInSeconds * 1000;
 
         this.timerInterval = setInterval(() => {
-            const ms = Date.now() - this.startTime;
-            const seconds = Math.floor(ms / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const remainder = seconds % 60;
-            this.elapsedTime = `${this.pad(minutes)}:${this.pad(remainder)}`;
 
+            const msLeft = this.endTime - Date.now();
+            const secondsLeft = Math.max(0, Math.floor(msLeft / 1000));
+            const minutes = Math.floor(secondsLeft / 60);
+            const seconds = secondsLeft % 60;
+
+            this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
             this.updateWPMAndAccuracy();
+
+            if (msLeft <= 0) {
+                this.stopDrill(); // Auto-submit or end
+            }
         }, 1000);
     }
 
@@ -240,5 +260,29 @@ export class DrillEngineComponent implements OnInit {
 
     pad(num: number): string {
         return num.toString().padStart(2, '0');
+    }
+
+    focusInput() {
+        this.drillInputComponent?.focusInput();
+    }
+
+    onInputFocus(): void {
+        this.ngZone.runOutsideAngular(() => {
+            setTimeout(() => {
+                this.ngZone.run(() => {
+                    this.isInputFocused = true;
+                });
+            });
+        });
+    }
+
+    onInputBlur(): void {
+        this.ngZone.runOutsideAngular(() => {
+            setTimeout(() => {
+                this.ngZone.run(() => {
+                    this.isInputFocused = false;
+                });
+            });
+        });
     }
 }

@@ -1,0 +1,8 @@
+<div class="auth-container">
+  <div class="auth-toggle">
+    <button (click)="switchTo('login')" routerLinkActive="active">Login</button>
+    <button (click)="switchTo('register')" routerLinkActive="active">Register</button>
+  </div>
+
+  <router-outlet></router-outlet>
+</div>

@@ -1,8 +1,10 @@
-<div class="drill-engine-wrapper">
+<!-- <app-drill-stats></app-drill-stats> -->
+
+<div class="drill-engine-center" (click)="focusInput()">
   <div class="drill-metrics">
     <span>WPM: {{ wpm }}</span>
     <span>Accuracy: {{ accuracy }}%</span>
-    <span>Time: {{ elapsedTime }}</span>
+    <span>Time Left: {{ remainingTime }}</span>
   </div>
 
   <app-drill-text
@@ -10,9 +12,14 @@
     [typedInput]="typedText"
     [currentWordIndex]="currentWordIndex"
     [currentCharIndex]="currentCharIndex"
+    [isFocused]="isInputFocused"
   ></app-drill-text>
-
+  
   @if (isDrillActive) {
-    <app-drill-input (keyTyped)="onKeyTyped($event)"></app-drill-input>
+  <app-drill-input
+    (keyTyped)="onKeyTyped($event)"
+    (focusEvent)="onInputFocus()"
+    (blurEvent)="onInputBlur()"
+  ></app-drill-input>
   }
 </div>

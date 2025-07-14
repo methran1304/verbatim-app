@@ -1,0 +1,17 @@
+<form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+  <div>
+    <label>Email Address</label>
+    <input type="email" formControlName="emailAddress" />
+  </div>
+  <div>
+    <label>Password</label>
+    <input type="password" formControlName="password" />
+  </div>
+
+  @if (errorMessage) {
+  <div class="error">{{ errorMessage }}</div>
+  }
+
+  <!-- <button type="submit" [disabled]="loading">Login</button> -->
+  <button type="button" nz-button nzType="primary" [disabled]="loading">Primary</button>
+</form>

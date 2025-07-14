@@ -1,1 +1,7 @@
 <p>drill-stats works!</p>
+
+@for (d of data; track $index) {
+    {{ d }}
+}
+
+<button (click)="onSubscribe()" type="button" class="btn btn-success">SUBSCRIBE</button>
