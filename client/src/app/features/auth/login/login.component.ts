@@ -1,4 +1,3 @@
-
 import { Component } from '@angular/core';
 import {
     FormBuilder,
@@ -9,10 +8,21 @@ import {
 import { AuthService } from '../../../services/auth.service';
 import { Router } from '@angular/router';
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { CommonModule } from '@angular/common';
 
 @Component({
     selector: 'app-login',
-    imports: [ReactiveFormsModule, NzButtonModule],
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        NzButtonModule,
+        NzFormModule,
+        NzInputModule,
+        NzCardModule,
+    ],
     templateUrl: './login.component.html',
     styleUrl: './login.component.scss',
 })
@@ -24,7 +34,7 @@ export class LoginComponent {
     constructor(
         private fb: FormBuilder,
         private authService: AuthService,
-        private router: Router
+        private router: Router,
     ) {
         this.loginForm = this.fb.group({
             emailAddress: ['', [Validators.required, Validators.email]],

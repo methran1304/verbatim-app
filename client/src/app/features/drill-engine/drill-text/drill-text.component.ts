@@ -8,11 +8,13 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { KeyStroke } from '../../../models/interfaces/typed-char.interface';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 
 @Component({
     selector: 'app-drill-text',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, NzCardModule, NzTagModule],
     templateUrl: './drill-text.component.html',
     styleUrl: './drill-text.component.scss',
 })

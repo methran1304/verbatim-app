@@ -1,23 +1,46 @@
 .drill-text {
+    padding: 1rem 2.5rem 1rem 2.5rem;
+    background: #fafcff;
+    border-radius: 12px;
+    box-shadow:
+        0 4px 24px 0 rgba(24, 144, 255, 0.06),
+        0 1.5px 6px 0 rgba(0, 0, 0, 0.03);
+    border: none;
+    margin-bottom: 1.5rem;
     display: flex;
     flex-wrap: wrap;
-    padding: 1rem;
-    font-size: 1.25rem;
+    font-size: 1.05rem;
     font-family: monospace;
-    max-width: 100%;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    line-height: 1.8rem;
+    line-height: 1.7rem;
+    max-height: calc(1.7rem * 5 + 2.5rem * 2); /* 5 lines + vertical padding */
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.drill-text::-webkit-scrollbar {
+    display: none;
 }
 
 .word {
     display: inline-flex;
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-    padding: 0.1rem 0.25rem;
-    border-radius: 4px;
-    transition: background-color 0.25s ease;
+    align-items: center;
+    margin: 0 0.4rem 0.4rem 0;
+    padding: 0.12rem 0.55rem 0.12rem 0.55rem;
+    border-radius: 7px;
+    background: #f7f9fa;
+    color: #222;
+    border: 1px solid #f0f0f0;
+    font-family:
+        "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas,
+        "Courier New", monospace;
+    font-size: 1em;
+    font-weight: 500;
     min-height: 2.2rem;
+    transition:
+        background 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        border 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .word span {
@@ -26,33 +49,100 @@
 }
 
 // Letter-level styling
+.letter {
+    display: inline-block;
+    padding: 0 0.5px;
+    font-weight: 500;
+    line-height: 2.2rem;
+    position: relative;
+    transition:
+        color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    padding-bottom: 6px; /* Reserve space for a lower underline */
+}
+
 .letter-correct {
-    color: green;
+    color: #389e0d;
 }
 
 .letter-incorrect {
-    color: red;
+    color: #cf1322;
 }
 
 .letter-active {
-    border-bottom: 0.125rem solid blue;
+    color: #1890ff;
+    /* Box-shadow underline for premium, stable look */
+    box-shadow: 0 2px 0 0 #1890ff;
+    /* Animate underline fade/slide in */
+    transition:
+        color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    padding-bottom: 6px; /* Ensure consistent space for underline */
+    animation: underline-fade-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.letter-active-space {
+    box-shadow: none !important;
+    animation: none !important;
+}
+
+@keyframes underline-fade-in {
+    from {
+        box-shadow: 0 2px 0 0 rgba(24, 144, 255, 0);
+    }
+    to {
+        box-shadow: 0 2px 0 0 #1890ff;
+    }
 }
 
 // Word-level background states
 .word-active {
-    background-color: rgba(0, 120, 255, 0.1);
-    box-shadow: 0 0 0 2px rgba(0, 120, 255, 0.3);
+    background: #f0f7ff; /* Very light blue */
+    border: 1px solid #e6f4ff; /* Subtle blue border */
+    color: #1890ff;
+    box-shadow: none;
 }
 
 .word-correct {
-    background-color: rgba(0, 200, 0, 0.1);
+    background: #f3fff7; /* Very light green */
+    border: 1px solid #b7eb8f; /* Pale green border */
+    color: #389e0d;
+    animation: word-pulse-green 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .word-incorrect {
-    background-color: rgba(255, 0, 0, 0.1);
+    background: #fff6f6; /* Very light red */
+    border: 1px solid #ffccc7; /* Pale red border */
+    color: #cf1322;
+    animation: word-pulse-red 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes word-pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.1);
+    }
+    60% {
+        box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.06);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(82, 196, 26, 0);
+    }
+}
+
+@keyframes word-pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.1);
+    }
+    60% {
+        box-shadow: 0 0 0 4px rgba(255, 77, 79, 0.06);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
+    }
 }
 
 .word-active-blur {
-  background-color: rgba(120, 120, 120, 0.1);
-  box-shadow: 0 0 0 2px rgba(120, 120, 120, 0.2);
+    background: #f5f5f5; /* Very light gray */
+    border: 1px solid #f0f0f0;
+    color: #222;
 }

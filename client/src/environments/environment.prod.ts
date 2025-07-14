@@ -1,4 +1,4 @@
 export const environment = {
-  production: true,
-  apiBaseUrl: 'https://api.verbatimapp.com/api',
+    production: true,
+    apiBaseUrl: 'https://api.verbatimapp.com/api',
 };

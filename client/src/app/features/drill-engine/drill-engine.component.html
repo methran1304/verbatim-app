@@ -1,25 +1,18 @@
-<!-- <app-drill-stats></app-drill-stats> -->
-
 <div class="drill-engine-center" (click)="focusInput()">
-  <div class="drill-metrics">
-    <span>WPM: {{ wpm }}</span>
-    <span>Accuracy: {{ accuracy }}%</span>
-    <span>Time Left: {{ remainingTime }}</span>
-  </div>
+  <nz-card class="drill-metrics-card">
+    <div class="drill-metrics">
+      <nz-statistic nzTitle="WPM" [nzValue]="wpm" [nzValueStyle]="{ color: '#1890ff' }"></nz-statistic>
+      <nz-statistic nzTitle="Accuracy" [nzValue]="accuracy" nzSuffix="%"
+        [nzValueStyle]="{ color: '#52c41a' }"></nz-statistic>
+      <nz-statistic nzTitle="Time Left" [nzValue]="remainingTime" [nzValueStyle]="{ color: '#fa8c16' }"></nz-statistic>
+    </div>
+  </nz-card>
 
-  <app-drill-text
-    [sourceText]="sourceText"
-    [typedInput]="typedText"
-    [currentWordIndex]="currentWordIndex"
-    [currentCharIndex]="currentCharIndex"
-    [isFocused]="isInputFocused"
-  ></app-drill-text>
-  
+  <app-drill-text [sourceText]="sourceText" [typedInput]="typedText" [currentWordIndex]="currentWordIndex"
+    [currentCharIndex]="currentCharIndex" [isFocused]="isInputFocused"></app-drill-text>
+
   @if (isDrillActive) {
-  <app-drill-input
-    (keyTyped)="onKeyTyped($event)"
-    (focusEvent)="onInputFocus()"
-    (blurEvent)="onInputBlur()"
-  ></app-drill-input>
+  <app-drill-input (keyTyped)="onKeyTyped($event)" (focusEvent)="onInputFocus()"
+    (blurEvent)="onInputBlur()"></app-drill-input>
   }
 </div>

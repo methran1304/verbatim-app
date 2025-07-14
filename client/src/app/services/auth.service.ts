@@ -1,7 +1,12 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
-import { LoginRequestDTO, RefreshTokenRequestDTO, RegisterRequestDTO, TokenResponseDTO } from '../models/interfaces/auth.interface';
+import {
+    LoginRequestDTO,
+    RefreshTokenRequestDTO,
+    RegisterRequestDTO,
+    TokenResponseDTO,
+} from '../models/interfaces/auth.interface';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -19,16 +24,16 @@ export class AuthService {
     login(payload: LoginRequestDTO): Observable<TokenResponseDTO> {
         return this.http.post<TokenResponseDTO>(
             `${this.baseUrl}/login`,
-            payload
+            payload,
         );
     }
 
     refreshToken(
-        payload: RefreshTokenRequestDTO
+        payload: RefreshTokenRequestDTO,
     ): Observable<TokenResponseDTO> {
         return this.http.post<TokenResponseDTO>(
             `${this.baseUrl}/refresh-token`,
-            payload
+            payload,
         );
     }
 

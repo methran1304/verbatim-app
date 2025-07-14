@@ -1,19 +1,19 @@
 export interface RegisterRequestDTO {
-  emailAddress: string;
-  username: string;
-  password: string;
+    emailAddress: string;
+    username: string;
+    password: string;
 }
 export interface LoginRequestDTO {
-  emailAddress: string;
-  password: string;
+    emailAddress: string;
+    password: string;
 }
 
 export interface TokenResponseDTO {
-  accessToken: string;
-  refreshToken: string;
+    accessToken: string;
+    refreshToken: string;
 }
 
 export interface RefreshTokenRequestDTO {
-  userId: string;
-  refreshToken: string;
+    userId: string;
+    refreshToken: string;
 }

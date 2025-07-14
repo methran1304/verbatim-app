@@ -8,12 +8,20 @@ import { SpecialKeys } from '../../core/constants/keys.constant';
 import { DrillDifficulty } from '../../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../../models/enums/drill-length.enum';
 import { DrillStats } from '../../models/interfaces/drill-stats.interface';
-import { DrillStatsComponent } from './drill-stats/drill-stats.component';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzStatisticModule } from 'ng-zorro-antd/statistic';
+import { CommonModule } from '@angular/common';
 
 @Component({
     selector: 'app-drill-engine',
     standalone: true,
-    imports: [DrillTextComponent, DrillInputComponent],
+    imports: [
+    CommonModule,
+    DrillTextComponent,
+    DrillInputComponent,
+    NzCardModule,
+    NzStatisticModule,
+],
     templateUrl: './drill-engine.component.html',
     styleUrl: './drill-engine.component.scss',
 })
@@ -28,7 +36,7 @@ export class DrillEngineComponent implements OnInit {
     currentCharIndex: number = 0;
 
     startTime: number = 0;
-    totalTimeInSeconds: number = 60; 
+    totalTimeInSeconds: number = 60;
     remainingTime: string = '01:00';
     private endTime: number = 0;
     timerInterval!: any;
@@ -41,7 +49,7 @@ export class DrillEngineComponent implements OnInit {
 
     constructor(
         private drillTextService: DrillTextService,
-        private ngZone: NgZone
+        private ngZone: NgZone,
     ) {}
 
     ngOnInit(): void {
@@ -63,7 +71,7 @@ export class DrillEngineComponent implements OnInit {
 
         const words = this.drillTextService.getRandomDrillText(
             DrillDifficulty.Advanced,
-            DrillLength.Short
+            DrillLength.Long,
         );
 
         // add space for every word except last
@@ -74,7 +82,7 @@ export class DrillEngineComponent implements OnInit {
 
         // create undefined 2d array with same source text structure
         this.typedText = this.sourceText.map((word) =>
-            new Array(word.length).fill(undefined)
+            new Array(word.length).fill(undefined),
         );
 
         this.wordLocked = this.sourceText.map(() => false);
@@ -143,7 +151,7 @@ export class DrillEngineComponent implements OnInit {
             console.log(this.drillStats);
             const isWordCorrect = this.typedText[this.currentWordIndex].every(
                 (stroke, i) =>
-                    stroke?.key === this.sourceText[this.currentWordIndex][i]
+                    stroke?.key === this.sourceText[this.currentWordIndex][i],
             );
 
             // build word error map
@@ -192,7 +200,7 @@ export class DrillEngineComponent implements OnInit {
 
         // clear typed state for current word
         this.typedText[this.currentWordIndex] = new Array(wordLength).fill(
-            undefined
+            undefined,
         );
 
         this.currentCharIndex = 0;
@@ -239,7 +247,6 @@ export class DrillEngineComponent implements OnInit {
         this.endTime = this.startTime + this.totalTimeInSeconds * 1000;
 
         this.timerInterval = setInterval(() => {
-
             const msLeft = this.endTime - Date.now();
             const secondsLeft = Math.max(0, Math.floor(msLeft / 1000));
             const minutes = Math.floor(secondsLeft / 60);
