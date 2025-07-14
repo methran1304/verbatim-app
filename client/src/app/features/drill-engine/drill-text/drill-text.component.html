@@ -1,15 +1,15 @@
 <div class="drill-text" #drillText>
-  <ng-container *ngFor="let word of sourceText; let wi = index">
+  @for (word of sourceText; track word; let wi = $index) {
     <span
       class="word"
       [ngClass]="getWordClass(wi)"
       #wordRef
-    >
-      <ng-container *ngFor="let char of word; let ci = index">
+      >
+      @for (char of word; track char; let ci = $index) {
         <span [ngClass]="getLetterClass(wi, ci)">
           {{ char === " " ? "␣" : char }}
         </span>
-      </ng-container>
+      }
     </span>
-  </ng-container>
+  }
 </div>

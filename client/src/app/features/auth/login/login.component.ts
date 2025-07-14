@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+
 import { Component } from '@angular/core';
 import {
     FormBuilder,
@@ -12,7 +12,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 
 @Component({
     selector: 'app-login',
-    imports: [CommonModule, ReactiveFormsModule, NzButtonModule],
+    imports: [ReactiveFormsModule, NzButtonModule],
     templateUrl: './login.component.html',
     styleUrl: './login.component.scss',
 })
