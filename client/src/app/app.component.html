@@ -1,1 +1,19 @@
 <router-outlet></router-outlet>
+
+<button class="theme-toggle-fab" (click)="toggleDarkMode()" [attr.aria-label]="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
+  <nz-icon *ngIf="darkMode" nzType="sun" nzTheme="outline"></nz-icon>
+  <nz-icon *ngIf="!darkMode" nzType="moon" nzTheme="fill"></nz-icon>
+</button>
+
+@if (isScreenTooSmall) {
+  <nz-card id="screen-size-overlay">
+    <h3>Screen Too Small</h3>
+    <p>This application requires a minimum screen resolution of 800x800 pixels.</p>
+    <p>Current resolution: {{ screenWidth }}x{{ screenHeight }}</p>
+    <p>Please resize your browser window or use a larger screen.</p>
+  </nz-card>
+}
+
+<div class="app-content" [ngClass]="{'screen-too-small': isScreenTooSmall}">
+  <router-outlet></router-outlet>
+</div>

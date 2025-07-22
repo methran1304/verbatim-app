@@ -8,20 +8,28 @@ import { SpecialKeys } from '../../core/constants/keys.constant';
 import { DrillDifficulty } from '../../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../../models/enums/drill-length.enum';
 import { DrillStats } from '../../models/interfaces/drill-stats.interface';
-import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { CommonModule } from '@angular/common';
+import { VirtualKeyboardComponent } from './virtual-keyboard/virtual-keyboard.component';
+import { DrillToolbarComponent } from './drill-toolbar/drill-toolbar.component';
+import { ThemeService } from '../../services/theme.service';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { DrillPreference } from '../../models/interfaces/drill-preference.interface';
+
 
 @Component({
     selector: 'app-drill-engine',
     standalone: true,
     imports: [
-    CommonModule,
-    DrillTextComponent,
-    DrillInputComponent,
-    NzCardModule,
-    NzStatisticModule,
-],
+        CommonModule,
+        DrillTextComponent,
+        DrillInputComponent,
+        VirtualKeyboardComponent,
+        DrillToolbarComponent,
+        NzCardModule,
+        NzButtonModule,
+    ],
+    providers: [],
     templateUrl: './drill-engine.component.html',
     styleUrl: './drill-engine.component.scss',
 })
@@ -36,7 +44,7 @@ export class DrillEngineComponent implements OnInit {
     currentCharIndex: number = 0;
 
     startTime: number = 0;
-    totalTimeInSeconds: number = 60;
+    totalTimeInSeconds: number = 10;
     remainingTime: string = '01:00';
     private endTime: number = 0;
     timerInterval!: any;
@@ -46,17 +54,58 @@ export class DrillEngineComponent implements OnInit {
     drillStats!: DrillStats;
 
     isInputFocused: boolean = true;
+    currentInput: string = '';
+
+    isDarkMode: boolean = false;
+    
+    // drill preference
+    drillPreferences: DrillPreference;
+
+    // drill settings
+    // Remove selectedDifficulty, selectedDuration
+    
+    // typing state for toolbar animation
+    isTyping: boolean = false;
+    private typingTimeout: any;
+
+    showPostDrillOverlay: boolean = false;
+    isSubmitting: boolean = false;
+    submitError: string = '';
 
     constructor(
         private drillTextService: DrillTextService,
         private ngZone: NgZone,
-    ) {}
+        private themeService: ThemeService,
+    ) {
+        // get drill preference
+        let storedPreference: DrillPreference = JSON.parse(localStorage.getItem('drillPreference') ?? '{}');
+
+        // if no preference set, set default preference
+        if (Object.keys(storedPreference).length === 0) {
+            const defaultPreference: DrillPreference = {
+                drillDifficulty: DrillDifficulty.Intermediate,
+                drillLength: DrillLength.Medium,
+                drillDuration: 30
+            };
+
+            localStorage.setItem('drillPreference', JSON.stringify(defaultPreference));
+
+            storedPreference = defaultPreference;
+        }
+
+        this.drillPreferences = storedPreference;
+    }
 
     ngOnInit(): void {
+        this.showPostDrillOverlay = false;
         this.startDrill();
+        this.themeService.getDarkMode().subscribe(isDark => {
+            this.isDarkMode = isDark;
+        });
     }
 
     startDrill(): void {
+        this.showPostDrillOverlay = false;
         this.isDrillActive = true;
 
         this.drillStats = {
@@ -70,8 +119,8 @@ export class DrillEngineComponent implements OnInit {
         };
 
         const words = this.drillTextService.getRandomDrillText(
-            DrillDifficulty.Advanced,
-            DrillLength.Long,
+            this.drillPreferences.drillDifficulty,
+            this.drillPreferences.drillLength,
         );
 
         // add space for every word except last
@@ -95,10 +144,10 @@ export class DrillEngineComponent implements OnInit {
         // stop timer
         this.isDrillActive = false;
         this.stopTimer();
-
         // update WPM & accuracy in drill stats
         this.drillStats.wpm = this.wpm;
         this.drillStats.accuracy = this.accuracy;
+        this.showPostDrillOverlay = true;
     }
 
     resumeDrill(): void {
@@ -119,6 +168,9 @@ export class DrillEngineComponent implements OnInit {
             this.handleBackspace();
             return;
         }
+
+        // set typing state for toolbar animation
+        this.setTypingState(true);
 
         // start timer on first keystroke
         if (!this.startTime) this.startTimer();
@@ -256,7 +308,7 @@ export class DrillEngineComponent implements OnInit {
             this.updateWPMAndAccuracy();
 
             if (msLeft <= 0) {
-                this.stopDrill(); // Auto-submit or end
+                this.stopDrill(); // auto-submit or end
             }
         }, 1000);
     }
@@ -291,5 +343,78 @@ export class DrillEngineComponent implements OnInit {
                 });
             });
         });
+    }
+
+    handleVirtualKeyPress = (button: string) => {
+        this.onKeyTyped(button);
+        this.currentInput += button;
+    };
+
+    // toolbar event handlers
+    onRestart(): void {
+        this.stopDrill();
+        this.resetDrillStats();
+        this.currentWordIndex = 0;
+        this.currentCharIndex = 0;
+        this.typedText = this.sourceText.map((word) =>
+            new Array(word.length).fill(undefined),
+        );
+        this.wordLocked = this.sourceText.map(() => false);
+        this.isDrillActive = true;
+        this.showPostDrillOverlay = false;
+        this.focusInput();
+    }
+
+    onNewDrill(): void {
+        this.stopDrill();
+        this.startDrill();
+        this.focusInput();
+    }
+
+    private resetDrillStats(): void {
+        this.drillStats = {
+            wpm: 0,
+            accuracy: 0,
+            errorMap: {
+                wordErrorMap: {},
+                charErrorMap: {},
+            },
+            corrections: 0,
+        };
+        this.wpm = 0;
+        this.accuracy = 100;
+        this.startTime = 0;
+        this.remainingTime = '01:00';
+    }
+
+    onDrillPreferenceChange(preference: DrillPreference): void {
+        this.drillPreferences = preference;
+        localStorage.setItem('drillPreference', JSON.stringify(preference));
+        if (this.isDrillActive) {
+            this.stopDrill();
+            this.resetDrillStats();
+            this.startDrill();
+            this.focusInput();
+        }
+    }
+
+    private setTypingState(isTyping: boolean): void {
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+        }
+
+        this.isTyping = isTyping;
+
+        if (isTyping) {
+            // reset typing state after 2 seconds of no typing
+            this.typingTimeout = setTimeout(() => {
+                this.isTyping = false;
+            }, 2000);
+        }
+    }
+
+    onPostDrillSubmit(): void {
+        // TODO: Integrate backend submission here
+        this.showPostDrillOverlay = false;
     }
 }

@@ -1,15 +1,32 @@
 <div class="drill-engine-center" (click)="focusInput()">
-  <nz-card class="drill-metrics-card">
-    <div class="drill-metrics">
-      <nz-statistic nzTitle="WPM" [nzValue]="wpm" [nzValueStyle]="{ color: '#1890ff' }"></nz-statistic>
-      <nz-statistic nzTitle="Accuracy" [nzValue]="accuracy" nzSuffix="%"
-        [nzValueStyle]="{ color: '#52c41a' }"></nz-statistic>
-      <nz-statistic nzTitle="Time Left" [nzValue]="remainingTime" [nzValueStyle]="{ color: '#fa8c16' }"></nz-statistic>
-    </div>
-  </nz-card>
+  <app-drill-toolbar
+    [wpm]="wpm"
+    [accuracy]="accuracy"
+    [remainingTime]="remainingTime"
+    [drillPreference]="drillPreferences"
+    [isTyping]="isTyping"
+    [disabled]="showPostDrillOverlay"
+    [forceCollapsed]="showPostDrillOverlay"
+    (restart)="onRestart()"
+    (newDrill)="onNewDrill()"
+    (drillPreferenceChange)="onDrillPreferenceChange($event)"
+  ></app-drill-toolbar>
 
-  <app-drill-text [sourceText]="sourceText" [typedInput]="typedText" [currentWordIndex]="currentWordIndex"
-    [currentCharIndex]="currentCharIndex" [isFocused]="isInputFocused"></app-drill-text>
+  <app-drill-text
+    [sourceText]="sourceText"
+    [typedInput]="typedText"
+    [currentWordIndex]="currentWordIndex"
+    [currentCharIndex]="currentCharIndex"
+    [isFocused]="isInputFocused"
+    [showPostDrillOverlay]="showPostDrillOverlay"
+    (postDrillRestart)="onRestart()"
+    (postDrillSubmit)="onPostDrillSubmit()"
+  ></app-drill-text>
+
+  <app-virtual-keyboard
+    [inputValue]="currentInput"
+    [isDarkTheme]="isDarkMode"
+  ></app-virtual-keyboard>
 
   @if (isDrillActive) {
   <app-drill-input (keyTyped)="onKeyTyped($event)" (focusEvent)="onInputFocus()"

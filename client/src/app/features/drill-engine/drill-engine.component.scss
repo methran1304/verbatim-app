@@ -1,7 +1,8 @@
 .drill-metrics-card {
     margin-bottom: 1rem;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--color-shadow);
+    background: var(--color-bg-card);
 }
 
 .drill-metrics {
@@ -18,7 +19,7 @@
     justify-content: center;
 
     height: 100vh;
-    max-width: 900px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 2rem;
     box-sizing: border-box;
@@ -38,7 +39,7 @@
     align-items: center;
     justify-content: center;
 
-    color: white;
+    color: var(--color-text-inverse);
     font-size: 1.5rem;
     font-weight: bold;
     text-align: center;
@@ -55,7 +56,7 @@
 
 .pause-message {
     text-align: center;
-    color: #fff;
+    color: var(--color-text-inverse);
     font-family: monospace;
 
     h2 {
@@ -67,4 +68,30 @@
         font-size: 1.1rem;
         opacity: 0.8;
     }
+}
+
+.post-drill-overlay {
+  display: block;
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: auto;
+  min-width: 250px;
+  z-index: 30;
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  box-shadow: var(--color-shadow);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  text-align: center;
+  padding: 2rem 1.5rem 1.5rem 1.5rem;
+  .error-message {
+    color: var(--color-error);
+    margin-top: 1rem;
+  }
+  button {
+    margin: 0.5rem 0.5rem 0 0.5rem;
+    min-width: 120px;
+  }
 }

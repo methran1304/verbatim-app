@@ -35,7 +35,7 @@ export class DrillTextService {
         let commonWordsCount = Math.floor(0.8 * wordCount);
         let difficultyWordsCount = Math.floor(0.2 * wordCount);
 
-        // Select random words from each category
+        // select random words from each category
         const shuffledCommonWords = [...basicWords].sort(
             () => Math.random() - 0.5,
         );
@@ -52,7 +52,7 @@ export class DrillTextService {
             difficultyWordsCount,
         );
 
-        // Combine and shuffle the final result
+        // combine and shuffle the final result
         const combinedWords = [
             ...selectedCommonWords,
             ...selectedDifficultyWords,

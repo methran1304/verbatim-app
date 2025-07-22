@@ -1,0 +1,19 @@
+.drill-metrics-card {
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  box-shadow: var(--color-shadow);
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border);
+  backdrop-filter: blur(2px);
+}
+
+.drill-metrics {
+  display: flex;
+  justify-content: space-around;
+  gap: 2rem;
+  padding: 0.5rem 0;
+}
+
+::ng-deep .ant-statistic-title {
+  color: var(--color-text);
+}

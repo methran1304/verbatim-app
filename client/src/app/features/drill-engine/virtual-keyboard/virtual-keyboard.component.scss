@@ -1,0 +1,88 @@
+:root {
+  --color-key-green-light: #8EC07C;
+  --color-key-red-light: #D66354;
+  --color-key-blue-light: #1976d2;
+  
+  --color-key-green-dark: #607A58;
+  --color-key-red-dark: #854B44;
+  --color-key-blue-dark: #b3e5fc; 
+}
+
+// light theme colors
+$green-lg: #8EC07C;
+$dark-green-lg: #B8BB25;
+$yellow-lg: #FABD2F;
+$blue-lg: #83A698;
+$pink-lg: #D3869B;
+$space-bar-lg: #D66354;
+
+// dark theme colors
+$green-dk: #607A58;
+$dark-green-dk: #76772D;
+$yellow-dk: #977831;
+$blue-dk: #5B6D66;
+$pink-dk: #835D67;
+$space-bar-dk: #854B44;
+
+
+// dark theme
+$bg-dk: #404040;
+$text-dk: #9F9999;
+
+// light theme
+$bg-lg: #E9E1E1;
+$text-lg: #282640;
+.verbatim-kb {
+  min-width: 680px;
+  margin-top: 16px;
+  background: $bg-lg;
+  border-radius: 8px;
+  color: $text-lg;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+  padding: 15px;
+
+  .hg-button {
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 1.25em;
+    transition: background 0.18s, color 0.18s, border 0.18s;
+    border: none;
+  }
+
+  .hg-button.green { background: $green-lg; color: $text-lg; }
+  .hg-button.dark-green { background: $dark-green-lg; color: $text-lg; }
+  .hg-button.yellow  { background: $yellow-lg;  color: $text-lg; }
+  .hg-button.blue   { background: $blue-lg;   color: $text-lg; }
+  .hg-button.pink   { background: $pink-lg;   color: $text-lg; }
+  .hg-button.space-bar { background: $space-bar-lg; color: $text-lg; }
+  .hg-button.alphabet {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+  }
+  .hg-button.tab, .hg-button.backtick {
+    width: 66px;
+    min-width: 66px;
+    max-width: 66px;
+  }
+  .mod {
+    background: $green-lg;
+    color: $text-lg;
+  }
+
+  &.dark {
+    background: $bg-dk;
+    color: $text-dk;
+
+    .hg-button.green { background: $green-dk; color: $text-dk; }
+    .hg-button.dark-green { background: $dark-green-dk; color: $text-dk; }
+    .hg-button.yellow  { background: $yellow-dk;  color: $text-dk; }
+    .hg-button.blue   { background: $blue-dk;   color: $text-dk; }
+    .hg-button.pink   { background: $pink-dk;   color: $text-dk; }
+    .hg-button.space-bar { background: $space-bar-dk; color: $text-dk; }
+    .mod {
+      background: $green-dk;
+      color: $text-dk;
+    }
+  }
+}

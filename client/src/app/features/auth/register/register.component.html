@@ -1,65 +1,56 @@
-<nz-card nzTitle="Register" [nzBodyStyle]="{ padding: '24px' }">
-  <form
-    nz-form
-    [formGroup]="registerForm"
-    (ngSubmit)="onSubmit()"
-    class="register-form"
-  >
-    <nz-form-item>
-      <nz-form-label [nzSpan]="24" nzRequired>Email Address</nz-form-label>
-      <nz-form-control [nzSpan]="24" nzErrorTip="Please input your email!">
-        <input
-          nz-input
-          formControlName="emailAddress"
-          placeholder="Enter your email"
-        />
-      </nz-form-control>
-    </nz-form-item>
-
-    <nz-form-item>
-      <nz-form-label [nzSpan]="24" nzRequired>Username</nz-form-label>
-      <nz-form-control [nzSpan]="24" nzErrorTip="Please input your username!">
-        <input
-          nz-input
-          formControlName="username"
-          placeholder="Enter your username"
-        />
-      </nz-form-control>
-    </nz-form-item>
-
-    <nz-form-item>
-      <nz-form-label [nzSpan]="24" nzRequired>Password</nz-form-label>
-      <nz-form-control [nzSpan]="24" nzErrorTip="Please input your password!">
-        <input
-          nz-input
-          nzType="password"
-          formControlName="password"
-          placeholder="Enter your password"
-        />
-      </nz-form-control>
-    </nz-form-item>
-
-    @if (errorMessage) {
-      <nz-form-item>
-        <nz-form-control [nzSpan]="24">
-          <div class="error-message">{{ errorMessage }}</div>
-        </nz-form-control>
-      </nz-form-item>
-    }
-
-    <nz-form-item>
-      <nz-form-control [nzSpan]="24">
-        <button
-          nz-button
-          nzType="primary"
-          nzSize="large"
-          [disabled]="loading"
-          [nzLoading]="loading"
-          class="register-button"
-        >
-          Register
-        </button>
-      </nz-form-control>
-    </nz-form-item>
-  </form>
-</nz-card>
+<div class="register-viewport">
+  <div class="register-card">
+    <div class="register-title">verbatim</div>
+    <form
+      nz-form
+      [formGroup]="registerForm"
+      (ngSubmit)="onSubmit()"
+      class="register-form"
+    >
+      <input
+        nz-input
+        formControlName="username"
+        placeholder="Username"
+        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
+        [nzStatus]="username?.invalid && (username?.dirty || username?.touched || submitted) ? 'error' : ''"
+      />
+      <input
+        nz-input
+        formControlName="emailAddress"
+        placeholder="Email"
+        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
+        [nzStatus]="email?.invalid && (email?.dirty || email?.touched || submitted) ? 'error' : ''"
+      />
+      <input
+        nz-input
+        type="password"
+        formControlName="password"
+        placeholder="Password"
+        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
+        [nzStatus]="password?.invalid && (password?.dirty || password?.touched || submitted) ? 'error' : ''"
+      />
+      <input
+        nz-input
+        type="password"
+        formControlName="confirmPassword"
+        placeholder="Confirm Password"
+        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
+        [nzStatus]="(confirmPassword?.invalid && (confirmPassword?.dirty || confirmPassword?.touched || submitted)) || (registerForm.errors?.['passwordsDontMatch'] && (confirmPassword?.dirty || confirmPassword?.touched || submitted)) ? 'error' : ''"
+      />
+      <div class="register-links-row">
+        <span class="login-link" (click)="onLogin()" [class.disabled-link]="loading" [attr.tabindex]="loading ? -1 : 0">Already a member?</span>
+      </div>
+      <div *ngIf="getValidationMessage()" class="validation-message">{{ getValidationMessage() }}</div>
+      <button
+        nz-button
+        nzType="primary"
+        [disabled]="loading"
+        [nzLoading]="loading"
+        class="register-button"
+        type="submit"
+      >
+        Register
+      </button>
+    </form>
+  </div>
+</div> 

@@ -12,16 +12,9 @@ export const routes: Routes = [
         component: AuthComponent,
         canActivate: [redirectIfAuthenticatedGuard],
         children: [
-            {
-                path: 'login',
-                component: LoginComponent,
-                children: [],
-            },
-            {
-                path: 'register',
-                component: RegisterComponent,
-                children: [],
-            },
+            { path: 'login', component: LoginComponent },
+            { path: 'register', component: RegisterComponent },
+            { path: '', redirectTo: 'login', pathMatch: 'full' },
         ],
     },
     {
@@ -29,6 +22,6 @@ export const routes: Routes = [
         component: DrillEngineComponent,
         canActivate: [authGuard],
     },
-    { path: '', redirectTo: 'drill', pathMatch: 'full' },
+    { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
     { path: '**', redirectTo: 'auth/login' },
 ];

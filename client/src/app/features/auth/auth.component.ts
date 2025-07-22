@@ -1,20 +1,20 @@
 import { Component } from '@angular/core';
-
-import { RouterModule, Router } from '@angular/router';
-import { LoginComponent } from './login/login.component';
-import { RegisterComponent } from './register/register.component';
+import { Router, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 
 @Component({
-    selector: 'app-auth',
-    standalone: true,
-    imports: [RouterModule],
-    templateUrl: './auth.component.html',
-    styleUrl: './auth.component.scss',
+  selector: 'app-auth',
+  standalone: true,
+  imports: [CommonModule, RouterModule, NzCardModule, NzButtonModule],
+  templateUrl: './auth.component.html',
+  styleUrl: './auth.component.scss',
 })
 export class AuthComponent {
-    constructor(public router: Router) {}
+  constructor(public router: Router) {}
 
-    switchTo(view: 'login' | 'register') {
-        this.router.navigate(['/auth', view]);
-    }
+  isLoginRoute() {
+    return this.router.url === '/auth/login';
+  }
 }

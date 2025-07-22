@@ -4,6 +4,17 @@ input {
     padding: 0.5rem;
     width: 100%;
     box-sizing: border-box;
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: var(--color-shadow);
+    margin-bottom: 1rem;
+}
+
+input:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
 }
 
 .drill-input {

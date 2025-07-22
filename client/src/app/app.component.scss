@@ -1,0 +1,54 @@
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+#screen-size-overlay {
+  display: block;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  max-width: 90vw;
+  z-index: 9999;
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  box-shadow: var(--color-shadow);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  text-align: center;
+  padding: 2rem;
+
+  h3 {
+    margin-bottom: 1rem;
+    color: var(--color-error);
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+    
+    &:last-child {
+      margin-bottom: 0;
+      font-weight: 500;
+      color: var(--color-primary);
+    }
+  }
+}
+
+.app-content {
+  transition: filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &.screen-too-small {
+    filter: blur(0.125rem);
+    pointer-events: none;
+    user-select: none;
+  }
+}
+

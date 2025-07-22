@@ -3,41 +3,94 @@ import {
     Input,
     ElementRef,
     QueryList,
+    ViewChild,
     ViewChildren,
     AfterViewChecked,
+    SimpleChanges,
+    OnChanges,
+    Output,
+    EventEmitter,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { KeyStroke } from '../../../models/interfaces/typed-char.interface';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 
 @Component({
     selector: 'app-drill-text',
     standalone: true,
-    imports: [CommonModule, NzCardModule, NzTagModule],
+    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule],
     templateUrl: './drill-text.component.html',
     styleUrl: './drill-text.component.scss',
 })
-export class DrillTextComponent implements AfterViewChecked {
+export class DrillTextComponent implements AfterViewChecked, OnChanges {
     @Input() sourceText: string[][] = [];
     @Input() typedInput: (KeyStroke | undefined)[][] = [];
     @Input() currentWordIndex: number = 0;
     @Input() currentCharIndex: number = 0;
     @Input() isFocused: boolean = true;
+    @Input() showPostDrillOverlay: boolean = false;
+    @Output() postDrillRestart = new EventEmitter<void>();
+    @Output() postDrillSubmit = new EventEmitter<void>();
 
-    @ViewChildren('wordRef') wordElements!: QueryList<
-        ElementRef<HTMLSpanElement>
-    >;
+    @ViewChildren('wordEl', { read: ElementRef }) wordElements!: QueryList<ElementRef<HTMLElement>>;
+    @ViewChild('drillText', { read: ElementRef }) drillTextEl!: ElementRef<HTMLElement>;
+
+    private pendingScroll: boolean = false;
+    delayedAfkOverlay: boolean = false;
+    private afkTimeout: any;
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (
+            changes['currentWordIndex'] &&
+            !changes['currentWordIndex'].firstChange
+        ) {
+            this.pendingScroll = true;
+        }
+        if (changes['isFocused'] && !this.showPostDrillOverlay) {
+            if (this.isFocused) {
+                this.delayedAfkOverlay = false;
+                if (this.afkTimeout) {
+                    clearTimeout(this.afkTimeout);
+                }
+            } else {
+                if (this.afkTimeout) {
+                    clearTimeout(this.afkTimeout);
+                }
+                this.afkTimeout = setTimeout(() => {
+                    this.delayedAfkOverlay = true;
+                }, 400);
+            }
+        }
+    }
 
     ngAfterViewChecked(): void {
-        const active = this.wordElements.get(this.currentWordIndex);
-        if (active) {
-            active.nativeElement.scrollIntoView({
-                behavior: 'smooth',
-                inline: 'center',
-                block: 'nearest',
-            });
+        if (this.pendingScroll) {
+            setTimeout(() => this.scrollToCenterLine(), 0);
+            this.pendingScroll = false;
         }
+    }
+
+    private scrollToCenterLine(): void {
+        const elements = this.wordElements.toArray();
+        const activeEl = elements[this.currentWordIndex]?.nativeElement;
+        const containerEl = this.drillTextEl?.nativeElement;
+
+        if (!activeEl || !containerEl) return;
+
+        const elTop = activeEl.offsetTop;
+        const elHeight = activeEl.offsetHeight;
+        const containerHeight = containerEl.clientHeight;
+
+        const targetScrollTop = elTop - (containerHeight / 2) + (elHeight / 2);
+
+        containerEl.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth',
+        });
     }
 
     getLetterClass(wordIdx: number, charIdx: number): string {

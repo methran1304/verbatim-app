@@ -1,0 +1,31 @@
+
+:host {
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  box-shadow: var(--color-shadow);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+}
+
+.stat-value {
+  color: var(--color-primary);
+}
+
+.stat-success {
+  color: var(--color-success);
+}
+
+.stat-warning {
+  color: var(--color-warning);
+}
+
+.stat-error {
+  color: var(--color-error);
+}
+
+.stat-inverse {
+  color: var(--color-text-inverse);
+}
+

@@ -1,0 +1,204 @@
+.drill-toolbar {
+  display: flex;
+  align-items: center;
+  background: var(--color-bg-card);
+  border-radius: 8px;
+  box-shadow: var(--color-shadow);
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 1rem;
+  margin-bottom: 2.25rem;
+  gap: 0; // Start with no gap
+  overflow: hidden;
+  min-height: 40px;
+  transition: gap 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  &:not(.controls-hidden) {
+    gap: 1rem; // Add gap when controls are visible
+  }
+}
+
+.toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stats-section {
+  flex: 1;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.controls-section {
+  flex: 1;
+  justify-content: flex-end;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(0);
+  opacity: 1;
+  max-width: 500px;
+  
+  &.hidden {
+    transform: translateX(100%);
+    opacity: 0;
+    max-width: 0;
+    margin-left: 0;
+    padding-left: 0;
+    gap: 0;
+  }
+}
+
+.toolbar-divider {
+  height: 1.5rem;
+  margin: 0;
+  border-color: var(--color-border);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  max-width: 1px;
+  
+  &.hidden {
+    opacity: 0;
+    max-width: 0;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+// Compact stat items with labels on same line
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--color-text);
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+// Control buttons styling
+.control-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text);
+  border: none;
+  background: transparent;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  height: 28px;
+  
+  &:hover {
+    background: var(--color-bg-blur);
+    color: var(--color-primary);
+  }
+  
+  .anticon {
+    font-size: 0.875rem;
+  }
+  
+  .button-text {
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+}
+
+// Select dropdowns styling
+.control-select {
+  min-width: 100px;
+  transition: all 0.3s ease;
+  
+  ::ng-deep .ant-select-selector {
+    border-radius: 6px;
+    border-color: var(--color-border);
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
+    height: 28px !important;
+    padding: 0 8px !important;
+  }
+  
+  ::ng-deep .ant-select-selection-item {
+    font-size: 0.75rem;
+    color: var(--color-text);
+    line-height: 26px;
+  }
+  
+  &:hover ::ng-deep .ant-select-selector {
+    border-color: var(--color-primary);
+  }
+}
+
+// Dark theme dropdown overrides
+::ng-deep .ant-select-dropdown {
+  background: var(--color-bg-card) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--color-shadow) !important;
+  border-radius: 8px !important;
+}
+
+::ng-deep .ant-select-item {
+  color: var(--color-text) !important;
+  background: var(--color-bg-card) !important;
+  
+  &:hover {
+    background: var(--color-bg-blur) !important;
+  }
+  
+  &.ant-select-item-option-selected {
+    background: var(--color-primary-light) !important;
+    color: var(--color-primary) !important;
+  }
+  
+  &.ant-select-item-option-active {
+    background: var(--color-bg-blur) !important;
+  }
+}
+
+::ng-deep .ant-select-arrow {
+  color: var(--color-text) !important;
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .drill-toolbar {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  .toolbar-divider {
+    display: none;
+  }
+  
+  .stats-section,
+  .controls-section {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .controls-section {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: none;
+    
+    &.hidden {
+      transform: translateY(100%);
+      max-height: 0;
+      overflow: hidden;
+    }
+  }
+  
+  .control-select {
+    min-width: 100px;
+  }
+} 
