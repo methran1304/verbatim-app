@@ -1,35 +1,56 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzLayoutModule } from 'ng-zorro-antd/layout';
 import { ThemeService } from './services/theme.service';
+import { AuthService } from './services/auth.service';
 import { ThemeType } from './models/enums/theme-type.enum';
 import { UserPreference } from './models/interfaces/user-preference.interface';
+import { TopNavComponent } from './features/navigation/top-nav.component';
 
 @Component({
     selector: 'app-root',
-    imports: [CommonModule, RouterOutlet, FormsModule, NzIconModule, NzSwitchModule, NzCardModule],
+    imports: [
+        CommonModule, 
+        RouterOutlet, 
+        FormsModule, 
+        NzIconModule, 
+        NzSwitchModule, 
+        NzCardModule,
+        NzLayoutModule,
+        TopNavComponent
+    ],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit, OnDestroy {
+export class AppComponent implements OnInit {
     title = 'verbatim.app';
     darkMode = false;
     userPreference!: UserPreference;
+    isAuthenticated = false;
     
     // screen size detection
     isScreenTooSmall: boolean = false;
     screenWidth: number = 0;
     screenHeight: number = 0;
     private readonly MIN_WIDTH = 800;
-    private readonly MIN_HEIGHT = 800;
+    private readonly MIN_HEIGHT = 600;
 
-    constructor(private themeService: ThemeService) {}
+    constructor(
+        private themeService: ThemeService,
+        private authService: AuthService
+    ) {}
 
     ngOnInit() {
+        // subscribe to authentication state changes
+        this.authService.getAuthenticated().subscribe(isAuthenticated => {
+            this.isAuthenticated = isAuthenticated;
+        });
+        
         // get user preference from localStorage
         let storedPreference: UserPreference = JSON.parse(localStorage.getItem('userPreference') ?? '{}');
         if (!storedPreference.theme) {
@@ -55,11 +76,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.checkScreenSize();
     }
 
-    ngOnDestroy(): void {
-    }
-
     @HostListener('window:resize')
-    onResize(): void {
+    onResize() {
         this.checkScreenSize();
     }
 

@@ -114,9 +114,9 @@ export class DrillToolbarComponent implements OnChanges {
         clearTimeout(this.hoverTimeout);
       }
     } else {
-      // When forceCollapsed becomes false, expand the toolbar
+      // when forceCollapsed becomes false, expand the toolbar
       this.showControls = true;
-      // Clear any pending timeouts to ensure clean state
+      // clear any pending timeouts to ensure clean state transition
       if (this.animationTimeout) {
         clearTimeout(this.animationTimeout);
       }

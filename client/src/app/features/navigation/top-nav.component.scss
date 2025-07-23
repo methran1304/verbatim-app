@@ -1,0 +1,303 @@
+.top-nav-header {
+  background: var(--color-bg-navbar, var(--color-bg));
+  height: 70.4px;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  box-shadow: var(--color-shadow);
+}
+
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  padding: 0 2.2rem;
+}
+
+// logo
+.nav-logo {
+  flex-shrink: 0;
+  
+  .logo-button {
+    background: transparent;
+    border: none;
+    padding: 0;
+    height: auto;
+    line-height: 1;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
+    outline: none;
+    
+    &:hover {
+      opacity: 0.8;
+      box-shadow: none;
+      outline: none;
+    }
+    
+    &:focus {
+      box-shadow: none;
+      outline: none;
+    }
+  }
+  
+  .logo-text {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: var(--color-text);
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  }
+}
+
+// main navigation menu
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: 1;
+  justify-content: center;
+}
+
+// navigation buttons
+.nav-button {
+  height: 44px;
+  padding: 0 1.1rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  box-shadow: none;
+  
+  &:hover {
+    background: transparent;
+    color: var(--color-primary);
+    box-shadow: none;
+  }
+  
+  &.active {
+    background: transparent;
+    color: var(--color-primary);
+    border: none;
+    box-shadow: none;
+  }
+  
+  .anticon {
+    font-size: 0.9625rem;
+  }
+}
+
+// dropdown styling
+.nav-dropdown {
+  .ant-dropdown-trigger {
+    display: flex;
+    align-items: center;
+  }
+}
+
+// user menu
+.nav-user {
+  flex-shrink: 0;
+}
+
+.user-button {
+  height: 40px;
+  padding: 0 1rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: none;
+  
+  &:hover {
+    background: transparent;
+    border: none;
+    color: var(--color-primary);
+    box-shadow: none;
+  }
+  
+  .user-text {
+    font-weight: 500;
+  }
+  
+  .anticon {
+    font-size: 0.875rem;
+  }
+}
+
+// dropdown menu overrides
+::ng-deep .ant-dropdown-menu {
+  background: var(--color-bg-navbar) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--color-shadow) !important;
+  border-radius: 8px !important;
+  padding: 0.5rem 0 !important;
+  animation-duration: 0.1s !important;
+  transition: all 0.1s ease !important;
+}
+
+::ng-deep .ant-dropdown {
+  animation-duration: 0.1s !important;
+  transition: all 0.1s ease !important;
+}
+
+::ng-deep .ant-dropdown-menu-item {
+  color: var(--color-text) !important;
+  background: var(--color-bg-navbar) !important;
+  padding: 0.5rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  border-radius: 4px !important;
+  margin: 0 0.25rem !important;
+  transition: all 0.1s ease !important;
+  
+  &:hover {
+    background: var(--color-bg-blur) !important;
+    color: var(--color-primary) !important;
+  }
+  
+  &.ant-dropdown-menu-item-active {
+    background: var(--color-primary-light) !important;
+    color: var(--color-primary) !important;
+  }
+  
+  &.active {
+    background: var(--color-primary-light) !important;
+    color: var(--color-primary) !important;
+    font-weight: 500 !important;
+  }
+}
+
+::ng-deep .ant-dropdown-menu-item-icon {
+  font-size: 0.875rem !important;
+}
+
+// responsive design
+@media (max-width: 1024px) {
+  .nav-container {
+    padding: 0 1.5rem;
+  }
+  
+  .nav-menu {
+    gap: 0.4rem;
+  }
+  
+  .nav-button {
+    padding: 0 0.8rem;
+    font-size: 0.9rem;
+  }
+  
+  .user-button {
+    padding: 0 0.8rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .nav-container {
+    padding: 0 1.25rem;
+  }
+  
+  .nav-menu {
+    gap: 0.3rem;
+  }
+  
+  .nav-button {
+    padding: 0 0.7rem;
+    font-size: 0.85rem;
+  }
+  
+  .user-button {
+    padding: 0 0.7rem;
+  }
+  
+  .logo-text {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .nav-container {
+    padding: 0 1rem;
+  }
+  
+  .nav-menu {
+    gap: 0.25rem;
+  }
+  
+  .nav-button {
+    padding: 0 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  .user-button {
+    padding: 0 0.6rem;
+  }
+  
+  .logo-text {
+    font-size: 1.2rem;
+  }
+  
+  .top-nav-header {
+    height: 56px;
+    line-height: 56px;
+    padding: 0 1rem;
+  }
+  
+  .nav-container {
+    padding: 0 0.5rem;
+  }
+  
+  .nav-logo .logo-text {
+    font-size: 1.2rem;
+  }
+  
+  .nav-item {
+    font-size: 0.8rem;
+    padding: 0 0.6rem;
+  }
+  
+  .nav-button {
+    height: 32px;
+    padding: 0 0.8rem;
+    font-size: 0.8rem;
+  }
+  
+  .nav-dropdown {
+    font-size: 0.8rem;
+  }
+} 
+
+// global overrides for NG-ZORRO button focus styles
+:host ::ng-deep {
+  .ant-btn:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  .ant-btn:active {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  .ant-btn:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+} 

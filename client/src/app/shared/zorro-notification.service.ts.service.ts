@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { NzNotificationPlacement, NzNotificationService } from 'ng-zorro-antd/notification';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +11,10 @@ export class ZorroNotificationServiceTsService {
     this.notification.create(
       type,
       title,
-      message
+      message,
+      {
+        nzPlacement: 'topRight'
+      }
     );
   }
 }

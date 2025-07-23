@@ -5,6 +5,7 @@
   --color-bg-secondary: #f7f9fa;
   --color-bg-card: #fff;
   --color-bg-blur: #f5f5f5;
+  --color-bg-navbar: #fff; // light navbar color
   --color-primary: #1890ff;
   --color-primary-light: #f5faff;
   --color-primary-border: #eaf2fb;
@@ -30,6 +31,7 @@
   --color-bg-secondary: #3a3a3a;
   --color-bg-card: #393939;
   --color-bg-blur: #2d2d2d;
+  --color-bg-navbar: #1a1a1a; // new darker navbar color
   --color-primary: #4d8cff;
   --color-primary-light: #2d3440;
   --color-primary-border: #3a4a6b;
@@ -51,13 +53,12 @@ html,
 body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
     height: 100%;
     background: var(--color-bg);
     color: var(--color-text);
 }
 
-// Theme-consistent ng-zorro notification styles
+// theme-consistent ng-zorro notification styles
 [data-theme='dark'] .ant-notification-notice {
   background: var(--color-bg-card) !important;
   color: var(--color-text) !important;
@@ -77,7 +78,7 @@ body {
   border-left: 4px solid var(--color-warning) !important;
 }
 
-// Light mode (optional, for extra polish)
+// light mode (optional, for extra polish)
 .ant-notification-notice {
   background: var(--color-bg-card) !important;
   color: var(--color-text) !important;
@@ -131,7 +132,7 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
-// Responsive for mobile
+// responsive for mobile
 @media (max-width: 600px) {
   .theme-toggle-fab {
     right: 1rem;

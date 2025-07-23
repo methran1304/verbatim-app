@@ -10,6 +10,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { ZorroNotificationServiceTsService } from '../../../shared/zorro-notification.service.ts.service';
+import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
 
 @Component({
   selector: 'app-register',
@@ -68,9 +69,10 @@ export class RegisterComponent {
         this.loading = false;
       },
       error: (result) => {
-        this.notificationService.createNotification('error', 'Something went wrong!', result?.error ?? 'Please try again later.');
+        const errorMessage = ErrorHandlerUtil.handleError(result, 'auth');
+        this.notificationService.createNotification('error', 'Something went wrong!', errorMessage);
         this.loading = false;
-        this.errorMessage = result?.error || 'Registration Failed';
+        this.errorMessage = errorMessage;
       },
     });
   }

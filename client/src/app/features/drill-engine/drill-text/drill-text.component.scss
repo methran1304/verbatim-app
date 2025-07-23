@@ -96,21 +96,21 @@
   background: var(--color-bg);
   border-radius: 8px;
   border: none;
-  margin-bottom: 1.5rem;
-  font-size: 1.25rem;
+  margin-bottom: 1.65rem;
+  font-size: 1.375rem;
   font-family: monospace;
-  line-height: 2.7rem;
-  height: calc(2.7rem * 7 + 2rem); // 5 lines + vertical padding
+  line-height: 2.97rem;
+  height: calc(2.97rem * 7 + 2.2rem);
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
   scroll-behavior: smooth;
-  padding: 0 2.5rem;
+  padding: 0 2.75rem;
   display: block;
 }
 
 .drill-text-inner {
-  padding: 1rem 0;
+  padding: 1.1rem 0;
   display: flex;
   flex-wrap: wrap;
   width: 100%;
@@ -126,7 +126,7 @@
   position: absolute;
   left: 0;
   width: 100%;
-  height: 4rem;
+  height: 4.4rem;
   pointer-events: none;
   z-index: 20;
 }
@@ -145,8 +145,8 @@
 .word {
   display: inline-flex;
   align-items: center;
-  margin: 0 0.4rem 0.4rem 0;
-  padding: 0.12rem 0.55rem;
+  margin: 0 0.44rem 0.44rem 0;
+  padding: 0.132rem 0.605rem;
   border-radius: 8px;
   background: var(--color-bg-secondary);
   color: var(--color-text);
@@ -156,7 +156,7 @@
     "Courier New", monospace;
   font-size: 1em;
   font-weight: 500;
-  min-height: 2.2rem;
+  min-height: 2.42rem;
   transition:
     background 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -166,17 +166,17 @@
 
 .word span {
   display: inline;
-  padding: 0 0.05rem;
+  padding: 0 0.055rem;
 }
 
 // Letter-level styling
 .letter {
   display: inline-block;
-  padding: 0 0.5px;
+  padding: 0 0.55px;
   font-weight: 500;
-  line-height: 2.2rem;
+  line-height: 2.42rem;
   position: relative;
-  padding-bottom: 6px;
+  padding-bottom: 6.6px;
   transition:
     color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -289,4 +289,124 @@
   background: rgba(73, 81, 79, 0.12); // subtle neutral blue-dark
   border: 1px solid rgba(73, 81, 79, 0.22); // subtle neutral blue-dark border
   color: var(--color-key-blue-dark);
+}
+
+// width-based responsive scaling
+@media (max-width: 1024px) {
+  .drill-text {
+    font-size: 1.1rem;
+    line-height: 2.5rem;
+    height: calc(2.5rem * 7 + 2rem);
+    padding: 0 2rem;
+  }
+  
+  .word {
+    font-size: 0.95em;
+    min-height: 2rem;
+  }
+  
+  .letter {
+    line-height: 2rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .drill-text {
+    font-size: 1rem;
+    line-height: 2.3rem;
+    height: calc(2.3rem * 7 + 2rem);
+    padding: 0 1.5rem;
+  }
+  
+  .word {
+    font-size: 0.9em;
+    min-height: 1.8rem;
+    margin: 0 0.3rem 0.3rem 0;
+    padding: 0.1rem 0.4rem;
+  }
+  
+  .letter {
+    line-height: 1.8rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .drill-text {
+    font-size: 0.9rem;
+    line-height: 2.1rem;
+    height: calc(2.1rem * 7 + 2rem);
+    padding: 0 1rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .word {
+    font-size: 0.85em;
+    min-height: 1.6rem;
+    margin: 0 0.25rem 0.25rem 0;
+    padding: 0.08rem 0.35rem;
+  }
+  
+  .letter {
+    line-height: 1.6rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .drill-text {
+    height: calc(2.7rem * 5 + 1rem) !important; // Reduce to 5 lines
+    margin-bottom: 1rem !important;
+    font-size: 1.1rem !important;
+    line-height: 2.5rem !important;
+  }
+  
+  .word {
+    font-size: 0.95em !important;
+    min-height: 2rem !important;
+    margin: 0 0.3rem 0.3rem 0 !important;
+    padding: 0.1rem 0.4rem !important;
+  }
+  
+  .letter {
+    line-height: 2rem !important;
+  }
+}
+
+@media (max-height: 650px) {
+  .drill-text {
+    height: calc(2.7rem * 4 + 0.75rem) !important; // Reduce to 4 lines
+    margin-bottom: 0.75rem !important;
+    font-size: 1rem !important;
+    line-height: 2.3rem !important;
+  }
+  
+  .word {
+    font-size: 0.9em !important;
+    min-height: 1.8rem !important;
+    margin: 0 0.25rem 0.25rem 0 !important;
+    padding: 0.08rem 0.35rem !important;
+  }
+  
+  .letter {
+    line-height: 1.8rem !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .drill-text {
+    height: calc(2.7rem * 3 + 0.5rem) !important; // Reduce to 3 lines
+    margin-bottom: 0.5rem !important;
+    font-size: 0.9rem !important;
+    line-height: 2.1rem !important;
+  }
+  
+  .word {
+    font-size: 0.85em !important;
+    min-height: 1.6rem !important;
+    margin: 0 0.2rem 0.2rem 0 !important;
+    padding: 0.06rem 0.3rem !important;
+  }
+  
+  .letter {
+    line-height: 1.6rem !important;
+  }
 }

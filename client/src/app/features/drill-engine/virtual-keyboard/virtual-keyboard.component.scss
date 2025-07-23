@@ -86,3 +86,148 @@ $text-lg: #282640;
     }
   }
 }
+
+// width-based responsive scaling
+@media (max-width: 1024px) {
+  .verbatim-kb {
+    min-width: 600px;
+    padding: 12px;
+    margin-top: 14px;
+    
+    .hg-button {
+      font-size: 1.1em;
+    }
+    
+    .hg-button.alphabet {
+      width: 35px;
+      min-width: 35px;
+      max-width: 35px;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 58px;
+      min-width: 58px;
+      max-width: 58px;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .verbatim-kb {
+    min-width: 520px;
+    padding: 10px;
+    margin-top: 12px;
+    
+    .hg-button {
+      font-size: 1em;
+    }
+    
+    .hg-button.alphabet {
+      width: 30px;
+      min-width: 30px;
+      max-width: 30px;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 50px;
+      min-width: 50px;
+      max-width: 50px;
+    }
+  }
+}
+
+@media (max-width: 800px) {
+  .verbatim-kb {
+    min-width: 450px;
+    padding: 8px;
+    margin-top: 10px;
+    
+    .hg-button {
+      font-size: 0.9em;
+    }
+    
+    .hg-button.alphabet {
+      width: 26px;
+      min-width: 26px;
+      max-width: 26px;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 44px;
+      min-width: 44px;
+      max-width: 44px;
+    }
+  }
+}
+
+@media (max-height: 700px) {
+  .verbatim-kb {
+    margin-top: 8px !important;
+    padding: 10px !important;
+    min-width: 520px !important;
+    
+    .hg-button {
+      font-size: 1em !important;
+    }
+    
+    .hg-button.alphabet {
+      width: 30px !important;
+      min-width: 30px !important;
+      max-width: 30px !important;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 50px !important;
+      min-width: 50px !important;
+      max-width: 50px !important;
+    }
+  }
+}
+
+@media (max-height: 650px) {
+  .verbatim-kb {
+    margin-top: 6px !important;
+    padding: 8px !important;
+    min-width: 450px !important;
+    
+    .hg-button {
+      font-size: 0.9em !important;
+    }
+    
+    .hg-button.alphabet {
+      width: 26px !important;
+      min-width: 26px !important;
+      max-width: 26px !important;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 44px !important;
+      min-width: 44px !important;
+      max-width: 44px !important;
+    }
+  }
+}
+
+@media (max-height: 600px) {
+  .verbatim-kb {
+    margin-top: 4px !important;
+    padding: 6px !important;
+    min-width: 400px !important;
+    
+    .hg-button {
+      font-size: 0.8em !important;
+    }
+    
+    .hg-button.alphabet {
+      width: 24px !important;
+      min-width: 24px !important;
+      max-width: 24px !important;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 40px !important;
+      min-width: 40px !important;
+      max-width: 40px !important;
+    }
+  }
+}

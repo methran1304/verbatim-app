@@ -1,0 +1,110 @@
+<nz-header class="top-nav-header">
+  <div class="nav-container">
+    <!-- logo -->
+    <div class="nav-logo">
+      <button 
+        nz-button 
+        class="logo-button"
+        (click)="onLogoClick()">
+        <span class="logo-text">verbatim</span>
+      </button>
+    </div>
+
+    <!-- main navigation -->
+    <div class="nav-menu">
+      <!-- drills dropdown -->
+      <div 
+        nz-dropdown 
+        [nzDropdownMenu]="drillMenu" 
+        nzTrigger="click"
+        class="nav-dropdown">
+        <button 
+          nz-button 
+          class="nav-button"
+          [class.active]="currentSection === 'drills'">
+          Drills
+          <span nz-icon nzType="down" nzTheme="outline"></span>
+        </button>
+        <nz-dropdown-menu #drillMenu="nzDropdownMenu">
+          <ul nz-menu>
+            <li nz-menu-item 
+                *ngFor="let item of drillMenuItems"
+                (click)="onDrillSelect(item.key)"
+                [class.active]="currentDrillType === item.key">
+              <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+              {{ item.label }}
+            </li>
+          </ul>
+        </nz-dropdown-menu>
+      </div>
+
+      <!-- classics -->
+      <button 
+        nz-button 
+        class="nav-button"
+        [class.active]="currentSection === 'classics'"
+        (click)="onSectionClick('classics')">
+        Classics
+      </button>
+
+      <!-- competitive dropdown -->
+      <div 
+        nz-dropdown 
+        [nzDropdownMenu]="competitiveMenu" 
+        nzTrigger="click"
+        class="nav-dropdown">
+        <button 
+          nz-button 
+          class="nav-button"
+          [class.active]="currentSection === 'competitive'">
+          Competitive
+          <span nz-icon nzType="down" nzTheme="outline"></span>
+        </button>
+        <nz-dropdown-menu #competitiveMenu="nzDropdownMenu">
+          <ul nz-menu>
+            <li nz-menu-item 
+                *ngFor="let item of competitiveMenuItems"
+                (click)="onCompetitiveSelect(item.key)">
+              <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+              {{ item.label }}
+            </li>
+          </ul>
+        </nz-dropdown-menu>
+      </div>
+
+      <!-- guide -->
+      <button 
+        nz-button 
+        class="nav-button"
+        [class.active]="currentSection === 'guide'"
+        (click)="onSectionClick('guide')">
+        Guide
+      </button>
+    </div>
+
+    <!-- user menu -->
+    <div class="nav-user">
+      <div 
+        nz-dropdown 
+        [nzDropdownMenu]="userMenu" 
+        nzTrigger="click"
+        class="user-dropdown">
+        <button nz-button class="user-button">
+          <nz-avatar nzIcon="user" nzSize="small"></nz-avatar>
+          <span class="user-text">{{ username }}</span>
+          <span nz-icon nzType="down" nzTheme="outline"></span>
+        </button>
+        <nz-dropdown-menu #userMenu="nzDropdownMenu">
+          <ul nz-menu>
+            <li nz-menu-item 
+                *ngFor="let item of userMenuItems"
+                (click)="onUserSelect(item.key)">
+              <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+              {{ item.label }}
+            </li>
+          </ul>
+        </nz-dropdown-menu>
+      </div>
+    </div>
+  </div>
+</nz-header> 

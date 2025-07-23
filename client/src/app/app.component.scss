@@ -1,9 +1,35 @@
 
-:host {
-  display: block;
+.app-layout {
   min-height: 100vh;
   background: var(--color-bg);
+}
+
+.app-content {
+  margin-top: 0; // default no margin
+  min-height: 100vh; // full height when no navbar
+  background: var(--color-bg);
   color: var(--color-text);
+  transition: filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto; // enable vertical scrolling
+  
+  &.screen-too-small {
+    filter: blur(0.125rem);
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+// when navbar is present (authenticated)
+.app-layout:has(app-top-nav) .app-content {
+  margin-top: 70.4px; 
+  min-height: calc(100vh - 70.4px);
+}
+
+@media (max-width: 800px) {
+  .app-layout:has(app-top-nav) .app-content {
+    margin-top: 61.6px; 
+    min-height: calc(100vh - 61.6px);
+  }
 }
 
 #screen-size-overlay {
@@ -12,7 +38,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 400px;
+  width: 440px; 
   max-width: 90vw;
   z-index: 9999;
   color: var(--color-text);
@@ -21,17 +47,17 @@
   border-radius: 8px;
   border: 1px solid var(--color-border);
   text-align: center;
-  padding: 2rem;
+  padding: 2.2rem; 
 
   h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 1.1rem; 
     color: var(--color-error);
-    font-size: 1.5rem;
+    font-size: 1.65rem; 
     font-weight: 600;
   }
 
   p {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.55rem;
     line-height: 1.5;
     
     &:last-child {
@@ -39,16 +65,6 @@
       font-weight: 500;
       color: var(--color-primary);
     }
-  }
-}
-
-.app-content {
-  transition: filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  
-  &.screen-too-small {
-    filter: blur(0.125rem);
-    pointer-events: none;
-    user-select: none;
   }
 }
 

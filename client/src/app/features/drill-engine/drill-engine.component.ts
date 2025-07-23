@@ -1,5 +1,6 @@
 // === drill-engine.component.ts ===
 import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DrillTextComponent } from './drill-text/drill-text.component';
 import { DrillInputComponent } from './drill-input/drill-input.component';
 import { DrillTextService } from '../../services/drill-text.service';
@@ -12,9 +13,11 @@ import { CommonModule } from '@angular/common';
 import { VirtualKeyboardComponent } from './virtual-keyboard/virtual-keyboard.component';
 import { DrillToolbarComponent } from './drill-toolbar/drill-toolbar.component';
 import { ThemeService } from '../../services/theme.service';
+import { NavigationService } from '../navigation/navigation.service';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { DrillPreference } from '../../models/interfaces/drill-preference.interface';
+import { DrillType } from '../../models/enums/drill-type.enum';
 
 
 @Component({
@@ -27,7 +30,7 @@ import { DrillPreference } from '../../models/interfaces/drill-preference.interf
         VirtualKeyboardComponent,
         DrillToolbarComponent,
         NzCardModule,
-        NzButtonModule,
+        NzButtonModule
     ],
     providers: [],
     templateUrl: './drill-engine.component.html',
@@ -61,9 +64,9 @@ export class DrillEngineComponent implements OnInit {
     // drill preference
     drillPreferences: DrillPreference;
 
-    // drill settings
-    // Remove selectedDifficulty, selectedDuration
-    
+    // drill type from navigation
+    currentDrillType: DrillType = DrillType.Timed;
+
     // typing state for toolbar animation
     isTyping: boolean = false;
     private typingTimeout: any;
@@ -76,6 +79,9 @@ export class DrillEngineComponent implements OnInit {
         private drillTextService: DrillTextService,
         private ngZone: NgZone,
         private themeService: ThemeService,
+        private navigationService: NavigationService,
+        private route: ActivatedRoute,
+        private router: Router
     ) {
         // get drill preference
         let storedPreference: DrillPreference = JSON.parse(localStorage.getItem('drillPreference') ?? '{}');
@@ -83,6 +89,7 @@ export class DrillEngineComponent implements OnInit {
         // if no preference set, set default preference
         if (Object.keys(storedPreference).length === 0) {
             const defaultPreference: DrillPreference = {
+                drillType: DrillType.Timed,
                 drillDifficulty: DrillDifficulty.Intermediate,
                 drillLength: DrillLength.Medium,
                 drillDuration: 30
@@ -94,11 +101,33 @@ export class DrillEngineComponent implements OnInit {
         }
 
         this.drillPreferences = storedPreference;
+        
+        // initialize current drill type from stored preferences
+        this.currentDrillType = this.drillPreferences.drillType || DrillType.Timed;
     }
 
     ngOnInit(): void {
-        this.showPostDrillOverlay = false;
-        this.startDrill();
+        // set initial drill type from preferences
+        this.navigationService.setCurrentDrillType(this.currentDrillType);
+        
+        // get drill type from URL query parameters
+        this.route.queryParams.subscribe(params => {
+            const drillType = params['type'];
+            if (drillType && Object.values(DrillType).includes(drillType)) {
+                this.currentDrillType = drillType as DrillType;
+                this.navigationService.setCurrentDrillType(this.currentDrillType);
+                
+                // update drill preferences with new drill type and save to localStorage
+                this.drillPreferences.drillType = this.currentDrillType;
+                localStorage.setItem('drillPreference', JSON.stringify(this.drillPreferences));
+                
+                this.onNewDrill();
+            } else if (!drillType) {
+                // if no drill type in URL, start with current drill type from preferences
+                this.onNewDrill();
+            }
+        });
+
         this.themeService.getDarkMode().subscribe(isDark => {
             this.isDarkMode = isDark;
         });
@@ -366,7 +395,19 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onNewDrill(): void {
-        this.stopDrill();
+        // reset all stats and state completely
+        this.resetDrillStats();
+        this.isDrillActive = false;
+        this.showPostDrillOverlay = false;
+        this.currentWordIndex = 0;
+        this.currentCharIndex = 0;
+        this.currentInput = '';
+        this.isInputFocused = true;
+        
+        // stop any existing timer
+        this.stopTimer();
+        
+        // start fresh drill
         this.startDrill();
         this.focusInput();
     }
@@ -384,12 +425,21 @@ export class DrillEngineComponent implements OnInit {
         this.wpm = 0;
         this.accuracy = 100;
         this.startTime = 0;
+        this.endTime = 0;
         this.remainingTime = '01:00';
+        this.totalTimeInSeconds = 10;
     }
 
     onDrillPreferenceChange(preference: DrillPreference): void {
         this.drillPreferences = preference;
         localStorage.setItem('drillPreference', JSON.stringify(preference));
+        
+        // update current drill type if it changed
+        if (preference.drillType !== this.currentDrillType) {
+            this.currentDrillType = preference.drillType;
+            this.navigationService.setCurrentDrillType(this.currentDrillType);
+        }
+        
         if (this.isDrillActive) {
             this.stopDrill();
             this.resetDrillStats();
@@ -414,7 +464,26 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onPostDrillSubmit(): void {
-        // TODO: Integrate backend submission here
+        // TODO: integrate backend submission here
+        // example of how to handle API errors when backend is integrated:
+        /*
+        this.isSubmitting = true;
+        this.drillService.submitDrillResult(this.drillStats).subscribe({
+            next: (result) => {
+                this.notificationService.createNotification('success', 'Drill completed!', 'Your results have been saved successfully.');
+                this.showPostDrillOverlay = false;
+                this.isSubmitting = false;
+            },
+            error: (result) => {
+                const errorMessage = ErrorHandlerUtil.handleError(result, 'drill');
+                this.notificationService.createNotification('error', 'Something went wrong!', errorMessage);
+                this.submitError = errorMessage;
+                this.isSubmitting = false;
+            },
+        });
+        */
+        
+        // for now, just close the overlay
         this.showPostDrillOverlay = false;
     }
 }
