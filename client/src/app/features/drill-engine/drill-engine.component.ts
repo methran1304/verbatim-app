@@ -49,6 +49,7 @@ export class DrillEngineComponent implements OnInit {
     startTime: number = 0;
     totalTimeInSeconds: number = 10;
     remainingTime: string = '01:00';
+    remainingSeconds: number = 60;
     private endTime: number = 0;
     timerInterval!: any;
 
@@ -81,7 +82,6 @@ export class DrillEngineComponent implements OnInit {
         private themeService: ThemeService,
         private navigationService: NavigationService,
         private route: ActivatedRoute,
-        private router: Router
     ) {
         // get drill preference
         let storedPreference: DrillPreference = JSON.parse(localStorage.getItem('drillPreference') ?? '{}');
@@ -110,6 +110,9 @@ export class DrillEngineComponent implements OnInit {
         // set initial drill type from preferences
         this.navigationService.setCurrentDrillType(this.currentDrillType);
         
+        // initialize timer with current preferences
+        this.resetDrillStats();
+        
         // get drill type from URL query parameters
         this.route.queryParams.subscribe(params => {
             const drillType = params['type'];
@@ -137,6 +140,15 @@ export class DrillEngineComponent implements OnInit {
         this.showPostDrillOverlay = false;
         this.isDrillActive = true;
 
+        // set timer duration from drill preferences for timed drills
+        if (this.drillPreferences.drillType === DrillType.Timed) {
+            this.totalTimeInSeconds = this.drillPreferences.drillDuration;
+            this.remainingSeconds = this.totalTimeInSeconds;
+            const minutes = Math.floor(this.totalTimeInSeconds / 60);
+            const seconds = this.totalTimeInSeconds % 60;
+            this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
+        }
+
         this.drillStats = {
             wpm: 0,
             accuracy: 0,
@@ -147,9 +159,14 @@ export class DrillEngineComponent implements OnInit {
             corrections: 0,
         };
 
+        // for timed drills, always use marathon length to ensure enough text
+        const drillLength = this.drillPreferences.drillType === DrillType.Timed 
+            ? DrillLength.Marathon 
+            : this.drillPreferences.drillLength;
+
         const words = this.drillTextService.getRandomDrillText(
             this.drillPreferences.drillDifficulty,
-            this.drillPreferences.drillLength,
+            drillLength,
         );
 
         // add space for every word except last
@@ -325,19 +342,37 @@ export class DrillEngineComponent implements OnInit {
 
     startTimer(): void {
         this.startTime = Date.now();
-        this.endTime = this.startTime + this.totalTimeInSeconds * 1000;
+        
+        // only set end time for timed drills
+        if (this.drillPreferences.drillType === DrillType.Timed) {
+            this.endTime = this.startTime + this.totalTimeInSeconds * 1000;
+        }
 
         this.timerInterval = setInterval(() => {
-            const msLeft = this.endTime - Date.now();
-            const secondsLeft = Math.max(0, Math.floor(msLeft / 1000));
-            const minutes = Math.floor(secondsLeft / 60);
-            const seconds = secondsLeft % 60;
+            if (this.drillPreferences.drillType === DrillType.Timed) {
+                // timed drill logic
+                const msLeft = this.endTime - Date.now();
+                const secondsLeft = Math.max(0, Math.floor(msLeft / 1000));
+                const minutes = Math.floor(secondsLeft / 60);
+                const seconds = secondsLeft % 60;
 
-            this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
-            this.updateWPMAndAccuracy();
+                this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
+                this.remainingSeconds = secondsLeft;
+                this.updateWPMAndAccuracy();
 
-            if (msLeft <= 0) {
-                this.stopDrill(); // auto-submit or end
+                if (msLeft <= 0) {
+                    this.stopDrill(); // auto-submit or end
+                }
+            } else {
+                // non-timed drill logic - just track elapsed time for WPM
+                const elapsedMs = Date.now() - this.startTime;
+                const elapsedSeconds = Math.floor(elapsedMs / 1000);
+                const minutes = Math.floor(elapsedSeconds / 60);
+                const seconds = elapsedSeconds % 60;
+
+                this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
+                this.remainingSeconds = elapsedSeconds;
+                this.updateWPMAndAccuracy();
             }
         }, 1000);
     }
@@ -426,8 +461,19 @@ export class DrillEngineComponent implements OnInit {
         this.accuracy = 100;
         this.startTime = 0;
         this.endTime = 0;
-        this.remainingTime = '01:00';
-        this.totalTimeInSeconds = 10;
+        
+        // set timer duration from drill preferences for timed drills
+        if (this.drillPreferences.drillType === DrillType.Timed) {
+            this.totalTimeInSeconds = this.drillPreferences.drillDuration;
+            this.remainingSeconds = this.totalTimeInSeconds;
+            const minutes = Math.floor(this.totalTimeInSeconds / 60);
+            const seconds = this.totalTimeInSeconds % 60;
+            this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
+        } else {
+            this.remainingTime = '01:00';
+            this.totalTimeInSeconds = 10;
+            this.remainingSeconds = 60;
+        }
     }
 
     onDrillPreferenceChange(preference: DrillPreference): void {
@@ -440,6 +486,7 @@ export class DrillEngineComponent implements OnInit {
             this.navigationService.setCurrentDrillType(this.currentDrillType);
         }
         
+        // always restart drill when preferences change to ensure proper initialization
         if (this.isDrillActive) {
             this.stopDrill();
             this.resetDrillStats();

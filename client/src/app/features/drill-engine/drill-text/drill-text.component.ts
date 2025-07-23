@@ -18,11 +18,12 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 
 @Component({
     selector: 'app-drill-text',
     standalone: true,
-    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule],
+    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule, NzToolTipModule],
     templateUrl: './drill-text.component.html',
     styleUrl: './drill-text.component.scss',
 })

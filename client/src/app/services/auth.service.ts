@@ -49,6 +49,8 @@ export class AuthService {
     logout(): void {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userPreference');
+        localStorage.removeItem('drillPreference');
         this.isAuthenticatedSubject.next(false);
         this.payloadSubject.next(null);
     }

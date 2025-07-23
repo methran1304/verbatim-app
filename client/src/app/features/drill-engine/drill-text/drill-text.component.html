@@ -7,12 +7,20 @@
 @if (showPostDrillOverlay) {
   <nz-card id="post-drill-overlay" #postdrilloverlay>
     <div class="post-drill-btn-row">
-      <span class="post-drill-btn" (click)="postDrillRestart.emit()">
+      <span class="post-drill-btn" 
+            (click)="postDrillRestart.emit()"
+            nz-tooltip
+            nzTooltipTitle="Start the drill again with the same text and settings. Perfect for practicing the same passage multiple times."
+            [nzTooltipMouseEnterDelay]="1.5">
         <span nz-icon nzType="reload" nzTheme="outline" style="font-size: 16px;"></span>
         <span class="button-text">Start Over</span>
       </span>
       <nz-divider nzType="vertical"></nz-divider>
-      <span class="post-drill-btn" (click)="postDrillSubmit.emit()">
+      <span class="post-drill-btn" 
+            (click)="postDrillSubmit.emit()"
+            nz-tooltip
+            nzTooltipTitle="Submit your drill results and save your performance data. View detailed statistics and track your progress."
+            [nzTooltipMouseEnterDelay]="1.5">
         <span nz-icon nzType="check-circle" nzTheme="outline" style="font-size: 16px;"></span>
         <span class="button-text">Submit</span>
       </span>

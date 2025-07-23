@@ -14,8 +14,8 @@ import { DrillType } from '../../models/enums/drill-type.enum';
 import { DrillDifficulty } from '../../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../../models/enums/drill-length.enum';
 import { AuthService } from '../../services/auth.service';
-import { JwtDecoderUtil, JwtPayload } from '../../core/utils/jwt-decoder.util';
 import { DrillService } from '../../services/drill.service';
+import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 
 @Component({
   selector: 'app-top-nav',
@@ -28,7 +28,8 @@ import { DrillService } from '../../services/drill.service';
     NzButtonModule,
     NzIconModule,
     NzAvatarModule,
-    NzDividerModule
+    NzDividerModule,
+    NzToolTipModule
   ],
   templateUrl: './top-nav.component.html',
   styleUrl: './top-nav.component.scss'
@@ -36,6 +37,8 @@ import { DrillService } from '../../services/drill.service';
 export class TopNavComponent implements OnInit {
   isDarkMode = false;
   currentDrillType: DrillType | null = null;
+  currentDrillTypeLabel: string = 'Timed';
+  currentDrillTypeIcon: string = 'clock-circle';
   currentSection = 'drills';
   username: string = 'User';
 
@@ -44,22 +47,26 @@ export class TopNavComponent implements OnInit {
     {
       key: DrillType.Timed,
       label: 'Timed',
-      icon: 'clock-circle'
+      icon: 'clock-circle',
+      tooltip: 'Type as many words as you can before the timer ends. Choose from 15s, 30s, 60s, or 120s.'
     },
     {
       key: DrillType.Marathon,
       label: 'Marathon',
-      icon: 'thunderbolt'
+      icon: 'thunderbolt',
+      tooltip: 'No timer. Just type through a fixed number of words at your own pace.'
     },
     {
       key: DrillType.Memory,
       label: 'Memory',
-      icon: 'eye'
+      icon: 'eye',
+      tooltip: 'Words appear briefly and vanish. Rely on your memory to type them correctly.'
     },
     {
       key: DrillType.Adaptive,
       label: 'Adaptive',
-      icon: 'bulb'
+      icon: 'bulb',
+      tooltip: 'Practice the words you struggle with most. Powered by AI to improve your weak spots.'
     }
   ];
 
@@ -68,12 +75,14 @@ export class TopNavComponent implements OnInit {
     {
       key: 'compete',
       label: 'Compete',
-      icon: 'team'
+      icon: 'team',
+      tooltip: 'Compete with a friend in realtime by creating or joining a room. Challenge others and improve together.'
     },
     {
       key: 'leaderboard',
       label: 'Leaderboard',
-      icon: 'bar-chart'
+      icon: 'bar-chart',
+      tooltip: 'View the leaderboard to see top performers and track your ranking among other typists.'
     }
   ];
 
@@ -115,6 +124,10 @@ export class TopNavComponent implements OnInit {
 
     this.navigationService.getCurrentDrillType().subscribe(drillType => {
       this.currentDrillType = drillType;
+      if (drillType) {
+        this.currentDrillTypeLabel = this.getDrillTypeLabel(drillType);
+        this.currentDrillTypeIcon = this.getDrillTypeIcon(drillType);
+      }
     });
 
     this.navigationService.getCurrentSection().subscribe(section => {
@@ -132,6 +145,9 @@ export class TopNavComponent implements OnInit {
   }
 
   onDrillSelect(drillType: DrillType) {
+    this.currentDrillType = drillType;
+    this.currentDrillTypeLabel = this.getDrillTypeLabel(drillType);
+    this.currentDrillTypeIcon = this.getDrillTypeIcon(drillType);
     this.navigationService.setCurrentDrillType(drillType);
     this.navigationService.setCurrentSection('drills');
     
@@ -192,11 +208,18 @@ export class TopNavComponent implements OnInit {
     this.router.navigate(['/drill'], { queryParams: { type: 'timed' } });
     this.currentSection = 'drills';
     this.currentDrillType = DrillType.Timed;
+    this.currentDrillTypeLabel = this.getDrillTypeLabel(DrillType.Timed);
+    this.currentDrillTypeIcon = this.getDrillTypeIcon(DrillType.Timed);
     this.navigationService.setCurrentSection('drills');
     this.navigationService.setCurrentDrillType(DrillType.Timed);
   }
 
   getDrillTypeLabel(drillType: DrillType): string {
     return this.navigationService.getDrillTypeLabel(drillType);
+  }
+
+  getDrillTypeIcon(drillType: DrillType): string {
+    const item = this.drillMenuItems.find(item => item.key === drillType);
+    return item ? item.icon : 'clock-circle';
   }
 } 

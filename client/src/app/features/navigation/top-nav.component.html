@@ -20,17 +20,20 @@
         class="nav-dropdown">
         <button 
           nz-button 
-          class="nav-button"
+          class="nav-button drills-button"
           [class.active]="currentSection === 'drills'">
-          Drills
-          <span nz-icon nzType="down" nzTheme="outline"></span>
+          <span nz-icon [nzType]="currentDrillTypeIcon" nzTheme="outline"></span> {{ currentDrillTypeLabel }}
+          <span nz-icon nzType="down" nzTheme="outline" class="dropdown-arrow"></span>
         </button>
         <nz-dropdown-menu #drillMenu="nzDropdownMenu">
           <ul nz-menu>
             <li nz-menu-item 
                 *ngFor="let item of drillMenuItems"
                 (click)="onDrillSelect(item.key)"
-                [class.active]="currentDrillType === item.key">
+                [class.active]="currentDrillType === item.key"
+                nzTooltipTitle="{{ item.tooltip }}"
+                nz-tooltip
+                [nzTooltipMouseEnterDelay]="1.5">
               <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
               {{ item.label }}
             </li>
@@ -43,7 +46,10 @@
         nz-button 
         class="nav-button"
         [class.active]="currentSection === 'classics'"
-        (click)="onSectionClick('classics')">
+        (click)="onSectionClick('classics')"
+        nz-tooltip
+        nzTooltipTitle="Type text with book text as source. Practice with classic literature and famous passages."
+        [nzTooltipMouseEnterDelay]="1.5">
         Classics
       </button>
 
@@ -58,13 +64,16 @@
           class="nav-button"
           [class.active]="currentSection === 'competitive'">
           Competitive
-          <span nz-icon nzType="down" nzTheme="outline"></span>
+          <span nz-icon nzType="down" nzTheme="outline" class="dropdown-arrow"></span>
         </button>
         <nz-dropdown-menu #competitiveMenu="nzDropdownMenu">
           <ul nz-menu>
             <li nz-menu-item 
                 *ngFor="let item of competitiveMenuItems"
-                (click)="onCompetitiveSelect(item.key)">
+                (click)="onCompetitiveSelect(item.key)"
+                nz-tooltip
+                [nzTooltipTitle]="item.tooltip"
+                [nzTooltipMouseEnterDelay]="1.5">
               <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
               {{ item.label }}
             </li>
@@ -77,7 +86,10 @@
         nz-button 
         class="nav-button"
         [class.active]="currentSection === 'guide'"
-        (click)="onSectionClick('guide')">
+        (click)="onSectionClick('guide')"
+        nz-tooltip
+        nzTooltipTitle="Learn finger placements, view typing history, discover advantages, and master typing techniques."
+        [nzTooltipMouseEnterDelay]="1.5">
         Guide
       </button>
     </div>
@@ -92,7 +104,7 @@
         <button nz-button class="user-button">
           <nz-avatar nzIcon="user" nzSize="small"></nz-avatar>
           <span class="user-text">{{ username }}</span>
-          <span nz-icon nzType="down" nzTheme="outline"></span>
+          <span nz-icon nzType="down" nzTheme="outline" class="dropdown-arrow"></span>
         </button>
         <nz-dropdown-menu #userMenu="nzDropdownMenu">
           <ul nz-menu>

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, OnInit, SimpleChanges, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -27,10 +27,12 @@ import { DrillPreference } from '../../../models/interfaces/drill-preference.int
   templateUrl: './drill-toolbar.component.html',
   styleUrl: './drill-toolbar.component.scss',
 })
-export class DrillToolbarComponent implements OnChanges {
+export class DrillToolbarComponent implements OnChanges, OnInit {
   @Input() wpm: number = 0;
   @Input() accuracy: number = 100;
-  @Input() remainingTime: string = '00:00';
+  @Input() remainingSeconds: number = 0;
+  @Input() currentWordIndex: number = 0;
+  @Input() totalWords: number = 0;
   @Input() drillPreference!: DrillPreference;
   @Input() isTyping: boolean = false;
   @Input() disabled: boolean = false;
@@ -39,18 +41,20 @@ export class DrillToolbarComponent implements OnChanges {
   @Output() newDrill = new EventEmitter<void>();
   @Output() drillPreferenceChange = new EventEmitter<DrillPreference>();
 
+  selectedDuration: number = 30;
+  selectedLength: DrillLength = DrillLength.Medium;
+
   drillDifficulties = [
-    { label: 'Beginner', value: DrillDifficulty.Beginner},
+    { label: 'Beginner', value: DrillDifficulty.Beginner },
     { label: 'Intermediate', value: DrillDifficulty.Intermediate },
     { label: 'Advanced', value: DrillDifficulty.Advanced }
   ];
 
   drillDurations = [
-    { label: 'Test', value: DrillLength.Test, wordCount: DrillLengthWordCount[DrillLength.Test]},
-    { label: 'Short', value: DrillLength.Short, wordCount: DrillLengthWordCount[DrillLength.Short]},
-    { label: 'Medium', value: DrillLength.Medium, wordCount: DrillLengthWordCount[DrillLength.Medium]},
-    { label: 'Long', value: DrillLength.Long, wordCount: DrillLengthWordCount[DrillLength.Long]},
-    { label: 'Marathon', value: DrillLength.Marathon, wordCount: DrillLengthWordCount[DrillLength.Marathon]}
+    { label: 'Test', value: DrillLength.Test, wordCount: DrillLengthWordCount[DrillLength.Test] },
+    { label: 'Short', value: DrillLength.Short, wordCount: DrillLengthWordCount[DrillLength.Short] },
+    { label: 'Medium', value: DrillLength.Medium, wordCount: DrillLengthWordCount[DrillLength.Medium] },
+    { label: 'Long', value: DrillLength.Long, wordCount: DrillLengthWordCount[DrillLength.Long] }
   ];
 
   // animation state
@@ -58,12 +62,27 @@ export class DrillToolbarComponent implements OnChanges {
   private animationTimeout: any;
   private hoverTimeout: any;
 
+  ngOnInit(): void {
+    // initialize selected values from drill preferences if available
+    if (this.drillPreference) {
+      this.selectedDuration = this.drillPreference.drillDuration;
+      this.selectedLength = this.drillPreference.drillLength;
+    }
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isTyping']) {
       this.handleTypingStateChange();
     }
     if (changes['forceCollapsed']) {
       this.handleForceCollapsedChange();
+    }
+    if (changes['drillPreference']) {
+      if (changes['drillPreference'].currentValue) {
+        // initialize selected values from drill preferences
+        this.selectedDuration = this.drillPreference.drillDuration;
+        this.selectedLength = this.drillPreference.drillLength;
+      }
     }
   }
 
@@ -139,8 +158,17 @@ export class DrillToolbarComponent implements OnChanges {
     this.drillPreferenceChange.emit(this.drillPreference);
   }
 
-  onDurationChange(value: DrillLength): void {
+  onDurationChange(value: number): void {
+    this.selectedDuration = value;
+    this.drillPreference = { ...this.drillPreference, drillDuration: value };
+    this.drillPreferenceChange.emit(this.drillPreference);
+    console.log('Duration changed to:', value, 'seconds');
+  }
+
+  onLengthChange(value: DrillLength): void {
+    this.selectedLength = value;
     this.drillPreference = { ...this.drillPreference, drillLength: value };
     this.drillPreferenceChange.emit(this.drillPreference);
+    console.log('Length changed to:', value);
   }
 } 
