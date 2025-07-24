@@ -36,16 +36,7 @@ namespace server.Entities
 		[BsonElement("drill_input_id")]
 		public string DrillInputId { get; set; } = null!;
 
-		[BsonElement("wpm")]
-		public double WPM { get; set; } = 0;
-
-		[BsonElement("accuracy")]
-		public double Accuracy { get; set; } = 0;
-
-		[BsonElement("word_error_map")]
-		public Dictionary<string, int>? WordErrorMap { get; set; } = null;
-
-		[BsonElement("char_error_map")]
-		public Dictionary<string, int>? CharErrorMap { get; set; } = null;
+		[BsonElement("statistics")]
+		public DrillStatistic Statistics { get; set; } = new();
 	}
 }

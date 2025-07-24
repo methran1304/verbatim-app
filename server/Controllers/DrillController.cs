@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +14,6 @@ using server.Utils;
 namespace server.Controllers
 {
     [Authorize]
-    [ApiController]
     [Route("/api/[controller]")]
     public class DrillController(
 		IConfiguration configuration,
@@ -23,7 +21,7 @@ namespace server.Controllers
 		IProfileService profileService,
 		IDrillService drillService,
 		IDrillInputService drillInputService,
-		IDrillSourceTextService drillSourceTextService) : ControllerBase
+		IDrillSourceTextService drillSourceTextService) : BaseController
     {
         private readonly IConfiguration _configuration = configuration;
         private readonly IUserService _userService = userService;
@@ -35,9 +33,7 @@ namespace server.Controllers
 		[HttpPost("submit")]
         public async Task<IActionResult> SubmitDrill([FromBody] DrillSubmissionDTO submission)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId is null)
-                return Unauthorized();
+            var userId = UserIdRequired;
 
             var drillInput = GetDrillInputEntity(submission.TypedWords);
             var drillSourceText = GetDrillSourceEntity(submission.SourceText);
@@ -58,15 +54,12 @@ namespace server.Controllers
                 DrillDifficulty = submission.DrillDifficulty,
                 DrillInputId = drillInput.DrillInputId,
                 SourceTextId = drillSourceText.DrillSourceId,
-                WPM = submission.WPM,
-                Accuracy = submission.Accuracy,
-                WordErrorMap = submission.WordErrorMap,
-                CharErrorMap = submission.CharErrorMap,
+                Statistics = submission.DrillStatistic,
                 PointsGained = DrillScorer.CalculateCasualPoints(
                     submission.DrillType,
                     submission.DrillDifficulty,
-                    submission.WPM,
-                    submission.Accuracy
+                    submission.DrillStatistic.WPM,
+                    submission.DrillStatistic.Accuracy
                 )
             };
 

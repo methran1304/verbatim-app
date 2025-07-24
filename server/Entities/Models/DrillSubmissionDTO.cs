@@ -9,9 +9,6 @@ namespace server.Entities.Models
         public List<string> SourceText { get; set; } = new();
         public List<string> TypedWords { get; set; } = new();
         public int DrillDuration { get; set; } = 0;
-        public double WPM { get; set; }
-        public double Accuracy { get; set; }
-
-        DrillStatistic drillStatistic { get; set; } = new();
+        public DrillStatistic DrillStatistic { get; set; } = new();
     }
 }

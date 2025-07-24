@@ -14,7 +14,12 @@ namespace server.Services
 			await _drills.InsertOneAsync(drill);
 		}
 
-		public async Task<List<Drill>> GetRecentDrills(string userId, int count)
+		public async Task<List<Drill>> GetAllDrillsAsync(string userId)
+		{
+			return await _drills.Find(d => d.UserId == userId).ToListAsync();
+		}
+
+		public async Task<List<Drill>> GetRecentDrillsAsync(string userId, int count)
 		{
 			var filter = Builders<Drill>.Filter
 				.Eq(d => userId, userId);

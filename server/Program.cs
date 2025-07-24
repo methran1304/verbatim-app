@@ -35,6 +35,7 @@ builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<IDrillInputService, DrillInputService>();
 builder.Services.AddScoped<IDrillSourceTextService, DrillSourceTextService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<server.Utils.WordPoolManager>();
 
 
 builder.Services.AddControllers()
@@ -84,5 +85,19 @@ app.UseAuthorization();
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.MapControllers();
+
+// initialize word pool (loads from database into static storage by default)
+using (var scope = app.Services.CreateScope())
+{
+    var wordPoolManager = scope.ServiceProvider.GetRequiredService<server.Utils.WordPoolManager>();
+    try
+    {
+        await wordPoolManager.InitializeWordPoolAsync(initializeDatabase: false);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Failed to initialize word pool: {ex.Message}");
+    }
+}
 
 app.Run();
