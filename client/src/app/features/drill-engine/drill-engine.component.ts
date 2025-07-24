@@ -149,16 +149,6 @@ export class DrillEngineComponent implements OnInit {
             this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
         }
 
-        this.drillStats = {
-            wpm: 0,
-            accuracy: 0,
-            errorMap: {
-                wordErrorMap: {},
-                charErrorMap: {},
-            },
-            corrections: 0,
-        };
-
         // for timed drills, always use marathon length to ensure enough text
         const drillLength = this.drillPreferences.drillType === DrillType.Timed 
             ? DrillLength.Marathon 
@@ -184,16 +174,41 @@ export class DrillEngineComponent implements OnInit {
 
         this.currentWordIndex = 0;
         this.currentCharIndex = 0;
+
+        // construct drill stats 
+        this.drillStats = {
+            wpm: 0,
+            accuracy: 0,
+            errorMap: {
+                wordErrorMap: {},
+                charErrorMap: {},
+            },
+            corrections: 0,
+            wordsCount: 0,
+            lettersCount: 0,
+            correctWords: 0,
+            correctLetters: 0,
+            incorrectWords: 0,
+            incorrectLetters: 0,
+            duration: 0,
+        };
     }
 
     stopDrill(): void {
         // stop timer
         this.isDrillActive = false;
         this.stopTimer();
+
         // update WPM & accuracy in drill stats
         this.drillStats.wpm = this.wpm;
         this.drillStats.accuracy = this.accuracy;
+        
+        // wordsCount equals the sum of correct and incorrect words
+        this.drillStats.wordsCount = this.drillStats.correctWords + this.drillStats.incorrectWords;
+        // lettersCount equals the sum of correct and incorrect letters
+        this.drillStats.lettersCount = this.drillStats.correctLetters + this.drillStats.incorrectLetters;
         this.showPostDrillOverlay = true;
+
     }
 
     resumeDrill(): void {
@@ -228,6 +243,12 @@ export class DrillEngineComponent implements OnInit {
 
         const isCharCorrect = expectedChar === enteredChar;
 
+        if (isCharCorrect) {
+            this.drillStats.correctLetters++;
+        } else {
+            this.drillStats.incorrectLetters++;
+        }
+
         // build char error map
         if (!isCharCorrect) {
             this.drillStats.errorMap.charErrorMap[expectedChar] ??= 0;
@@ -257,6 +278,9 @@ export class DrillEngineComponent implements OnInit {
                 const currentWordTrimmed = currentWord.join('').trim();
                 this.drillStats.errorMap.wordErrorMap[currentWordTrimmed] ??= 0;
                 this.drillStats.errorMap.wordErrorMap[currentWordTrimmed]++;
+                this.drillStats.incorrectWords++;
+            } else {
+                this.drillStats.correctWords++;
             }
 
             // do not let user modify the completed correct words
@@ -342,6 +366,7 @@ export class DrillEngineComponent implements OnInit {
 
     startTimer(): void {
         this.startTime = Date.now();
+        this.drillStats.startTime = this.startTime;
         
         // only set end time for timed drills
         if (this.drillPreferences.drillType === DrillType.Timed) {
@@ -379,6 +404,14 @@ export class DrillEngineComponent implements OnInit {
 
     stopTimer(): void {
         clearInterval(this.timerInterval);
+        if (this.drillStats) {
+            this.drillStats.endTime = Date.now();
+            if (this.drillStats.startTime !== undefined) {
+                this.drillStats.duration = (this.drillStats.endTime - this.drillStats.startTime) / 1000;
+            } else {
+                this.drillStats.duration = 0;
+            }
+        }
     }
 
     pad(num: number): string {
@@ -456,7 +489,15 @@ export class DrillEngineComponent implements OnInit {
                 charErrorMap: {},
             },
             corrections: 0,
+            wordsCount: 0,
+            lettersCount: 0,
+            correctWords: 0,
+            correctLetters: 0,
+            incorrectWords: 0,
+            incorrectLetters: 0,
+            duration: 0,
         };
+
         this.wpm = 0;
         this.accuracy = 100;
         this.startTime = 0;

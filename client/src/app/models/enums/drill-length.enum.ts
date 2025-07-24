@@ -11,5 +11,5 @@ export const DrillLengthWordCount: Record<DrillLength, number> = {
     [DrillLength.Short]: 50,
     [DrillLength.Medium]: 70,
     [DrillLength.Long]: 100,
-    [DrillLength.Marathon]: 1000,
+    [DrillLength.Marathon]: 500,
 };
