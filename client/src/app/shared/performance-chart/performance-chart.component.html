@@ -1,0 +1,24 @@
+<div class="performance-chart-container">
+  <div class="chart-card">
+    <div class="chart-title">Performance Over Time</div>
+    <div class="chart-container">
+      <ngx-charts-line-chart
+        [results]="chartData"
+        [xAxis]="true"
+        [yAxis]="true"
+        [legend]="true"
+        [showXAxisLabel]="true"
+        [showYAxisLabel]="true"
+        [xAxisLabel]="'Time (seconds)'"
+        [yAxisLabel]="'WPM / Accuracy (%)'"
+        [timeline]="false"
+        [autoScale]="true"
+        [curve]="curve"
+        [scheme]="colorScheme"
+        [animations]="true"
+        [rangeFillOpacity]="0.1"
+        [gradient]="false">
+      </ngx-charts-line-chart>
+    </div>
+  </div>
+</div> 

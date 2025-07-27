@@ -30,16 +30,17 @@
         </button>
         <nz-dropdown-menu #drillMenu="nzDropdownMenu">
           <ul nz-menu>
-            <li nz-menu-item 
-                *ngFor="let item of drillMenuItems"
-                (click)="onDrillSelect(item.key)"
-                [class.active]="currentDrillType === item.key"
-                nzTooltipTitle="{{ item.tooltip }}"
-                nz-tooltip
-                [nzTooltipMouseEnterDelay]="1.5">
-              <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
-              {{ item.label }}
-            </li>
+            @for (item of drillMenuItems; track item.key) {
+              <li nz-menu-item 
+                  (click)="onDrillSelect(item.key)"
+                  [class.active]="currentDrillType === item.key"
+                  nzTooltipTitle="{{ item.tooltip }}"
+                  nz-tooltip
+                  [nzTooltipMouseEnterDelay]="1.5">
+                <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+                {{ item.label }}
+              </li>
+            }
           </ul>
         </nz-dropdown-menu>
       </div>
@@ -71,15 +72,16 @@
         </button>
         <nz-dropdown-menu #competitiveMenu="nzDropdownMenu">
           <ul nz-menu>
-            <li nz-menu-item 
-                *ngFor="let item of competitiveMenuItems"
-                (click)="onCompetitiveSelect(item.key)"
-                nz-tooltip
-                [nzTooltipTitle]="item.tooltip"
-                [nzTooltipMouseEnterDelay]="1.5">
-              <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
-              {{ item.label }}
-            </li>
+            @for (item of competitiveMenuItems; track item.key) {
+              <li nz-menu-item 
+                  (click)="onCompetitiveSelect(item.key)"
+                  nz-tooltip
+                  [nzTooltipTitle]="item.tooltip"
+                  [nzTooltipMouseEnterDelay]="1.5">
+                <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+                {{ item.label }}
+              </li>
+            }
           </ul>
         </nz-dropdown-menu>
       </div>
@@ -111,12 +113,13 @@
         </button>
         <nz-dropdown-menu #userMenu="nzDropdownMenu">
           <ul nz-menu>
-            <li nz-menu-item 
-                *ngFor="let item of userMenuItems"
-                (click)="onUserSelect(item.key)">
-              <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
-              {{ item.label }}
-            </li>
+            @for (item of userMenuItems; track item.key) {
+              <li nz-menu-item 
+                  (click)="onUserSelect(item.key)">
+                <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
+                {{ item.label }}
+              </li>
+            }
           </ul>
         </nz-dropdown-menu>
       </div>

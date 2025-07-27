@@ -40,7 +40,9 @@
       <div class="register-links-row">
         <span class="login-link" (click)="onLogin()" [class.disabled-link]="loading" [attr.tabindex]="loading ? -1 : 0">Already a member?</span>
       </div>
-      <div *ngIf="getValidationMessage()" class="validation-message">{{ getValidationMessage() }}</div>
+      @if (getValidationMessage()) {
+        <div class="validation-message">{{ getValidationMessage() }}</div>
+      }
       <button
         nz-button
         nzType="primary"

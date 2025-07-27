@@ -3,6 +3,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
+import { PerformanceChartComponent } from '../../shared/performance-chart/performance-chart.component';
 
 // ng-Zorro imports
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -35,6 +36,7 @@ import { ZorroNotificationServiceTsService } from '../../shared/zorro-notificati
     CommonModule,
     FormsModule,
     NgxChartsModule,
+    PerformanceChartComponent,
     NzCardModule,
     NzStatisticModule,
     NzProgressModule,

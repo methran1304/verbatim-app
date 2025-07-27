@@ -52,9 +52,9 @@
      [ngClass]="{'afk' : !isFocused || showPostDrillOverlay, 'afk-cursor': delayedAfkOverlay && !showPostDrillOverlay}">
   <nz-card class="drill-text" #drillText>
     <div class="drill-text-inner">
-      <ng-container *ngFor="let word of sourceText; let wi = index">
+      @for (word of sourceText; track wi; let wi = $index) {
         <nz-tag class="word" [ngClass]="getWordClass(wi)" #wordEl>
-          <ng-container *ngFor="let char of word; let ci = index">
+          @for (char of word; track ci; let ci = $index) {
             <span
               [ngClass]="
                 getLetterClass(wi, ci) +
@@ -65,9 +65,9 @@
             >
               {{ char === " " ? "␣" : char }}
             </span>
-          </ng-container>
+          }
         </nz-tag>
-      </ng-container>
+      }
     </div>
   </nz-card>
 

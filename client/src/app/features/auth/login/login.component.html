@@ -26,7 +26,9 @@
         <span class="forgot-link" (click)="onForgotPassword()" [class.disabled-link]="loading" [attr.tabindex]="loading ? -1 : 0">Forgot password?</span>
         <span class="signup-link" (click)="onSignUp()" [class.disabled-link]="loading" [attr.tabindex]="loading ? -1 : 0">Sign Up?</span>
       </div>
-      <div *ngIf="getValidationMessage()" class="validation-message">{{ getValidationMessage() }}</div>
+      @if (getValidationMessage()) {
+        <div class="validation-message">{{ getValidationMessage() }}</div>
+      }
       <button
         nz-button
         nzType="primary"

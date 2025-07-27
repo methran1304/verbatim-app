@@ -1,0 +1,132 @@
+.performance-chart-container {
+  width: 100%;
+  
+  .chart-card {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--color-shadow);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      border-color: var(--color-primary);
+    }
+    
+    .chart-title {
+      color: var(--color-primary);
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      text-align: left;
+      line-height: 1.2;
+    }
+    
+    .chart-container {
+      height: 400px;
+      width: 100%;
+      
+      ngx-charts-line-chart {
+        width: 100%;
+        height: 100%;
+      }
+    }
+  }
+}
+
+// Custom ngx-charts styles for better theme integration
+::ng-deep {
+  .ngx-charts {
+    .line-chart {
+      .line {
+        stroke-width: 2px;
+      }
+      
+      .line-series {
+        .line {
+          transition: all 0.3s ease;
+        }
+      }
+    }
+    
+    .gridline-path {
+      stroke: var(--color-border) !important;
+      opacity: 0.3;
+    }
+    
+    .axis {
+      .tick {
+        line {
+          stroke: var(--color-border) !important;
+        }
+        
+        text {
+          fill: var(--color-text-secondary) !important;
+          font-size: 12px;
+        }
+      }
+      
+      .domain {
+        stroke: var(--color-border) !important;
+      }
+    }
+    
+    .legend {
+      .legend-title {
+        fill: var(--color-text) !important;
+        font-weight: 600;
+      }
+      
+      .legend-labels {
+        .legend-label {
+          color: var(--color-text) !important;
+          
+          .legend-label-text {
+            color: var(--color-text) !important;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+    
+    .axis-label {
+      fill: var(--color-text) !important;
+      font-weight: 600;
+      font-size: 14px;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .performance-chart-container {
+    .chart-card {
+      padding: 1rem;
+      
+      .chart-title {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+      }
+      
+      .chart-container {
+        height: 300px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .performance-chart-container {
+    .chart-card {
+      padding: 0.75rem;
+      
+      .chart-title {
+        font-size: 1.1rem;
+      }
+      
+      .chart-container {
+        height: 250px;
+      }
+    }
+  }
+} 

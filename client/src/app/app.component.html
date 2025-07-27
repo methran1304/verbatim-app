@@ -9,8 +9,12 @@
 </nz-layout>
 
 <button class="theme-toggle-fab" (click)="toggleDarkMode()" [attr.aria-label]="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
-  <nz-icon *ngIf="darkMode" nzType="sun" nzTheme="outline"></nz-icon>
-  <nz-icon *ngIf="!darkMode" nzType="moon" nzTheme="fill"></nz-icon>
+  @if (darkMode) {
+    <nz-icon nzType="sun" nzTheme="outline"></nz-icon>
+  }
+  @if (!darkMode) {
+    <nz-icon nzType="moon" nzTheme="fill"></nz-icon>
+  }
 </button>
   
 @if (isScreenTooSmall) {
