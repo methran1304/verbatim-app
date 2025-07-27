@@ -212,11 +212,11 @@ export class DrillStatsComponent implements OnInit, OnDestroy {
   
   // helper methods for formatting
   formatWPM(value: number): string {
-    return `${value.toFixed(2)} WPM`;
+    return `${value.toFixed(1)} WPM`;
   }
   
   formatAccuracy(value: number): string {
-    return `${value.toFixed(2)}%`;
+    return `${value.toFixed(1)}%`;
   }
   
   formatPoints(value: number): string {
@@ -243,7 +243,15 @@ export class DrillStatsComponent implements OnInit, OnDestroy {
     if (!stat) return '';
     const change = Math.abs(stat.difference);
     if (change === 0) return '';
-    return `${change.toFixed(2)}`;
+    
+    // for change values, use appropriate formatting based on size
+    if (change >= 1000) {
+      return this.formatLargeNumber(change).display;
+    } else if (change >= 1) {
+      return change.toFixed(0);
+    } else {
+      return change.toFixed(1);
+    }
   }
   
   getStatChangeColor(stat: StatDifference | undefined): string {
@@ -324,6 +332,31 @@ export class DrillStatsComponent implements OnInit, OnDestroy {
     const absDiff = Math.abs(stat.difference);
     if (absDiff === 0) return '';
     // show as (120 seconds) or (30 seconds) - no sign needed with arrows
-    return `(${absDiff} second${absDiff !== 1 ? 's' : ''})`;
+    return `${absDiff} second${absDiff !== 1 ? 's' : ''}`;
+  }
+
+
+  // formats large numbers with k/m/b suffixes and returns both formatted and original values
+  formatLargeNumber(value: number): { display: string; tooltip: string } {
+    if (value < 1000) {
+      return { display: value.toString(), tooltip: value.toLocaleString() };
+    }
+    
+    if (value < 1000000) {
+      const kValue = value / 1000;
+      const display = kValue >= 10 ? kValue.toFixed(0) + 'K' : kValue.toFixed(1) + 'K';
+      return { display, tooltip: value.toLocaleString() };
+    }
+    
+    if (value < 1000000000) {
+      const mValue = value / 1000000;
+      const display = mValue >= 10 ? mValue.toFixed(0) + 'M' : mValue.toFixed(1) + 'M';
+      return { display, tooltip: value.toLocaleString() };
+    }
+    
+    // billions
+    const bValue = value / 1000000000;
+    const display = bValue >= 10 ? bValue.toFixed(0) + 'B' : bValue.toFixed(1) + 'B';
+    return { display, tooltip: value.toLocaleString() };
   }
 } 
