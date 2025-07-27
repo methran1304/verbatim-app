@@ -39,11 +39,11 @@ export class PerformanceChartComponent implements OnInit, OnChanges {
   private updateColorScheme(): void {
     if (this.isDarkMode) {
       this.colorScheme = {
-        domain: ['#52c41a', '#1890ff'] // Green and Blue for dark theme
+        domain: ['#52c41a', '#1890ff'] // green and blue for dark theme
       };
     } else {
       this.colorScheme = {
-        domain: ['#52c41a', '#fa8c16'] // Green and Orange for light theme
+        domain: ['#52c41a', '#fa8c16'] // green and orange for light theme
       };
     }
   }

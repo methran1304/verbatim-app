@@ -61,7 +61,7 @@
         }
         
         text {
-          fill: var(--color-text-secondary) !important;
+          fill: var(--color-text) !important;
           font-size: 12px;
         }
       }
@@ -69,6 +69,18 @@
       .domain {
         stroke: var(--color-border) !important;
       }
+    }
+    
+    text {
+      fill: var(--color-text) !important;
+    }
+    
+    .tick text {
+      fill: var(--color-text) !important;
+    }
+    
+    .axis text {
+      fill: var(--color-text) !important;
     }
     
     .legend {
