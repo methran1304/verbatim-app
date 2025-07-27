@@ -9,10 +9,10 @@
     >
       <input
         nz-input
-        formControlName="emailAddress"
-        placeholder="Email"
+        formControlName="emailAddressOrUsername"
+        placeholder="Email or Username"
         [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
-        [nzStatus]="email?.invalid && (email?.dirty || email?.touched || submitted) ? 'error' : ''"
+        [nzStatus]="emailAddressOrUsername?.invalid && (emailAddressOrUsername?.dirty || emailAddressOrUsername?.touched || submitted) ? 'error' : ''"
       />
       <input
         nz-input

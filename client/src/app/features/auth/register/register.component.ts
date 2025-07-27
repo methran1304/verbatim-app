@@ -63,7 +63,6 @@ export class RegisterComponent {
     const creds = this.registerForm.value;
     this.authService.register(creds).subscribe({
       next: (result) => {
-        console.log(result?.error);
         this.notificationService.createNotification('success', 'Account created! ', 'Your account has been created successfully. Let’s get started!');
         this.router.navigate(['/auth/login']);
         this.loading = false;

@@ -17,6 +17,9 @@
         nz-dropdown 
         [nzDropdownMenu]="drillMenu" 
         nzTrigger="click"
+        nz-tooltip
+        nzTooltipTitle="{{ currentDrillTypeTooltip }}"
+        [nzTooltipMouseEnterDelay]="1.5"
         class="nav-dropdown">
         <button 
           nz-button 

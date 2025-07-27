@@ -22,16 +22,20 @@ namespace server.Entities
 		[BsonElement("avg_accuracy")]
 		public double AvgAccuracy { get; set; } = 0;
 
+		[BsonElement("avg_corrections")]
+		public double AvgCorrections { get; set; } = 0;
+
+		[BsonElement("avg_error_rate")]
+		public double AvgErrorRate { get; set; } = 0;
+
 		// date => list of drill IDs
 		[BsonElement("activity")]
 		public Dictionary<string, List<string>> Activity { get; set; } = new();
 
-		[BsonElement("casual_points")]
-		public int CasualPoints { get; set; } = 0;
+		[BsonElement("user_points")]
+		public int UserPoints { get; set; } = 0;
 
 		// Competitive stats
-		[BsonElement("competitive_points")]
-		public int CompetitivePoints { get; set; } = 0;
 
 		[BsonElement("competitive_drills")]
 		public int CompetitiveDrills { get; set; } = 0;
@@ -48,5 +52,27 @@ namespace server.Entities
 
 		[BsonElement("total_drills_participated")]
 		public int TotalDrillsParticipated { get; set; } = 0;
+
+		[BsonElement("total_words")]
+		public int TotalWords { get; set; } = 0;
+
+		[BsonElement("total_correct_words")]
+		public int TotalCorrectWords { get; set; } = 0;
+
+		[BsonElement("total_incorrect_words")]
+		public int TotalIncorrectWords { get; set; } = 0;
+
+		
+		[BsonElement("total_letters")]
+		public int TotalLetters { get; set; } = 0;
+
+		[BsonElement("total_correct_letters")]
+		public int TotalCorrectLetters { get; set; } = 0;
+		
+		[BsonElement("total_incorrect_letters")]
+		public int TotalIncorrectLetters { get; set; } = 0;
+
+		[BsonElement("total_drill_duration")]
+		public int TotalDrillDuration { get; set; } = 0; // in seconds
 	}
 }

@@ -47,5 +47,10 @@ namespace server.Services
 				.Filter
 				.Eq(u => u.UserId, userIdOrEmailAddress);
 		}
+
+		public async Task<User?> GetByUsernameAsync(string username)
+		{
+			return await _users.Find(u => u.Username == username).FirstOrDefaultAsync();
+		}
 	}
 }

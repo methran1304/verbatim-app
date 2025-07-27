@@ -4,7 +4,7 @@ import {
     DrillLength,
     DrillLengthWordCount,
 } from '../models/enums/drill-length.enum';
-import wordPoolData from '../assets/word-pool.json';
+import wordPoolData from '../../assets/word-pool.json';
 
 interface WordPool {
     short: string[];
@@ -63,4 +63,7 @@ export class DrillTextService {
 
         return combinedWords;
     }
+
+    
+
 }

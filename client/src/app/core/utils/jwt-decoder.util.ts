@@ -58,7 +58,7 @@ export class JwtDecoderUtil {
 
   static getUserId(token: string): string | null {
     const payload = this.decode(token);
-    return payload?.sub || null;
+    return payload?.sub || payload?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || null;
   }
 
   static getUserEmail(token: string): string | null {

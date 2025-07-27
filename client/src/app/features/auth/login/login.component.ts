@@ -42,7 +42,7 @@ export class LoginComponent {
     private notificationService: ZorroNotificationServiceTsService
   ) {
     this.loginForm = this.fb.group({
-      emailAddress: ['', [Validators.required, Validators.email]],
+      emailAddressOrUsername: ['', [Validators.required]],
       password: ['', [Validators.required]],
     });
     this.themeService.getDarkMode().subscribe(isDark => {
@@ -62,10 +62,7 @@ export class LoginComponent {
     const creds = this.loginForm.value;
     this.authService.login(creds).subscribe({
       next: (result) => {
-        this.notificationService.createNotification('success', 'Welcome back!', 'You’ve successfully logged in.');
-        localStorage.setItem('accessToken', result.accessToken);
-        localStorage.setItem('refreshToken', result.refreshToken);
-        this.authService.setAuthenticated(true);
+        this.notificationService.createNotification('success', 'Welcome back!', 'You\'ve successfully logged in.');
         this.router.navigate(['/drill']);
         this.loading = false;
       },
@@ -86,13 +83,12 @@ export class LoginComponent {
     this.router.navigate(['/auth/register']);
   }
 
-  get email() { return this.loginForm.get('emailAddress'); }
+  get emailAddressOrUsername() { return this.loginForm.get('emailAddressOrUsername'); }
   get password() { return this.loginForm.get('password'); }
 
   getValidationMessage(): string {
-    if ((this.email?.invalid && (this.email?.touched || this.submitted))) {
-      if (this.email.errors?.['required']) return 'Email is required.';
-      if (this.email.errors?.['email']) return 'Please enter a valid email address.';
+    if ((this.emailAddressOrUsername?.invalid && (this.emailAddressOrUsername?.touched || this.submitted))) {
+      if (this.emailAddressOrUsername.errors?.['required']) return 'Email or username is required.';
     }
     if ((this.password?.invalid && (this.password?.touched || this.submitted))) {
       if (this.password.errors?.['required']) return 'Password is required.';

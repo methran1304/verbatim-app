@@ -1,0 +1,288 @@
+<div class="drill-stats-container" [class.dark-mode]="isDarkMode">
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="isLoading">
+    <nz-spin nzSize="large">
+      <div class="loading-text">Loading your results...</div>
+    </nz-spin>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-container" *ngIf="hasError">
+    <nz-result nzStatus="error" nzTitle="Something went wrong" nzSubTitle="Unable to load drill results" nzExtra>
+      <button nz-button nzType="primary" (click)="router.navigate(['/drill'])">
+        Back to Drill
+      </button>
+    </nz-result>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading && !hasError && drillStats">
+    <!-- Header -->
+    <div class="stats-header">
+      <div class="drill-settings-toolbar">
+        <div class="stat-item">
+          <span class="stat-label">Type</span>
+          <span class="stat-value" [style.color]="'var(--color-primary)'">{{ drillTypeLabel }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Difficulty</span>
+          <span class="stat-value" [style.color]="'var(--color-success)'">{{ drillDifficultyLabel }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">{{ drillPreferences?.drillType === 'timed' ? 'Duration' : 'Length' }}</span>
+          <span class="stat-value" [style.color]="'var(--color-warning)'">
+            {{ drillPreferences?.drillType === 'timed' ? drillDurationLabel : drillLengthLabel }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Section: Summary Statistics -->
+    <div class="stats-section top-section">
+      <div class="stats-grid">
+
+        <!-- WPM Card -->
+        <div class="stat-card">
+          <div class="stat-title">Word(s) Per Minute</div>
+          <div class="stat-list">
+            <div class="stat-item">
+              <span class="label">Current WPM</span>
+              <span class="value current-value">{{ currentDrillStats?.wpm?.toFixed(1) || '0.0' }}</span>
+            </div>
+            <div class="stat-item" *ngIf="currentDrillStats?.avgWPM && drillStats?.avgWPM">
+              <span class="label">Avg: <strong class="current-value">{{ currentDrillStats?.avgWPM?.toFixed(2) || '0.00' }}</strong>
+                <nz-divider nzType="vertical"></nz-divider> Lifetime: <strong class="lifetime-value">{{ drillStats.avgWPM.new.toFixed(2)
+                  }}</strong></span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.avgWPM) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.avgWPM) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.avgWPM)">
+                <span nz-icon [nzType]="(drillStats.avgWPM.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.avgWPM) }}
+              </span>
+            </div>
+            <div class="stat-item" *ngIf="currentDrillStats?.maxWPM && drillStats?.maxWPM">
+              <span class="label">Max: <strong class="current-value">{{ currentDrillStats?.maxWPM?.toFixed(0) || '0' }}</strong> <nz-divider
+                  nzType="vertical"></nz-divider> Lifetime: <strong class="lifetime-value">{{ drillStats.maxWPM.new.toFixed(0)
+                  }}</strong></span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.maxWPM) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.maxWPM) === '#f5222d'"
+                *ngIf="isNewRecord(drillStats.maxWPM)">
+                <span nz-icon [nzType]="(drillStats.maxWPM.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                NEW RECORD!
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accuracy Card -->
+        <div class="stat-card">
+          <div class="stat-title">Accuracy</div>
+          <div class="stat-list">
+            <div class="stat-item">
+              <span class="label">Current Accuracy</span>
+              <span class="value current-value">{{ currentDrillStats?.accuracy?.toFixed(1) || '0.0' }}%</span>
+            </div>
+            <div class="stat-item" *ngIf="currentDrillStats?.avgAccuracy && drillStats?.avgAccuracy">
+              <span class="label">Avg: <strong class="current-value">{{ currentDrillStats?.avgAccuracy?.toFixed(2) || '0.00' }}%</strong>
+                <nz-divider nzType="vertical"></nz-divider> Lifetime: <strong class="lifetime-value">{{ drillStats.avgAccuracy.new.toFixed(2)
+                  }}%</strong></span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.avgAccuracy) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.avgAccuracy) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.avgAccuracy)">
+                <span nz-icon [nzType]="(drillStats.avgAccuracy.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.avgAccuracy) }}
+              </span>
+            </div>
+            <div class="stat-item" *ngIf="currentDrillStats?.maxAccuracy && drillStats?.maxAccuracy">
+              <span class="label">Max: <strong class="current-value">{{ currentDrillStats?.maxAccuracy?.toFixed(0) || '0' }}%</strong>
+                <nz-divider nzType="vertical"></nz-divider> Lifetime: <strong class="lifetime-value">{{ drillStats.maxAccuracy.new.toFixed(0)
+                  }}%</strong></span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.maxAccuracy) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.maxAccuracy) === '#f5222d'"
+                *ngIf="isNewRecord(drillStats.maxAccuracy)">
+                <span nz-icon [nzType]="(drillStats.maxAccuracy.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                NEW RECORD!
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Rate Card -->
+        <div class="stat-card">
+          <div class="stat-title">Error Rate</div>
+          <div class="stat-list">
+            <div class="stat-item">
+              <span class="label">Current Error Rate</span>
+              <span class="value current-value">{{ getCurrentErrorRateFraction() }} words ({{ getCurrentErrorRate().toFixed(1)
+                }}%)</span>
+            </div>
+            <div class="stat-item" *ngIf="drillStats?.avgErrorRate">
+              <span class="label"> Lifetime Avg: <strong class="lifetime-value">{{ getAverageErrorRate().toFixed(1)
+                  }}%</strong></span>
+              <span class="change"
+                [class.positive]="getNegativeMetricChangeColor(drillStats.avgErrorRate) === '#52c41a'"
+                [class.negative]="getNegativeMetricChangeColor(drillStats.avgErrorRate) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.avgErrorRate)">
+                <span nz-icon [nzType]="(drillStats.avgErrorRate.difference || 0) < 0 ? 'arrow-down' : 'arrow-up'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.avgErrorRate) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle Section: Detailed Statistics -->
+    <div class="stats-section middle-section">
+      <div class="stats-grid">
+        <!-- Word Stats -->
+        <div class="stat-card">
+          <div class="stat-title">Word Statistics</div>
+          <div class="stat-list">
+            <div class="stat-item">
+              <span class="label">Total: <strong class="current-value">{{ currentDrillStats?.wordsCount || 0 }}</strong> <nz-divider
+                  nzType="vertical"></nz-divider> Lifetotal: <strong class="lifetime-value">{{ drillStats.totalWords.new || 0 }}</strong></span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.totalWords) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.totalWords) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.totalWords)">
+                <span nz-icon [nzType]="(drillStats.totalWords.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.totalWords) }}
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Correct: <strong class="current-value">{{ currentDrillStats?.correctWords || 0 }}</strong> <nz-divider
+                  nzType="vertical"></nz-divider> Lifetotal: <strong class="lifetime-value">{{ drillStats.totalCorrectWords.new || 0
+                  }}</strong></span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.totalCorrectWords) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.totalCorrectWords) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.totalCorrectWords)">
+                <span nz-icon [nzType]="(drillStats.totalCorrectWords.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.totalCorrectWords) }}
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Incorrect: <strong class="current-value">{{ currentDrillStats?.incorrectWords || 0 }}</strong> <nz-divider
+                  nzType="vertical"></nz-divider> Lifetotal: <strong class="lifetime-value">{{ drillStats.totalIncorrectWords.new || 0
+                  }}</strong></span>
+              <span class="change"
+                [class.positive]="getNegativeMetricChangeColor(drillStats.totalIncorrectWords) === '#52c41a'"
+                [class.negative]="getNegativeMetricChangeColor(drillStats.totalIncorrectWords) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.totalIncorrectWords)">
+                <span nz-icon
+                  [nzType]="(drillStats.totalIncorrectWords.difference || 0) < 0 ? 'arrow-down' : 'arrow-up'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.totalIncorrectWords) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Letter Stats -->
+        <div class="stat-card">
+          <div class="stat-title">Letter Statistics</div>
+          <div class="stat-list">
+            <div class="stat-item">
+              <span class="label">Total: <strong class="current-value">{{ currentDrillStats?.lettersCount || 0 }}</strong> <nz-divider
+                  nzType="vertical"></nz-divider> Lifetotal: <strong class="lifetime-value">{{ drillStats.totalLetters.new || 0 }}</strong></span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.totalLetters) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.totalLetters) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.totalLetters)">
+                <span nz-icon [nzType]="(drillStats.totalLetters.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.totalLetters) }}
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Correct: <strong class="current-value">{{ currentDrillStats?.correctLetters || 0 }}</strong> <nz-divider
+                  nzType="vertical"></nz-divider> Lifetotal: <strong class="lifetime-value">{{ drillStats.totalCorrectLetters.new || 0
+                  }}</strong></span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.totalCorrectLetters) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.totalCorrectLetters) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.totalCorrectLetters)">
+                <span nz-icon
+                  [nzType]="(drillStats.totalCorrectLetters.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.totalCorrectLetters) }}
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="label">Incorrect: <strong class="current-value">{{ currentDrillStats?.incorrectLetters || 0 }}</strong> <nz-divider
+                  nzType="vertical"></nz-divider> Lifetotal: <strong class="lifetime-value">{{ drillStats.totalIncorrectLetters.new || 0
+                  }}</strong></span>
+              <span class="change"
+                [class.positive]="getNegativeMetricChangeColor(drillStats.totalIncorrectLetters) === '#52c41a'"
+                [class.negative]="getNegativeMetricChangeColor(drillStats.totalIncorrectLetters) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.totalIncorrectLetters)">
+                <span nz-icon
+                  [nzType]="(drillStats.totalIncorrectLetters.difference || 0) < 0 ? 'arrow-down' : 'arrow-up'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.totalIncorrectLetters) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drill Duration Card -->
+        <div class="stat-card">
+          <div class="stat-title">Drill Duration</div>
+          <div class="stat-list">
+            <div class="stat-item" *ngIf="currentDrillStats?.duration && getDrillDurationStat()">
+              <span class="label">Duration: <strong class="current-value">{{ formatDuration(currentDrillStats?.duration || 0) }}</strong></span>
+            </div>
+            <div class="stat-item" *ngIf="currentDrillStats?.duration && getDrillDurationStat()">
+              <span class="label">Lifetotal: <strong class="lifetime-value">{{
+                  formatDuration(getDrillDurationStat()?.new || 0) }}</strong></span>
+              <span class="change" [style.color]="getDurationChangeColor(getDrillDurationStat())"
+                [style.background]="'rgba(250, 140, 22, 0.1)'"
+                *ngIf="getDrillDurationStat() && getDrillDurationChangeText(getDrillDurationStat())">
+                <span nz-icon [nzType]="(getDrillDurationStat()?.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                {{ getDrillDurationChangeText(getDrillDurationStat()) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Points Card -->
+        <div class="stat-card">
+          <div class="stat-title">User Points</div>
+          <div class="stat-list">
+            <div class="stat-item" *ngIf="drillStats?.userPoints">
+              <span class="label">Gained: <strong class="current-value">{{ animatedStats.points.toFixed(0) }} pts</strong></span>
+            </div>
+            <div class="stat-item" *ngIf="drillStats?.userPoints">
+              <span class="label">Lifetime: <strong class="lifetime-value">{{ drillStats.userPoints.new.toFixed(0)
+                  }}</strong> pts </span>
+              <span class="change" [class.positive]="getStatChangeColor(drillStats.userPoints) === '#52c41a'"
+                [class.negative]="getStatChangeColor(drillStats.userPoints) === '#f5222d'"
+                *ngIf="getStatChangeText(drillStats.userPoints)">
+                <span nz-icon [nzType]="(drillStats.userPoints.difference || 0) > 0 ? 'arrow-up' : 'arrow-down'"
+                  nzTheme="outline"></span>
+                {{ getStatChangeText(drillStats.userPoints) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bottom Section: Navigation -->
+    <div class="stats-section bottom-section">
+      <!-- Continue Button -->
+      <div class="action-container">
+        <span class="continue-btn" (click)="onContinue()">
+          <span nz-icon nzType="arrow-right" nzTheme="outline" style="font-size: 16px;"></span>
+          <span class="button-text">Continue</span>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

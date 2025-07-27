@@ -4,14 +4,21 @@ namespace server.Entities
     {
         public double WPM { get; set; } = 0;
         public double Accuracy { get; set; } = 0;
+        public double AvgWPM { get; set; } = 0;
+        public double AvgAccuracy { get; set; } = 0;
+        public double MaxWPM { get; set; } = 0;
+        public double MaxAccuracy { get; set; } = 0;
+        public double ErrorRate { get; set; } = 0;
         public ErrorMap ErrorMap { get; set; } = new();
         public int Corrections { get; set; } = 0;
-        public int WordCount { get; set; } = 0;
-        public int CorrectWordCount { get; set; } = 0;
-        public int IncorrectWordCount { get; set; } = 0;
-        public int LetterCount { get; set; } = 0;
-        public int CorrectLetterCount { get; set; } = 0;
-        public int IncorrectLetterCount { get; set; } = 0;
+        public int WordsCount { get; set; } = 0;
+        public int LettersCount { get; set; } = 0;
+        public int CorrectWords { get; set; } = 0;
+        public int CorrectLetters { get; set; } = 0;
+        public int IncorrectWords { get; set; } = 0;
+        public int IncorrectLetters { get; set; } = 0;
+        public int Duration { get; set; } = 0;
+        public List<PointTimeData> RealTimeData { get; set; } = new();
     }
 
     public class ErrorMap
@@ -20,18 +27,13 @@ namespace server.Entities
         public Dictionary<string, int> WordErrorMap { get; set; } = new();
     }
 
-    /*
-
-        wpm: number;
-        accuracy: number;
-        errorMap: ErrorMap;
-        corrections: number;
-        wordsCount: number;
-        lettersCount: number;
-        correctWords: number;
-        correctLetters: number;
-        incorrectWords: number;
-        incorrectLetters: number;
-
-    */
+    public class PointTimeData
+    {
+        public int TimePoint { get; set; } = 0;
+        public double WPM { get; set; } = 0d;
+        public double Accuracy { get; set; } = 0d;
+        public int Corrections { get; set; } = 0;
+        public List<int> IncorrectWords { get; set; } = [];
+        public List<int> CorrectWords { get; set; } = [];
+    }
 }

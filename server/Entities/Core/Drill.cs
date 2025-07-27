@@ -23,9 +23,6 @@ namespace server.Entities
 		[BsonElement("points_gained")] // only applicable for non-competitive modes
 		public int PointsGained { get; set; } = 0;
 
-		[BsonElement("drill_duration")] // only for timed drills
-		public int DrillDuration { get; set; } = 0;
-
 		[BsonElement("drill_difficulty")] // only for non-competitive drill; null otherwise
 		[BsonRepresentation(BsonType.String)]
 		public DrillDifficulty? DrillDifficulty { get; set; }

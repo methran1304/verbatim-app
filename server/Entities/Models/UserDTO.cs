@@ -9,7 +9,7 @@ namespace server.Entities.Models
 
 	public class LoginRequestDTO
 	{
-		public string EmailAddress { get; set; } = null!;
+		public string EmailAddressOrUsername { get; set; } = null!;
 		public string Password { get; set; } = null!;
 	}
 }

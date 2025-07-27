@@ -6,6 +6,7 @@ namespace server.Entities.Enums
 		Adaptive,
 		MemoryMode,
 		Classics,
-		Competitive
+		Competitive,
+		Marathon
 	}
 }

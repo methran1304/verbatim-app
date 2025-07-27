@@ -2,8 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { DrillStats } from '../models/interfaces/drill-stats.interface';
+
 import { DrillPreference } from '../models/interfaces/drill-preference.interface';
+import { DrillSubmissionRequest, DrillSubmissionResponse } from '../models/interfaces/drill-submission.interface';
 
 @Injectable({
     providedIn: 'root',
@@ -13,12 +14,12 @@ export class DrillService {
 
     constructor(private http: HttpClient) {}
 
-    submitDrillResult(drillStats: DrillStats): Observable<any> {
-        return this.http.post(`${this.baseUrl}/submit`, drillStats);
+    submitDrillResult(drillSubmission: DrillSubmissionRequest): Observable<DrillSubmissionResponse> {
+        return this.http.post<DrillSubmissionResponse>(`${this.baseUrl}/submit`, drillSubmission);
     }
 
     getDrillHistory(): Observable<any> {
-        return this.http.get(`${this.baseUrl}/history`);
+        return this.http.get(`${this.baseUrl}/drill/history`);
     }
 
     getDrillPreferences(): DrillPreference | null {

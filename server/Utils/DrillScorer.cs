@@ -5,7 +5,7 @@ namespace server.Utils
 {
     public static class DrillScorer
     {
-        public static int CalculateCasualPoints(DrillType type, DrillDifficulty difficulty, double WPM, double Accuracy)
+        public static int CalculateUserPoints(DrillType type, DrillDifficulty difficulty, double WPM, double Accuracy)
         {
             var difficultyMultiplier = difficulty switch
             {
@@ -19,8 +19,10 @@ namespace server.Utils
             {
                 DrillType.MemoryMode => DrillConstants.MemoryModeMultiplier,
                 DrillType.Adaptive => DrillConstants.AdaptiveMultiplier,
+                DrillType.Competitive => DrillConstants.CompetitiveMultiplier,
                 _ => DrillConstants.DefaultTypeMultiplier
             };
+
 
             var points = WPM * (Accuracy / 100.0) * difficultyMultiplier * typeMultiplier;
             return (int)Math.Clamp(points, DrillConstants.MinPoints, DrillConstants.MaxPoints);

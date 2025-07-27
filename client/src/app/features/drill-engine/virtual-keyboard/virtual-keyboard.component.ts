@@ -1,6 +1,5 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, Input, ViewEncapsulation, SimpleChanges, OnChanges } from '@angular/core';
 import Keyboard from 'simple-keyboard';
-import 'simple-keyboard/build/css/index.css';
 
 @Component({
   selector: 'app-virtual-keyboard',

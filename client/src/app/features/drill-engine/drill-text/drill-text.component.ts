@@ -34,6 +34,11 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
     @Input() currentCharIndex: number = 0;
     @Input() isFocused: boolean = true;
     @Input() showPostDrillOverlay: boolean = false;
+    @Input() isSubmitting: boolean = false;
+    @Input() submitError: string = '';
+    @Input() isUserInactive: boolean = false;
+    @Input() hasBeenInactive: boolean = false;
+    @Input() afkReason: string = '';
     @Output() postDrillRestart = new EventEmitter<void>();
     @Output() postDrillSubmit = new EventEmitter<void>();
 

@@ -29,7 +29,7 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
     NzIconModule,
     NzAvatarModule,
     NzDividerModule,
-    NzToolTipModule
+    NzToolTipModule,
   ],
   templateUrl: './top-nav.component.html',
   styleUrl: './top-nav.component.scss'
@@ -41,6 +41,7 @@ export class TopNavComponent implements OnInit {
   currentDrillTypeIcon: string = 'clock-circle';
   currentSection = 'drills';
   username: string = 'User';
+  currentDrillTypeTooltip: string = '';
 
   // drill dropdown items
   drillMenuItems = [
@@ -124,6 +125,7 @@ export class TopNavComponent implements OnInit {
 
     this.navigationService.getCurrentDrillType().subscribe(drillType => {
       this.currentDrillType = drillType;
+      this.currentDrillTypeTooltip = this.drillMenuItems.find(item => item.key === drillType)?.tooltip || '';
       if (drillType) {
         this.currentDrillTypeLabel = this.getDrillTypeLabel(drillType);
         this.currentDrillTypeIcon = this.getDrillTypeIcon(drillType);
@@ -177,7 +179,7 @@ export class TopNavComponent implements OnInit {
       this.router.navigate(['/leaderboard']);
     } else if (key === 'compete') {
       // TODO: Implement compete feature
-      console.log('Compete feature coming soon');
+      // console.log('Compete feature coming soon');
     }
   }
 

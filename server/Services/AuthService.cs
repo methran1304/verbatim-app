@@ -32,7 +32,9 @@ namespace server.Services.Interfaces
         }
         public async Task<TokenResponseDTO?> LoginAsync(LoginRequestDTO request)
         {
-            var user = await _userService.GetByEmailAsync(request.EmailAddress);
+            var user = await _userService.GetByEmailAsync(request.EmailAddressOrUsername);
+
+            user ??= await _userService.GetByUsernameAsync(request.EmailAddressOrUsername);
 
             if (user is null)
             {

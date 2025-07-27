@@ -162,13 +162,11 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
     this.selectedDuration = value;
     this.drillPreference = { ...this.drillPreference, drillDuration: value };
     this.drillPreferenceChange.emit(this.drillPreference);
-    console.log('Duration changed to:', value, 'seconds');
   }
 
   onLengthChange(value: DrillLength): void {
     this.selectedLength = value;
     this.drillPreference = { ...this.drillPreference, drillLength: value };
     this.drillPreferenceChange.emit(this.drillPreference);
-    console.log('Length changed to:', value);
   }
 } 

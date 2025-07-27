@@ -6,6 +6,7 @@ namespace server.Services.Interfaces
 	{
 		Task<User?> GetByEmailAsync(string emailId);
 		Task<User?> GetByUserId(string userId);
+		Task<User?> GetByUsernameAsync(string username);
 		Task CreateAsync(User user);
 		Task<bool> UserExists(string username, string emailId);
 		Task RotateRefreshToken(string userId, string refreshToken);

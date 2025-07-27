@@ -1,5 +1,5 @@
 // === drill-engine.component.ts ===
-import { Component, NgZone, OnInit, ViewChild } from '@angular/core';
+import { Component, NgZone, OnInit, ViewChild, HostListener } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DrillTextComponent } from './drill-text/drill-text.component';
 import { DrillInputComponent } from './drill-input/drill-input.component';
@@ -8,7 +8,7 @@ import { KeyStroke } from '../../models/interfaces/typed-char.interface';
 import { SpecialKeys } from '../../core/constants/keys.constant';
 import { DrillDifficulty } from '../../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../../models/enums/drill-length.enum';
-import { DrillStats } from '../../models/interfaces/drill-stats.interface';
+import { DrillStatistic, PointTimeData } from '../../models/interfaces/drill-stats.interface';
 import { CommonModule } from '@angular/common';
 import { VirtualKeyboardComponent } from './virtual-keyboard/virtual-keyboard.component';
 import { DrillToolbarComponent } from './drill-toolbar/drill-toolbar.component';
@@ -18,6 +18,10 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { DrillPreference } from '../../models/interfaces/drill-preference.interface';
 import { DrillType } from '../../models/enums/drill-type.enum';
+import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service.ts.service';
+import { ErrorHandlerUtil } from '../../core/utils/error-handler.util';
+import { DrillService } from '../../services/drill.service';
+import { DrillSubmissionRequest, DrillSubmissionResponse } from '../../models/interfaces/drill-submission.interface';
 
 
 @Component({
@@ -55,7 +59,14 @@ export class DrillEngineComponent implements OnInit {
 
     wpm: number = 0;
     accuracy: number = 100;
-    drillStats!: DrillStats;
+    drillStatistic!: DrillStatistic;
+
+    // Time series data collection
+    realTimeData: PointTimeData[] = [];
+    private lastDataPointTime: number = 0;
+    private wordsCompletedThisSecond: number[] = [];
+    private wordsIncorrectThisSecond: number[] = [];
+    private correctionsThisSecond: number = 0;
 
     isInputFocused: boolean = true;
     currentInput: string = '';
@@ -76,12 +87,26 @@ export class DrillEngineComponent implements OnInit {
     isSubmitting: boolean = false;
     submitError: string = '';
 
+    // afk protection and inactivity detection
+    private lastActivityTime: number = 0;
+    public isUserInactive: boolean = false;
+    public hasBeenInactive: boolean = false;
+    private inactivityTimeout: any;
+    private readonly MAX_INACTIVITY_SECONDS = 10;
+    private readonly MAX_DRILL_DURATION_SECONDS = 7200;
+    private readonly INACTIVITY_CHECK_INTERVAL = 10000;
+    private inactivityCheckInterval: any;
+    public afkReason: string = '';
+
     constructor(
         private drillTextService: DrillTextService,
+        private drillService: DrillService,
         private ngZone: NgZone,
         private themeService: ThemeService,
         private navigationService: NavigationService,
         private route: ActivatedRoute,
+        private router: Router,
+        private notificationService: ZorroNotificationServiceTsService
     ) {
         // get drill preference
         let storedPreference: DrillPreference = JSON.parse(localStorage.getItem('drillPreference') ?? '{}');
@@ -113,7 +138,7 @@ export class DrillEngineComponent implements OnInit {
         // initialize timer with current preferences
         this.resetDrillStats();
         
-        // get drill type from URL query parameters
+        // get drill type from url query parameters
         this.route.queryParams.subscribe(params => {
             const drillType = params['type'];
             if (drillType && Object.values(DrillType).includes(drillType)) {
@@ -126,7 +151,7 @@ export class DrillEngineComponent implements OnInit {
                 
                 this.onNewDrill();
             } else if (!drillType) {
-                // if no drill type in URL, start with current drill type from preferences
+                // if no drill type in url, start with current drill type from preferences
                 this.onNewDrill();
             }
         });
@@ -176,14 +201,19 @@ export class DrillEngineComponent implements OnInit {
         this.currentCharIndex = 0;
 
         // construct drill stats 
-        this.drillStats = {
+        this.drillStatistic = {
+            errorRate: 0,
             wpm: 0,
             accuracy: 0,
+            avgWPM: 0,
+            avgAccuracy: 0,
+            maxWPM: 0,
+            maxAccuracy: 0,
             errorMap: {
                 wordErrorMap: {},
                 charErrorMap: {},
             },
-            corrections: 0,
+            totalCorrections: 0,
             wordsCount: 0,
             lettersCount: 0,
             correctWords: 0,
@@ -191,6 +221,7 @@ export class DrillEngineComponent implements OnInit {
             incorrectWords: 0,
             incorrectLetters: 0,
             duration: 0,
+            realTimeData: [],
         };
     }
 
@@ -199,16 +230,47 @@ export class DrillEngineComponent implements OnInit {
         this.isDrillActive = false;
         this.stopTimer();
 
-        // update WPM & accuracy in drill stats
-        this.drillStats.wpm = this.wpm;
-        this.drillStats.accuracy = this.accuracy;
+        // stop inactivity monitoring
+        this.stopInactivityMonitoring();
+
+        // add final data point if drill was active
+        if (this.startTime > 0) {
+            const finalTimePoint = this.drillPreferences.drillType === DrillType.Timed 
+                ? this.totalTimeInSeconds 
+                : Math.floor((Date.now() - this.startTime) / 1000);
+            this.addTimeSeriesDataPoint(finalTimePoint);
+        }
+
+        this.drillStatistic.realTimeData = [...this.realTimeData];
         
-        // wordsCount equals the sum of correct and incorrect words
-        this.drillStats.wordsCount = this.drillStats.correctWords + this.drillStats.incorrectWords;
-        // lettersCount equals the sum of correct and incorrect letters
-        this.drillStats.lettersCount = this.drillStats.correctLetters + this.drillStats.incorrectLetters;
+        // update wpm & accuracy in drill stats
+        this.drillStatistic.wpm = this.wpm;
+        this.drillStatistic.accuracy = this.accuracy;
+
+        this.drillStatistic.avgWPM = this.drillStatistic.realTimeData.length > 0 
+            ? this.drillStatistic.realTimeData.reduce((acc, curr) => acc + curr.wpm, 0) / this.drillStatistic.realTimeData.length
+            : 0;
+
+        this.drillStatistic.avgAccuracy = this.drillStatistic.realTimeData.length > 0
+            ? this.drillStatistic.realTimeData.reduce((acc, curr) => acc + curr.accuracy, 0) / this.drillStatistic.realTimeData.length
+            : 100;
+
+        this.drillStatistic.maxWPM = this.drillStatistic.realTimeData.reduce((acc, curr) => Math.max(acc, curr.wpm), 0);
+        this.drillStatistic.maxAccuracy = this.drillStatistic.realTimeData.reduce((acc, curr) => Math.max(acc, curr.accuracy), 0);
+        
+        // wordscount equals the sum of correct and incorrect words
+        this.drillStatistic.wordsCount = this.drillStatistic.correctWords + this.drillStatistic.incorrectWords;
+        // letterscount equals the sum of all letters in the source text
+        this.drillStatistic.lettersCount = this.drillStatistic.correctLetters + this.drillStatistic.incorrectLetters;
+
+        // calculate error rate for this drill
+        this.drillStatistic.errorRate = this.drillStatistic.wordsCount > 0 
+            ? (this.drillStatistic.incorrectWords / this.drillStatistic.wordsCount) * 100 
+            : 0;
+
         this.showPostDrillOverlay = true;
 
+        console.log(this.drillStatistic);
     }
 
     resumeDrill(): void {
@@ -225,10 +287,12 @@ export class DrillEngineComponent implements OnInit {
         }
 
         if (value === SpecialKeys.Backspace.toString()) {
-            this.drillStats.corrections++;
             this.handleBackspace();
             return;
         }
+
+        // track user activity
+        this.updateUserActivity();
 
         // set typing state for toolbar animation
         this.setTypingState(true);
@@ -244,20 +308,20 @@ export class DrillEngineComponent implements OnInit {
         const isCharCorrect = expectedChar === enteredChar;
 
         if (isCharCorrect) {
-            this.drillStats.correctLetters++;
+            this.drillStatistic.correctLetters++;
         } else {
-            this.drillStats.incorrectLetters++;
+            this.drillStatistic.incorrectLetters++;
         }
 
         // build char error map
         if (!isCharCorrect) {
-            this.drillStats.errorMap.charErrorMap[expectedChar] ??= 0;
-            this.drillStats.errorMap.charErrorMap[expectedChar]++;
+            this.drillStatistic.errorMap.charErrorMap[expectedChar] ??= 0;
+            this.drillStatistic.errorMap.charErrorMap[expectedChar]++;
         }
 
         if (this.currentCharIndex >= currentWord.length) return;
 
-        // construct typedText array for input to drillText component
+        // construct typedtext array for input to drilltext component
         this.typedText[this.currentWordIndex][this.currentCharIndex] = {
             key: value,
             correct: isCharCorrect,
@@ -267,7 +331,6 @@ export class DrillEngineComponent implements OnInit {
 
         // word complete
         if (this.currentCharIndex === currentWord.length) {
-            console.log(this.drillStats);
             const isWordCorrect = this.typedText[this.currentWordIndex].every(
                 (stroke, i) =>
                     stroke?.key === this.sourceText[this.currentWordIndex][i],
@@ -276,11 +339,17 @@ export class DrillEngineComponent implements OnInit {
             // build word error map
             if (!isWordCorrect) {
                 const currentWordTrimmed = currentWord.join('').trim();
-                this.drillStats.errorMap.wordErrorMap[currentWordTrimmed] ??= 0;
-                this.drillStats.errorMap.wordErrorMap[currentWordTrimmed]++;
-                this.drillStats.incorrectWords++;
+                this.drillStatistic.errorMap.wordErrorMap[currentWordTrimmed] ??= 0;
+                this.drillStatistic.errorMap.wordErrorMap[currentWordTrimmed]++;
+                this.drillStatistic.incorrectWords++;
+                
+                // track incorrect word for time series data
+                this.wordsIncorrectThisSecond.push(this.currentWordIndex);
             } else {
-                this.drillStats.correctWords++;
+                this.drillStatistic.correctWords++;
+                
+                // track completed word for time series data
+                this.wordsCompletedThisSecond.push(this.currentWordIndex);
             }
 
             // do not let user modify the completed correct words
@@ -343,9 +412,14 @@ export class DrillEngineComponent implements OnInit {
             this.currentCharIndex = this.sourceText[prevIndex].length;
         }
 
-        this.currentCharIndex--;
-        this.typedText[this.currentWordIndex][this.currentCharIndex] =
-            undefined;
+        // only increment corrections if we're actually moving the cursor back
+        // and there's a character to delete (not at the beginning of the word)
+        if (this.currentCharIndex > 0) {
+            this.currentCharIndex--;
+            this.typedText[this.currentWordIndex][this.currentCharIndex] = undefined;
+            this.drillStatistic.totalCorrections++;
+            this.correctionsThisSecond++;
+        }
     }
 
     updateWPMAndAccuracy(): void {
@@ -366,11 +440,20 @@ export class DrillEngineComponent implements OnInit {
 
     startTimer(): void {
         this.startTime = Date.now();
-        this.drillStats.startTime = this.startTime;
+        this.lastActivityTime = this.startTime;
+        
+        // initialize first data point at time 0
+        this.lastDataPointTime = 0;
+        this.addTimeSeriesDataPoint(0);
         
         // only set end time for timed drills
         if (this.drillPreferences.drillType === DrillType.Timed) {
             this.endTime = this.startTime + this.totalTimeInSeconds * 1000;
+        }
+
+        // start inactivity monitoring for non-timed drills
+        if (this.drillPreferences.drillType !== DrillType.Timed) {
+            this.startInactivityMonitoring();
         }
 
         this.timerInterval = setInterval(() => {
@@ -384,12 +467,15 @@ export class DrillEngineComponent implements OnInit {
                 this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
                 this.remainingSeconds = secondsLeft;
                 this.updateWPMAndAccuracy();
+                
+                const currentTimePoint = this.totalTimeInSeconds - secondsLeft;
+                this.addTimeSeriesDataPoint(currentTimePoint);
 
                 if (msLeft <= 0) {
-                    this.stopDrill(); // auto-submit or end
+                    this.stopDrill();
                 }
             } else {
-                // non-timed drill logic - just track elapsed time for WPM
+                // non-timed drill logic - just track elapsed time for wpm
                 const elapsedMs = Date.now() - this.startTime;
                 const elapsedSeconds = Math.floor(elapsedMs / 1000);
                 const minutes = Math.floor(elapsedSeconds / 60);
@@ -398,20 +484,67 @@ export class DrillEngineComponent implements OnInit {
                 this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
                 this.remainingSeconds = elapsedSeconds;
                 this.updateWPMAndAccuracy();
+                
+                // only add data points if user is active or within reasonable inactivity period
+                if (!this.isUserInactive || elapsedSeconds <= this.MAX_INACTIVITY_SECONDS) {
+                    this.addTimeSeriesDataPoint(elapsedSeconds);
+                }
+
+                // check for maximum drill duration
+                if (elapsedSeconds >= this.MAX_DRILL_DURATION_SECONDS) {
+                    this.notificationService.createNotification('warning', 'Drill Timeout', 'Maximum drill duration reached. Your progress will be saved.');
+                    this.stopDrill();
+                }
             }
         }, 1000);
     }
 
     stopTimer(): void {
         clearInterval(this.timerInterval);
-        if (this.drillStats) {
-            this.drillStats.endTime = Date.now();
-            if (this.drillStats.startTime !== undefined) {
-                this.drillStats.duration = (this.drillStats.endTime - this.drillStats.startTime) / 1000;
-            } else {
-                this.drillStats.duration = 0;
+        if (this.drillStatistic && this.startTime) {
+            this.drillStatistic.duration = Math.floor((Date.now() - this.startTime) / 1000);
+        }
+    }
+
+    private addTimeSeriesDataPoint(timePoint: number): void {
+        const expectedTimePoints = Array.from({length: timePoint + 1}, (_, i) => i);
+        
+        for (const expectedTimePoint of expectedTimePoints) {
+            // check if we already have this time point
+            const existingIndex = this.realTimeData.findIndex(dp => dp.timePoint === expectedTimePoint);
+            
+            if (existingIndex === -1) {
+                // add missing time point
+                const dataPoint: PointTimeData = {
+                    timePoint: expectedTimePoint,
+                    wpm: this.wpm,
+                    accuracy: this.accuracy,
+                    corrections: this.correctionsThisSecond,
+                    incorrectWords: [...this.wordsIncorrectThisSecond],
+                    correctWords: [...this.wordsCompletedThisSecond]
+                };
+                
+                this.realTimeData.push(dataPoint);
+            } else if (expectedTimePoint === timePoint) {
+                // update current time point with latest data
+                this.realTimeData[existingIndex] = {
+                    timePoint: expectedTimePoint,
+                    wpm: this.wpm,
+                    accuracy: this.accuracy,
+                    corrections: this.correctionsThisSecond,
+                    incorrectWords: [...this.wordsIncorrectThisSecond],
+                    correctWords: [...this.wordsCompletedThisSecond]
+                };
             }
         }
+        
+        // update last data point time
+        this.lastDataPointTime = Math.max(this.lastDataPointTime, timePoint);
+        
+        // reset the per-second tracking arrays
+        this.wordsCompletedThisSecond = [];
+        this.wordsIncorrectThisSecond = [];
+        this.correctionsThisSecond = 0;
     }
 
     pad(num: number): string {
@@ -481,14 +614,19 @@ export class DrillEngineComponent implements OnInit {
     }
 
     private resetDrillStats(): void {
-        this.drillStats = {
+        this.drillStatistic = {
+            errorRate: 0,
             wpm: 0,
             accuracy: 0,
+            avgWPM: 0,
+            avgAccuracy: 0,
+            maxWPM: 0,
+            maxAccuracy: 0,
             errorMap: {
                 wordErrorMap: {},
                 charErrorMap: {},
             },
-            corrections: 0,
+            totalCorrections: 0,
             wordsCount: 0,
             lettersCount: 0,
             correctWords: 0,
@@ -496,12 +634,27 @@ export class DrillEngineComponent implements OnInit {
             incorrectWords: 0,
             incorrectLetters: 0,
             duration: 0,
+            realTimeData: [],
         };
 
         this.wpm = 0;
         this.accuracy = 100;
         this.startTime = 0;
         this.endTime = 0;
+        
+        // reset time series data
+        this.realTimeData = [];
+        this.lastDataPointTime = 0;
+        this.wordsCompletedThisSecond = [];
+        this.wordsIncorrectThisSecond = [];
+        this.correctionsThisSecond = 0;
+        
+        // reset inactivity tracking
+        this.lastActivityTime = 0;
+        this.isUserInactive = false;
+        this.hasBeenInactive = false;
+        this.afkReason = '';
+        this.stopInactivityMonitoring();
         
         // set timer duration from drill preferences for timed drills
         if (this.drillPreferences.drillType === DrillType.Timed) {
@@ -552,26 +705,152 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onPostDrillSubmit(): void {
-        // TODO: integrate backend submission here
-        // example of how to handle API errors when backend is integrated:
-        /*
+        // reset error state for new submit request
+        this.submitError = '';
         this.isSubmitting = true;
-        this.drillService.submitDrillResult(this.drillStats).subscribe({
-            next: (result) => {
+
+        // validate drill submission before sending
+        if (!this.validateDrillSubmission()) {
+            this.submitError = 'Drill submission validation failed. Please try again.';
+            this.isSubmitting = false;
+            return;
+        }
+
+        // convert source text to array of strings
+        const sourceTextArray = this.sourceText.map(word => word.join('').trim());
+        
+        // convert typed text to array of strings
+        const typedWordsArray = this.typedText.map(word => {
+            return word.map(char => char?.key?.trim() || '').join('');
+        });
+
+        // create drill submission object
+        const drillSubmission: DrillSubmissionRequest = {
+            drillDifficulty: this.drillPreferences.drillDifficulty,
+            drillType: this.drillPreferences.drillType,
+            sourceText: sourceTextArray,
+            typedWords: typedWordsArray,
+            drillStatistic: this.drillStatistic
+        };
+
+        this.drillService.submitDrillResult(drillSubmission).subscribe({
+            next: (result: DrillSubmissionResponse) => {
                 this.notificationService.createNotification('success', 'Drill completed!', 'Your results have been saved successfully.');
                 this.showPostDrillOverlay = false;
                 this.isSubmitting = false;
+                
+                // navigate to drill stats page with the results
+                this.router.navigate(['/drill-stats'], {
+                    state: {
+                        drillStats: result,
+                        drillPreferences: this.drillPreferences,
+                        currentDrillStats: this.drillStatistic
+                    }
+                });
             },
-            error: (result) => {
-                const errorMessage = ErrorHandlerUtil.handleError(result, 'drill');
+            error: (error) => {
+                const errorMessage = ErrorHandlerUtil.handleError(error, 'drill');
                 this.notificationService.createNotification('error', 'Something went wrong!', errorMessage);
                 this.submitError = errorMessage;
                 this.isSubmitting = false;
             },
         });
-        */
+    }
+
+    // afk protection and inactivity detection methods
+    private updateUserActivity(): void {
+        this.lastActivityTime = Date.now();
         
-        // for now, just close the overlay
-        this.showPostDrillOverlay = false;
+        // if user was inactive and now becomes active, clear the current afk state but keep the permanent flag
+        if (this.isUserInactive) {
+            this.isUserInactive = false;
+            this.notificationService.createNotification('info', 'Activity Resumed', 'You can continue typing, but this drill cannot be submitted due to previous inactivity.');
+        }
+        
+        // clear existing inactivity timeout
+        if (this.inactivityTimeout) {
+            clearTimeout(this.inactivityTimeout);
+        }
+        
+        // set new inactivity timeout
+        this.inactivityTimeout = setTimeout(() => {
+            this.isUserInactive = true;
+            this.hasBeenInactive = true;
+            this.afkReason = 'Inactivity detected, so drill cannot be submitted.';
+            this.notificationService.createNotification('error', 'AFK Detected', this.afkReason);
+        }, this.MAX_INACTIVITY_SECONDS * 1000);
+    }
+
+    private startInactivityMonitoring(): void {
+        // check for inactivity every 10 seconds
+        this.inactivityCheckInterval = setInterval(() => {
+            const currentTime = Date.now();
+            const timeSinceLastActivity = (currentTime - this.lastActivityTime) / 1000;
+            
+            if (timeSinceLastActivity >= this.MAX_INACTIVITY_SECONDS && !this.isUserInactive) {
+                this.isUserInactive = true;
+                this.hasBeenInactive = true;
+                this.afkReason = 'Inactivity detected, so drill cannot be submitted.';
+                this.notificationService.createNotification('error', 'AFK Detected', this.afkReason);
+            }
+        }, this.INACTIVITY_CHECK_INTERVAL);
+    }
+
+    private stopInactivityMonitoring(): void {
+        if (this.inactivityTimeout) {
+            clearTimeout(this.inactivityTimeout);
+            this.inactivityTimeout = null;
+        }
+        
+        if (this.inactivityCheckInterval) {
+            clearInterval(this.inactivityCheckInterval);
+            this.inactivityCheckInterval = null;
+        }
+    }
+
+    private validateDrillSubmission(): boolean {
+        // check if user was afk during the drill (permanent flag)
+        if (this.hasBeenInactive) {
+            this.notificationService.createNotification('error', 'AFK Detected', 'Cannot submit drill due to inactivity. Please restart the drill.');
+            return false;
+        }
+
+        // check if drill duration is reasonable
+        const drillDuration = this.drillStatistic.duration;
+        
+        if (drillDuration > this.MAX_DRILL_DURATION_SECONDS) {
+            this.notificationService.createNotification('error', 'Invalid Drill Duration', 'Drill duration exceeds maximum allowed time.');
+            return false;
+        }
+
+        // check if real-time data array is not excessively large
+        if (this.drillStatistic.realTimeData.length > this.MAX_DRILL_DURATION_SECONDS) {
+            this.notificationService.createNotification('error', 'Invalid Data', 'Real-time data array is too large. Please restart the drill.');
+            return false;
+        }
+
+        // for non-timed drills, check for suspicious inactivity patterns
+        if (this.drillPreferences.drillType !== DrillType.Timed) {
+            const totalTypedChars = this.drillStatistic.correctLetters + this.drillStatistic.incorrectLetters;
+            const charsPerSecond = drillDuration > 0 ? totalTypedChars / drillDuration : 0;
+            
+            // if user typed less than 0.1 characters per second on average, it's suspicious
+            if (charsPerSecond < 0.1 && drillDuration > 60) {
+                this.notificationService.createNotification('error', 'Suspicious Activity', 'Very low typing activity detected. Please restart the drill.');
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // host listener for global activity tracking
+    @HostListener('document:keydown', ['$event'])
+    @HostListener('document:mousedown', ['$event'])
+    @HostListener('document:touchstart', ['$event'])
+    onGlobalActivity(): void {
+        if (this.isDrillActive && this.drillPreferences.drillType !== DrillType.Timed) {
+            this.updateUserActivity();
+        }
     }
 }
