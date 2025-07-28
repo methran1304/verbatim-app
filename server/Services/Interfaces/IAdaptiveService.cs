@@ -10,7 +10,7 @@ namespace server.Services.Interfaces
 {
     public interface IAdaptiveService
     {
-        Task<List<string>> GetAdaptiveDrillWordsAsync(string userId, DrillDifficulty difficulty, int count);
+        Task<List<string>> GetErrorProneWordsAsync(string userId, DrillDifficulty difficulty, int count);
         Task<bool> CanGenerateAdaptiveDrillWordsAsync(string userId, DrillDifficulty difficulty);
     }
 }

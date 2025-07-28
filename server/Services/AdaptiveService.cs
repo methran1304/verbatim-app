@@ -7,56 +7,93 @@ namespace server.Services
 	public class AdaptiveService : IAdaptiveService
 	{
 		private readonly WordPoolManager _wordPoolManager;
-		private readonly DrillService _drillService;
+		private readonly IDrillService _drillService;
 
-		public AdaptiveService(WordPoolManager wordPoolManager, DrillService drillService)
+		public AdaptiveService(IDrillService drillService, WordPoolManager wordPoolManager)
 		{
 			_wordPoolManager = wordPoolManager;
 			_drillService = drillService;
 		}
 
-		public async Task<List<string>> GetAdaptiveDrillWordsAsync(string userId, DrillDifficulty difficulty, int count)
+		public async Task<List<string>> GetErrorProneWordsAsync(string userId, DrillDifficulty difficulty, int count)
 		{
+			var wordPool = _wordPoolManager.GetWordsByDifficulty(difficulty.ToString());
+
 			var userSpecificDrills = await _drillService.GetAllDrillsAsync(userId);
 
-			// filter by difficulty and get the most recent 10 drills
+			// filter by difficulty and last 30 days
+			var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 			var recentDrillsByDifficulty = userSpecificDrills
-			.Where(d => d.DrillDifficulty == difficulty)
+			.Where(d => d.DrillDifficulty == difficulty && d.CreatedAt >= thirtyDaysAgo)
 			.OrderByDescending(d => d.CreatedAt)
-			.Take(10)
 			.ToList();
 
-			// get the word error map of the recent drills
-			var wordErrorMaps = recentDrillsByDifficulty
-			.Select(d => d.Statistics.ErrorMap.WordErrorMap)
-			.ToList();
+			// if no recent drills, return empty list (will be handled by fallback)
+			if (recentDrillsByDifficulty.Count == 0)
+			{
+				Console.WriteLine($"No recent drills found for user {userId} in difficulty {difficulty}");
+				return [];
+			}
 
-			// combine the word error maps
-			var combinedWordErrorMap = wordErrorMaps
-			.Aggregate(
-				(a, b) => a
-				.Concat(b)
-				.ToDictionary(k => k.Key, v => v.Value)
-			);
+			// calculate weighted error maps with exponential decay
+			var weightedWordErrorMap = new Dictionary<string, double>();
+			var mostRecentDrillTime = recentDrillsByDifficulty.First().CreatedAt;
 
-			// get the top 10 most frequent words
-			var top10MostFrequentWords = combinedWordErrorMap
+			foreach (var drill in recentDrillsByDifficulty)
+			{
+				// calculate days since most recent drill (0 = most recent, higher = older)
+				var daysSinceMostRecent = (mostRecentDrillTime - drill.CreatedAt).TotalDays;
+				
+				// exponential decay weight: newer drills have higher weight
+				// weight = e^(-0.1 * days) - this gives ~90% weight to drills from last 1 day, ~37% to drills from 10 days ago
+				var weight = Math.Exp(-0.1 * daysSinceMostRecent);
+
+				// apply weight to each word's error count
+				foreach (var wordError in drill.Statistics.ErrorMap.WordErrorMap)
+				{
+					var weightedErrorCount = wordError.Value * weight;
+					
+					if (weightedWordErrorMap.ContainsKey(wordError.Key))
+					{
+						weightedWordErrorMap[wordError.Key] += weightedErrorCount;
+					}
+					else
+					{
+						weightedWordErrorMap[wordError.Key] = weightedErrorCount;
+					}
+				}
+			}
+
+			// get the top error-prone words (up to 10, but can be fewer if not enough data)
+			var topErrorProneWords = weightedWordErrorMap
 			.OrderByDescending(kvp => kvp.Value)
+			.Take(Math.Min(10, weightedWordErrorMap.Count))
+			.Select(kvp => kvp.Key)
 			.ToList();
 
+			Console.WriteLine($"Found {topErrorProneWords.Count} error-prone words for user {userId} in difficulty {difficulty}");
 
-			return new List<string>();
+			// if no error-prone words found (user made no errors), return empty list
+			if (topErrorProneWords.Count == 0)
+			{
+				Console.WriteLine($"No error-prone words found for user {userId} in difficulty {difficulty} - user may have made no errors");
+				return [];
+			}
+
+			return topErrorProneWords;
 		}
 
 		public async Task<bool> CanGenerateAdaptiveDrillWordsAsync(string userId, DrillDifficulty difficulty)
 		{
 			var userSpecificDrills = await _drillService.GetAllDrillsAsync(userId);
 
-			// filter by difficulty
-			var difficultyFilteredDrills = userSpecificDrills.Where(d => d.DrillDifficulty == difficulty);
+			// filter by difficulty and last 30 days
+			var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+			var recentDrillsByDifficulty = userSpecificDrills
+			.Where(d => d.DrillDifficulty == difficulty && d.CreatedAt >= thirtyDaysAgo);
 
-			// if the count of difficultyFilteredDrills is greater than 10, return true
-			return difficultyFilteredDrills.Count() > 10;
+			// require at least 5 drills in the last 30 days to enable adaptive mode
+			return recentDrillsByDifficulty.Count() >= 5;
 		}
 	}
 }

@@ -66,7 +66,7 @@
 
     <!-- Length select for non-timed drills -->
     @if (drillPreference.drillType !== 'timed') {
-      <nz-select nzTooltipTitle="Sets the number of generated words. Choose from Short (50), Medium (70), or Long (100)."
+      <nz-select nzTooltipTitle="Sets the number of generated words. Choose from Short (30), Medium (50), or Long (100)."
         nz-tooltip [nzTooltipMouseEnterDelay]="1.5" [ngModel]="selectedLength"
         (ngModelChange)="onLengthChange($event)" nzSize="small" class="control-select" [disabled]="disabled"
         nzPlaceHolder="Select length">

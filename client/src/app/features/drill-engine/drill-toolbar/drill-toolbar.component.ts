@@ -51,10 +51,10 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
   ];
 
   drillDurations = [
-    { label: 'Test', value: DrillLength.Test, wordCount: DrillLengthWordCount[DrillLength.Test] },
-    { label: 'Short', value: DrillLength.Short, wordCount: DrillLengthWordCount[DrillLength.Short] },
-    { label: 'Medium', value: DrillLength.Medium, wordCount: DrillLengthWordCount[DrillLength.Medium] },
-    { label: 'Long', value: DrillLength.Long, wordCount: DrillLengthWordCount[DrillLength.Long] }
+    { label: 'Test (10)', value: DrillLength.Test, wordCount: DrillLengthWordCount[DrillLength.Test] },
+    { label: 'Short (30)', value: DrillLength.Short, wordCount: DrillLengthWordCount[DrillLength.Short] },
+    { label: 'Medium (50)', value: DrillLength.Medium, wordCount: DrillLengthWordCount[DrillLength.Medium] },
+    { label: 'Long (100)', value: DrillLength.Long, wordCount: DrillLengthWordCount[DrillLength.Long] }
   ];
 
   // animation state

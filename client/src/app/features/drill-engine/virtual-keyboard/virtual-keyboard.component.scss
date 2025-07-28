@@ -65,6 +65,12 @@ $text-lg: #282640;
     min-width: 66px;
     max-width: 66px;
   }
+  
+  .hg-button.backtick {
+    width: 100%;
+    min-width: 40px;
+    max-width: none;
+  }
   .mod {
     background: $green-lg;
     color: $text-lg;
@@ -109,6 +115,12 @@ $text-lg: #282640;
       min-width: 58px;
       max-width: 58px;
     }
+    
+    .hg-button.backtick {
+      width: 100%;
+      min-width: 35px;
+      max-width: none;
+    }
   }
 }
 
@@ -132,6 +144,12 @@ $text-lg: #282640;
       width: 50px;
       min-width: 50px;
       max-width: 50px;
+    }
+    
+    .hg-button.backtick {
+      width: 100%;
+      min-width: 30px;
+      max-width: none;
     }
   }
 }
@@ -157,6 +175,12 @@ $text-lg: #282640;
       min-width: 44px;
       max-width: 44px;
     }
+    
+    .hg-button.backtick {
+      width: 100%;
+      min-width: 26px;
+      max-width: none;
+    }
   }
 }
 
@@ -180,6 +204,12 @@ $text-lg: #282640;
       width: 50px !important;
       min-width: 50px !important;
       max-width: 50px !important;
+    }
+    
+    .hg-button.backtick {
+      width: 100% !important;
+      min-width: 30px !important;
+      max-width: none !important;
     }
   }
 }
@@ -205,6 +235,12 @@ $text-lg: #282640;
       min-width: 44px !important;
       max-width: 44px !important;
     }
+    
+    .hg-button.backtick {
+      width: 100% !important;
+      min-width: 26px !important;
+      max-width: none !important;
+    }
   }
 }
 
@@ -228,6 +264,12 @@ $text-lg: #282640;
       width: 40px !important;
       min-width: 40px !important;
       max-width: 40px !important;
+    }
+    
+    .hg-button.backtick {
+      width: 100% !important;
+      min-width: 24px !important;
+      max-width: none !important;
     }
   }
 }

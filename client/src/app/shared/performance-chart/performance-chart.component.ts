@@ -56,7 +56,7 @@ export class PerformanceChartComponent implements OnInit, OnChanges {
 
     const wpmSeries = this.realTimeData.map(point => ({
       name: point.timePoint,
-      value: point.wpm
+      value: point.wpm,
     }));
 
     const accuracySeries = this.realTimeData.map(point => ({

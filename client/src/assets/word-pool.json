@@ -1,5 +1,5 @@
 {
-  "short": [
+  "beginner": [
     "the",
     "and",
     "for",
@@ -596,7 +596,7 @@
     "arc",
     "dawn"
   ],
-  "medium": [
+  "intermediate": [
     "about",
     "search",
     "other",
@@ -2905,7 +2905,7 @@
     "fiber",
     "graph"
   ],
-  "long": [
+  "advanced": [
     "information",
     "available",
     "copyright",

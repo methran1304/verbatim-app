@@ -762,9 +762,13 @@ export class DrillEngineComponent implements OnInit {
         this.lastActivityTime = Date.now();
         
         // if user was inactive and now becomes active, clear the current afk state but keep the permanent flag
-        if (this.isUserInactive) {
+        // only show notification if drill is actually active and started
+        if (this.isUserInactive && this.isDrillActive && this.startTime > 0) {
             this.isUserInactive = false;
             this.notificationService.createNotification('info', 'Activity Resumed', 'You can continue typing, but this drill cannot be submitted due to previous inactivity.');
+        } else if (this.isUserInactive) {
+            // just clear the inactive state without notification if drill hasn't started
+            this.isUserInactive = false;
         }
         
         // clear existing inactivity timeout
@@ -772,26 +776,31 @@ export class DrillEngineComponent implements OnInit {
             clearTimeout(this.inactivityTimeout);
         }
         
-        // set new inactivity timeout
-        this.inactivityTimeout = setTimeout(() => {
-            this.isUserInactive = true;
-            this.hasBeenInactive = true;
-            this.afkReason = 'Inactivity detected, so drill cannot be submitted.';
-            this.notificationService.createNotification('error', 'AFK Detected', this.afkReason);
-        }, this.MAX_INACTIVITY_SECONDS * 1000);
+        // set new inactivity timeout only if drill is active
+        if (this.isDrillActive && this.startTime > 0) {
+            this.inactivityTimeout = setTimeout(() => {
+                this.isUserInactive = true;
+                this.hasBeenInactive = true;
+                this.afkReason = 'Inactivity detected, so drill cannot be submitted.';
+                this.notificationService.createNotification('error', 'AFK Detected', this.afkReason);
+            }, this.MAX_INACTIVITY_SECONDS * 1000);
+        }
     }
 
     private startInactivityMonitoring(): void {
         // check for inactivity every 10 seconds
         this.inactivityCheckInterval = setInterval(() => {
-            const currentTime = Date.now();
-            const timeSinceLastActivity = (currentTime - this.lastActivityTime) / 1000;
-            
-            if (timeSinceLastActivity >= this.MAX_INACTIVITY_SECONDS && !this.isUserInactive) {
-                this.isUserInactive = true;
-                this.hasBeenInactive = true;
-                this.afkReason = 'Inactivity detected, so drill cannot be submitted.';
-                this.notificationService.createNotification('error', 'AFK Detected', this.afkReason);
+            // only monitor if drill is active and has started
+            if (this.isDrillActive && this.startTime > 0) {
+                const currentTime = Date.now();
+                const timeSinceLastActivity = (currentTime - this.lastActivityTime) / 1000;
+                
+                if (timeSinceLastActivity >= this.MAX_INACTIVITY_SECONDS && !this.isUserInactive) {
+                    this.isUserInactive = true;
+                    this.hasBeenInactive = true;
+                    this.afkReason = 'Inactivity detected, so drill cannot be submitted.';
+                    this.notificationService.createNotification('error', 'AFK Detected', this.afkReason);
+                }
             }
         }, this.INACTIVITY_CHECK_INTERVAL);
     }
@@ -849,7 +858,8 @@ export class DrillEngineComponent implements OnInit {
     @HostListener('document:mousedown', ['$event'])
     @HostListener('document:touchstart', ['$event'])
     onGlobalActivity(): void {
-        if (this.isDrillActive && this.drillPreferences.drillType !== DrillType.Timed) {
+        // only track activity if drill is active, started, and is a non-timed drill
+        if (this.isDrillActive && this.startTime > 0 && this.drillPreferences.drillType !== DrillType.Timed) {
             this.updateUserActivity();
         }
     }

@@ -9,14 +9,14 @@ namespace server.Entities.Core
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; } = string.Empty;
 
-        [BsonElement("short")]
-        public List<string> Short { get; set; } = new List<string>();
+        [BsonElement("beginner")]
+        public List<string> Beginner { get; set; } = new List<string>();
 
-        [BsonElement("medium")]
-        public List<string> Medium { get; set; } = new List<string>();
+        [BsonElement("intermediate")]
+        public List<string> Intermediate { get; set; } = new List<string>();
 
-        [BsonElement("long")]
-        public List<string> Long { get; set; } = new List<string>();
+        [BsonElement("advanced")]
+        public List<string> Advanced { get; set; } = new List<string>();
 
         [BsonElement("lastUpdated")]
         public DateTime LastUpdated { get; set; } = DateTime.UtcNow;

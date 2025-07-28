@@ -35,6 +35,11 @@ builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<IDrillInputService, DrillInputService>();
 builder.Services.AddScoped<IDrillSourceTextService, DrillSourceTextService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpClient<IFuzzySearchService, FuzzySearchService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<IAdaptiveService, AdaptiveService>();
 builder.Services.AddScoped<server.Utils.WordPoolManager>();
 
 

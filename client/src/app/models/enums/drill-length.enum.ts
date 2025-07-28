@@ -8,8 +8,8 @@ export enum DrillLength {
 
 export const DrillLengthWordCount: Record<DrillLength, number> = {
     [DrillLength.Test]: 10,
-    [DrillLength.Short]: 50,
-    [DrillLength.Medium]: 70,
+    [DrillLength.Short]: 30,
+    [DrillLength.Medium]: 50,
     [DrillLength.Long]: 100,
     [DrillLength.Marathon]: 500,
 };

@@ -24,6 +24,7 @@ import { DrillSubmissionResponse, StatDifference } from '../../models/interfaces
 import { DrillPreference } from '../../models/interfaces/drill-preference.interface';
 import { DrillStatistic } from '../../models/interfaces/drill-stats.interface';
 import { DrillType } from '../../models/enums/drill-type.enum';
+import { DrillLength, DrillLengthWordCount } from '../../models/enums/drill-length.enum';
 
 // services
 import { ThemeService } from '../../services/theme.service';
@@ -305,7 +306,8 @@ export class DrillStatsComponent implements OnInit, OnDestroy {
   }
   get drillLengthLabel(): string {
     if (!this.drillPreferences) return '';
-    return this.drillPreferences.drillLength;
+    const wordCount = DrillLengthWordCount[this.drillPreferences.drillLength];
+    return `${this.drillPreferences.drillLength} (${wordCount})`;
   }
   get drillDurationLabel(): string {
     if (!this.drillPreferences) return '';
