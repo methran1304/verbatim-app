@@ -1,7 +1,9 @@
 <div class="drill-toolbar" [ngClass]="{'controls-hidden': !showControls}">
   <!-- live stats -->
   <div class="toolbar-section stats-section">
-    <div class="stat-item" nzTooltipTitle="WPM measures your typing speed. It is calculated based on the number of words you type in a minute." nz-tooltip [nzTooltipMouseEnterDelay]="1.5">
+    <div class="stat-item"
+      nzTooltipTitle="WPM measures your typing speed. It is calculated based on the number of words you type in a minute."
+      nz-tooltip [nzTooltipMouseEnterDelay]="1.5">
       <span class="stat-label">WPM</span>
       <span class="stat-value" [style.color]="'var(--color-primary)'">{{ wpm }}</span>
     </div>
@@ -12,14 +14,16 @@
       <span class="stat-value" [style.color]="'var(--color-success)'">{{ accuracy }}%</span>
     </div>
 
-    <div class="stat-item" nzTooltipTitle="{{ drillPreference.drillType === 'timed' ? 'Displays the time left before the drill ends.' : 'Indicates the total number of words you have typed during the current drill, whether correct or incorrect.' }}" nz-tooltip [nzTooltipMouseEnterDelay]="1.5">
+    <div class="stat-item"
+      nzTooltipTitle="{{ drillPreference.drillType === 'timed' ? 'Displays the time left before the drill ends.' : 'Indicates the total number of words you have typed during the current drill, whether correct or incorrect.' }}"
+      nz-tooltip [nzTooltipMouseEnterDelay]="1.5">
       <span class="stat-label">{{ drillPreference.drillType === 'timed' ? 'Time' : 'Progress' }}</span>
       <span class="stat-value" [style.color]="'var(--color-warning)'">
         @if (drillPreference.drillType === 'timed') {
-          {{ remainingSeconds }}s
+        {{ remainingSeconds }}s
         }
         @if (drillPreference.drillType !== 'timed') {
-          {{ currentWordIndex }}/{{ totalWords }}
+        {{ currentWordIndex }}/{{ totalWords }}
         }
       </span>
     </div>
@@ -30,51 +34,54 @@
 
   <!-- drill controls -->
   <div class="toolbar-section controls-section" [ngClass]="{'hidden': !showControls}">
-    <button nzTooltipTitle="Restart the drill with the same settings and word list." nz-tooltip [nzTooltipMouseEnterDelay]="1.5" nz-button nzType="text"
-      nzSize="small" (click)="onRestart()" class="control-button" [disabled]="disabled">
+
+
+    <button nzTooltipTitle="Restart the drill with the same settings and word list." nz-tooltip
+      [nzTooltipMouseEnterDelay]="1.5" nz-button nzType="text" nzSize="small" (click)="onRestart()"
+      class="control-button" [disabled]="disabled || showAdaptiveDrillOverlay">
       <span nz-icon nzType="reload" nzTheme="outline"></span>
       <span class="button-text">Restart</span>
     </button>
 
-    <button nzTooltipTitle="Start a new drill with the same settings but newly generated words." nz-tooltip [nzTooltipMouseEnterDelay]="1.5" nz-button
-      nzType="text" nzSize="small" (click)="onNewDrill()" class="control-button" [disabled]="disabled">
+
+    <button nzTooltipTitle="Start a new drill with the same settings but newly generated words." nz-tooltip
+      [nzTooltipMouseEnterDelay]="1.5" nz-button nzType="text" nzSize="small" (click)="onNewDrill()"
+      class="control-button" [disabled]="disabled || showAdaptiveDrillOverlay">
       <span nz-icon nzType="plus" nzTheme="outline"></span>
       <span class="button-text">New Drill</span>
     </button>
 
     <nz-select
       nzTooltipTitle="Controls word complexity - including length, repetition, and rarity. Choose from Beginner, Intermediate, or Advanced."
-      nz-tooltip [nzTooltipMouseEnterDelay]="1.5" [ngModel]="drillPreference.drillDifficulty" (ngModelChange)="onDifficultyChange($event)" nzSize="small"
-      class="control-select" [disabled]="disabled">
+      nz-tooltip [nzTooltipMouseEnterDelay]="1.5" [ngModel]="drillPreference.drillDifficulty"
+      (ngModelChange)="onDifficultyChange($event)" nzSize="small" class="control-select" [disabled]="disabled">
       @for (diff of drillDifficulties; track diff.value) {
-        <nz-option [nzValue]="diff.value" [nzLabel]="diff.label">
-        </nz-option>
+      <nz-option [nzValue]="diff.value" [nzLabel]="diff.label">
+      </nz-option>
       }
     </nz-select>
 
     @if (drillPreference.drillType === 'timed') {
-      <nz-select nzTooltipTitle="Sets how long the drill lasts. Choose from 15s, 30s, 60s, or 120s." nz-tooltip [nzTooltipMouseEnterDelay]="1.5"
-        [ngModel]="selectedDuration"
-        (ngModelChange)="onDurationChange($event)" nzSize="small" class="control-select" [disabled]="disabled"
-        nzPlaceHolder="Select duration">
-              <nz-option [nzValue]="15" [nzLabel]="'15s'"></nz-option>
-        <nz-option [nzValue]="30" [nzLabel]="'30s'"></nz-option>
-        <nz-option [nzValue]="60" [nzLabel]="'60s'"></nz-option>
-        <nz-option [nzValue]="120" [nzLabel]="'120s'"></nz-option>
-      </nz-select>
+    <nz-select nzTooltipTitle="Sets how long the drill lasts. Choose from 15s, 30s, 60s, or 120s." nz-tooltip
+      [nzTooltipMouseEnterDelay]="1.5" [ngModel]="selectedDuration" (ngModelChange)="onDurationChange($event)"
+      nzSize="small" class="control-select" [disabled]="disabled" nzPlaceHolder="Select duration">
+      <nz-option [nzValue]="15" [nzLabel]="'15s'"></nz-option>
+      <nz-option [nzValue]="30" [nzLabel]="'30s'"></nz-option>
+      <nz-option [nzValue]="60" [nzLabel]="'60s'"></nz-option>
+      <nz-option [nzValue]="120" [nzLabel]="'120s'"></nz-option>
+    </nz-select>
     }
 
     <!-- Length select for non-timed drills -->
     @if (drillPreference.drillType !== 'timed') {
-      <nz-select nzTooltipTitle="Sets the number of generated words. Choose from Short (30), Medium (50), or Long (100)."
-        nz-tooltip [nzTooltipMouseEnterDelay]="1.5" [ngModel]="selectedLength"
-        (ngModelChange)="onLengthChange($event)" nzSize="small" class="control-select" [disabled]="disabled"
-        nzPlaceHolder="Select length">
-        @for (dur of drillDurations; track dur.value) {
-          <nz-option [nzValue]="dur.value" [nzLabel]="dur.label">
-          </nz-option>
-        }
-      </nz-select>
+    <nz-select nzTooltipTitle="Sets the number of generated words. Choose from Short (30), Medium (50), or Long (100)."
+      nz-tooltip [nzTooltipMouseEnterDelay]="1.5" [ngModel]="selectedLength" (ngModelChange)="onLengthChange($event)"
+      nzSize="small" class="control-select" [disabled]="disabled" nzPlaceHolder="Select length">
+      @for (dur of drillDurations; track dur.value) {
+      <nz-option [nzValue]="dur.value" [nzLabel]="dur.label">
+      </nz-option>
+      }
+    </nz-select>
     }
   </div>
 </div>

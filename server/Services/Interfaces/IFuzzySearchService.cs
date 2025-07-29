@@ -11,6 +11,6 @@ namespace server.Services.Interfaces
 {
     public interface IFuzzySearchService
     {
-        Task<FuzzySearchResponse> GetSimilarWordsAsync(List<string> errorProneWords, DrillDifficulty drillDifficulty, int top);
+        Task<FuzzySearchResponse> GetSimilarWordsAsync(List<string> errorProneWords, DrillDifficulty drillDifficulty, int top, int totalWords);
     }
 }

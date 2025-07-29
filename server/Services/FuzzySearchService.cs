@@ -25,7 +25,7 @@ namespace server.Services
 			_wordPoolManager = wordPoolManager;
         }
 
-        public async Task<FuzzySearchResponse> GetSimilarWordsAsync(List<string> errorProneWords, DrillDifficulty drillDifficulty, int top)
+        public async Task<FuzzySearchResponse> GetSimilarWordsAsync(List<string> errorProneWords, DrillDifficulty drillDifficulty, int top, int totalWords)
         {
             string microserviceUrl = _configuration.GetValue<string>("FuzzySearchMicroservice:ConnectionString")!;
 
@@ -43,61 +43,7 @@ namespace server.Services
 
             var result = await response.Content.ReadFromJsonAsync<FuzzySearchResponse>();
 
-            // fill missing words to ensure we get the requested count
-            var filledResult = FillMissingWords(result ?? new FuzzySearchResponse(), errorProneWords, difficultyFilteredWords, top);
-
-            return filledResult;
-        }
-
-        private FuzzySearchResponse FillMissingWords(FuzzySearchResponse result, List<string> errorProneWords, List<string> wordPool, int targetCount)
-        {
-            Console.WriteLine("Triggered 'FillMissingWords'");
-
-            var random = new Random();
-            var usedWords = new HashSet<string>();
-
-            // collect all words already used
-            foreach (var similarWords in result.SimilarWords.Values)
-            {
-                foreach (var word in similarWords)
-                {
-                    usedWords.Add(word);
-                }
-            }
-
-            // fill missing words for each error-prone word
-            foreach (var errorProneWord in errorProneWords)
-            {
-                if (!result.SimilarWords.ContainsKey(errorProneWord))
-                {
-                    result.SimilarWords[errorProneWord] = new List<string>();
-                }
-
-                var currentWords = result.SimilarWords[errorProneWord];
-                var neededCount = targetCount - currentWords.Count;
-
-                if (neededCount > 0)
-                {
-                    // get available words (not already used)
-                    var availableWords = wordPool.Where(w => !usedWords.Contains(w) && !currentWords.Contains(w)).ToList();
-
-                    if (availableWords.Count >= neededCount)
-                    {
-                        // randomly select needed words
-                        var randomWords = availableWords.OrderBy(x => random.Next()).Take(neededCount).ToList();
-                        currentWords.AddRange(randomWords);
-                        usedWords.UnionWith(randomWords);
-                    }
-                    else
-                    {
-                        // ff not enough words available, just add what we have
-                        currentWords.AddRange(availableWords);
-                        usedWords.UnionWith(availableWords);
-                    }
-                }
-            }
-
-            return result;
+            return result ?? new FuzzySearchResponse();
         }
     }
 }

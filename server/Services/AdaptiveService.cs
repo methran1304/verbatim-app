@@ -15,7 +15,7 @@ namespace server.Services
 			_drillService = drillService;
 		}
 
-		public async Task<List<string>> GetErrorProneWordsAsync(string userId, DrillDifficulty difficulty, int count)
+		public async Task<List<string>> GetErrorProneWordsAsync(string userId, DrillDifficulty difficulty)
 		{
 			var wordPool = _wordPoolManager.GetWordsByDifficulty(difficulty.ToString());
 
@@ -94,6 +94,37 @@ namespace server.Services
 
 			// require at least 5 drills in the last 30 days to enable adaptive mode
 			return recentDrillsByDifficulty.Count() >= 5;
+		}
+
+		public async Task<(bool CanGenerate, string? ErrorMessage)> ValidateAdaptiveDrillGenerationAsync(string userId, DrillDifficulty difficulty, int requestedCount)
+		{
+			// Check if user has enough drill history
+			if (!await CanGenerateAdaptiveDrillWordsAsync(userId, difficulty))
+			{
+				return (false, "Insufficient data to generate adaptive drill words. Please complete at least 5 drills in this difficulty.");
+			}
+
+			// Get error-prone words
+			var errorProneWords = await GetErrorProneWordsAsync(userId, difficulty);
+
+			// Check if we have any error-prone words
+			if (errorProneWords.Count == 0)
+			{
+				return (false, "No error-prone words found. You may have made no errors in recent drills, or there's insufficient data. Try completing more drills in this difficulty.");
+			}
+
+			// Calculate if we can reasonably meet the requested count
+			var targetWordsPerError = (int) Math.Ceiling(requestedCount / (double)errorProneWords.Count);
+			var estimatedTotalWords = errorProneWords.Count * targetWordsPerError;
+
+			// Check if the word pool has enough words for this difficulty
+			var wordPool = _wordPoolManager.GetWordsByDifficulty(difficulty.ToString());
+			if (wordPool.Count < estimatedTotalWords)
+			{
+				return (false, $"Insufficient words in the word pool for difficulty {difficulty}. Please try a different difficulty or contact support.");
+			}
+
+			return (true, null);
 		}
 	}
 }

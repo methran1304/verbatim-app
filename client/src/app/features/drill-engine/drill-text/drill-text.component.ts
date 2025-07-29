@@ -34,13 +34,18 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
     @Input() currentCharIndex: number = 0;
     @Input() isFocused: boolean = true;
     @Input() showPostDrillOverlay: boolean = false;
+    @Input() showAdaptiveDrillOverlay: boolean = false;
     @Input() isSubmitting: boolean = false;
     @Input() submitError: string = '';
     @Input() isUserInactive: boolean = false;
     @Input() hasBeenInactive: boolean = false;
     @Input() afkReason: string = '';
+    @Input() isGeneratingAdaptive: boolean = false;
+    @Input() isLoadingErrorWords: boolean = false;
     @Output() postDrillRestart = new EventEmitter<void>();
     @Output() postDrillSubmit = new EventEmitter<void>();
+    @Output() generateAdaptiveDrill = new EventEmitter<void>();
+    @Output() viewErrorProneWords = new EventEmitter<void>();
 
     @ViewChildren('wordEl', { read: ElementRef }) wordElements!: QueryList<ElementRef<HTMLElement>>;
     @ViewChild('drillText', { read: ElementRef }) drillTextEl!: ElementRef<HTMLElement>;

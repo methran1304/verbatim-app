@@ -37,8 +37,11 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
   @Input() isTyping: boolean = false;
   @Input() disabled: boolean = false;
   @Input() forceCollapsed: boolean = false;
+  @Input() showAdaptiveDrillOverlay: boolean = false;
+  @Input() currentDrillType: string = '';
   @Output() restart = new EventEmitter<void>();
   @Output() newDrill = new EventEmitter<void>();
+  @Output() viewErrorWords = new EventEmitter<void>();
   @Output() drillPreferenceChange = new EventEmitter<DrillPreference>();
 
   selectedDuration: number = 30;
@@ -52,9 +55,9 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
 
   drillDurations = [
     { label: 'Test (10)', value: DrillLength.Test, wordCount: DrillLengthWordCount[DrillLength.Test] },
-    { label: 'Short (30)', value: DrillLength.Short, wordCount: DrillLengthWordCount[DrillLength.Short] },
-    { label: 'Medium (50)', value: DrillLength.Medium, wordCount: DrillLengthWordCount[DrillLength.Medium] },
-    { label: 'Long (100)', value: DrillLength.Long, wordCount: DrillLengthWordCount[DrillLength.Long] }
+    { label: 'Short', value: DrillLength.Short, wordCount: DrillLengthWordCount[DrillLength.Short] },
+    { label: 'Medium', value: DrillLength.Medium, wordCount: DrillLengthWordCount[DrillLength.Medium] },
+    { label: 'Long', value: DrillLength.Long, wordCount: DrillLengthWordCount[DrillLength.Long] }
   ];
 
   // animation state
@@ -151,6 +154,10 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
 
   onNewDrill(): void {
     this.newDrill.emit();
+  }
+
+  onViewErrorWords(): void {
+    this.viewErrorWords.emit();
   }
 
   onDifficultyChange(value: DrillDifficulty): void {
