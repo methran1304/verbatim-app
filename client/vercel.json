@@ -1,12 +1,8 @@
 {
-  "routes": [
+  "rewrites": [
     {
-      "src": "/browser/(.*)",
-      "dest": "/browser/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/browser/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "buildCommand": "ng build",
