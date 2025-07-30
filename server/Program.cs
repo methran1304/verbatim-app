@@ -128,7 +128,7 @@ using (var scope = app.Services.CreateScope())
     var wordPoolManager = scope.ServiceProvider.GetRequiredService<server.Utils.WordPoolManager>();
     try
     {
-        await wordPoolManager.InitializeWordPoolAsync(initializeDatabase: false);
+        await wordPoolManager.InitializeWordPoolAsync(initializeDatabase: true);
     }
     catch (Exception ex)
     {
