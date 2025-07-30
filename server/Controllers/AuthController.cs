@@ -71,7 +71,7 @@ namespace server.Controllers
 		}
 
 		[HttpPost("reset-password")]
-		public async Task<ActionResult<Object>> ForgotPassword([FromBody] ResetPasswordRequest request)
+		public async Task<ActionResult<Object>> ResetPassword([FromBody] ResetPasswordRequest request)
 		{
 			await Task.FromResult(false);
 			return Ok();

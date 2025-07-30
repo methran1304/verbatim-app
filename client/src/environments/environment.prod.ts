@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiBaseUrl: 'https://api.verbatimapp.com/api',
+    apiBaseUrl: 'https://verbatim-api.up.railway.app/api',
 };
