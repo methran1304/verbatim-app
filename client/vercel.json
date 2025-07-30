@@ -1,15 +1,12 @@
 {
-  "buildCommand": "ng build",
-  "outputDirectory": "dist/verbatim",
-  "framework": "angular",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/browser/(.*)",
-      "dest": "/browser/$1"
+      "source": "/browser/(.*)",
+      "destination": "/browser/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/browser/index.html"
+      "source": "/(.*)",
+      "destination": "/browser/index.html"
     }
   ]
 } 
