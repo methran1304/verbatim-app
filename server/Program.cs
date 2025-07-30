@@ -35,6 +35,11 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<IDrillInputService, DrillInputService>();
 builder.Services.AddScoped<IDrillSourceTextService, DrillSourceTextService>();
+builder.Services.AddHttpClient<IFeedbackService, FeedbackService>(client =>
+{
+	client.Timeout = TimeSpan.FromSeconds(120);
+});
+builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHttpClient<IFuzzySearchService, FuzzySearchService>(client =>
 {
