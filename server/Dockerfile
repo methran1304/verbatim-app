@@ -22,8 +22,5 @@ COPY --from=publish /app/publish .
 # Expose port
 EXPOSE 8080
 
-# Set environment variable for port
-ENV ASPNETCORE_URLS=http://+:8080
-
 # Start the application
 ENTRYPOINT ["dotnet", "server.dll"] 
