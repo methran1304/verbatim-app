@@ -18,7 +18,7 @@ builder.Services.AddCors(options =>
 	options.AddDefaultPolicy(
 		policy =>
 		{
-			policy.WithOrigins("http://localhost:4200")
+			policy.WithOrigins("http://localhost:4200", "https://frontend-domain.com")
 			.AllowAnyHeader()
 			.AllowAnyMethod();
 		}
@@ -99,6 +99,13 @@ if (app.Environment.IsDevelopment())
 {
 	app.MapScalarApiReference();
 	app.MapOpenApi();
+}
+
+// Railway uses PORT environment variable
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    app.Urls.Add($"http://0.0.0.0:{port}");
 }
 
 app.UseHttpsRedirection();
