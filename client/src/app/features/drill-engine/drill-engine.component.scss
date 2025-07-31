@@ -18,14 +18,28 @@
     align-items: center;
     justify-content: flex-start;
 
-    height: 100vh; // Use full viewport height
+    height: calc(100vh - 70.4px); // account for navbar height
     max-width: 1000px;
     width: 100%;
     margin: 0 auto; 
-    padding: 2rem;
+    padding: 1rem 2rem 1rem 2rem; // reduced padding
     box-sizing: border-box;
     position: relative;
-    overflow: hidden; // Prevent any scrolling
+    overflow: hidden; // prevent any scrolling
+    margin-top: 70.4px; // push content below navbar
+}
+
+// ensure drill page has no scrollbar
+.drill-page {
+    height: 100vh;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    padding-top: 70.4px; // account for navbar
 }
 
 .pause-overlay {
@@ -203,26 +217,87 @@
 // }
 
 // Add responsive scaling for smaller screens to ensure toolbar visibility
+@media (max-height: 880px) {
+  .drill-engine-center {
+    height: calc(100vh - 50px) !important; // account for smaller navbar
+    margin-top: 50px !important; // push content below smaller navbar
+    padding: 0.75rem 2rem 1rem 2rem !important; // added bottom padding
+  }
+  
+  .drill-page {
+    padding-top: 50px !important; // account for smaller navbar
+  }
+}
+
+@media (max-height: 850px) {
+  .drill-engine-center {
+    height: calc(100vh - 50px) !important; // keep same navbar height
+    margin-top: 50px !important;
+    padding: 0.5rem 2rem 1.5rem 2rem !important; // more bottom padding
+  }
+  
+  .drill-page {
+    padding-top: 50px !important;
+  }
+}
+
+@media (max-height: 830px) {
+  .drill-engine-center {
+    height: calc(100vh - 50px) !important; // keep same navbar height
+    margin-top: 50px !important;
+    padding: 0.25rem 2rem 2rem 2rem !important; // same as 800px-830px range
+  }
+  
+  .drill-page {
+    padding-top: 50px !important;
+  }
+}
+
 @media (max-height: 800px) {
   .drill-engine-center {
-    padding: 1.5rem 2rem 1.5rem 2rem !important;
+    height: calc(100vh - 50px) !important; // keep same navbar height
+    margin-top: 50px !important;
+    padding: 0.25rem 2rem 2rem 2rem !important; // same as 800px-830px range
+    justify-content: center !important; // center content vertically
+  }
+  
+  .drill-page {
+    padding-top: 50px !important;
   }
 }
 
 @media (max-height: 700px) {
   .drill-engine-center {
-    padding: 1rem 2rem 1rem 2rem !important;
+    height: calc(100vh - 50px) !important; // keep same navbar height
+    margin-top: 50px !important;
+    padding: 0.1rem 2rem 0.3rem 2rem !important; // even less bottom padding
+  }
+  
+  .drill-page {
+    padding-top: 50px !important;
   }
 }
 
 @media (max-height: 650px) {
   .drill-engine-center {
-    padding: 0.75rem 2rem 0.75rem 2rem !important;
+    height: calc(100vh - 50px) !important; // keep same navbar height
+    margin-top: 50px !important;
+    padding: 0.1rem 2rem 0.2rem 2rem !important; // minimal bottom padding
+  }
+  
+  .drill-page {
+    padding-top: 50px !important;
   }
 }
 
 @media (max-height: 600px) {
   .drill-engine-center {
-    padding: 0.5rem 2rem 0.5rem 2rem !important;
+    height: calc(100vh - 50px) !important; // keep same navbar height
+    margin-top: 50px !important;
+    padding: 0.1rem 2rem 0.1rem 2rem !important; // minimal bottom padding
+  }
+  
+  .drill-page {
+    padding-top: 50px !important;
   }
 }

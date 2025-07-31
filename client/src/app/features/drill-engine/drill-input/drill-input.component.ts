@@ -28,10 +28,12 @@ export class DrillInputComponent implements AfterViewInit, OnDestroy {
         this.focusMonitor.monitor(this.drillInput).subscribe((origin) => {
             if (origin) {
                 this.focusEvent.emit();
-                // Prevent scroll on focus
-                setTimeout(() => {
-                    window.scrollTo(0, 0);
-                }, 0);
+                // prevent scroll on focus only if on drill page
+                if (this.isOnDrillPage()) {
+                    setTimeout(() => {
+                        window.scrollTo(0, 0);
+                    }, 0);
+                }
             } else {
                 this.blurEvent.emit();
             }
@@ -39,13 +41,15 @@ export class DrillInputComponent implements AfterViewInit, OnDestroy {
 
         this.focusInput();
         
-        // Add focus event listener to prevent scroll
+        // add focus event listener to prevent scroll only on drill pages
         this.drillInput.nativeElement.addEventListener('focus', (event) => {
-            event.preventDefault();
-            // Prevent any scroll behavior
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-            }, 0);
+            if (this.isOnDrillPage()) {
+                event.preventDefault();
+                // Prevent any scroll behavior
+                setTimeout(() => {
+                    window.scrollTo(0, 0);
+                }, 0);
+            }
         });
     }
 
@@ -86,5 +90,9 @@ export class DrillInputComponent implements AfterViewInit, OnDestroy {
 
     blurInput() {
         this.drillInput.nativeElement.blur();
+    }
+
+    private isOnDrillPage(): boolean {
+        return this.drillInput?.nativeElement?.closest('.drill-page') !== null;
     }
 }

@@ -37,8 +37,8 @@ export class AppComponent implements OnInit {
     isScreenTooSmall: boolean = false;
     screenWidth: number = 0;
     screenHeight: number = 0;
-    private readonly MIN_WIDTH = 800;
-    private readonly MIN_HEIGHT = 600;
+    private readonly MIN_WIDTH = 880;
+    private readonly MIN_HEIGHT = 700;
 
     constructor(
         private themeService: ThemeService,

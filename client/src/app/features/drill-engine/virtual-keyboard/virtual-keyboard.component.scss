@@ -98,50 +98,51 @@ $text-lg: #282640;
   }
 }
 
-// Remove all responsive scaling - maintain consistent sizing
-// @media (max-width: 1200px) {
-//   .verbatim-kb {
-//     min-width: 600px;
-//     max-width: 85vw;
-//     padding: 12px;
-//     margin-top: 14px;
-//     
-//     .hg-button {
-//       font-size: 1.1em;
-//     }
-//     
-//     .hg-button.alphabet {
-//       width: 35px;
-//       min-width: 35px;
-//       max-width: 35px;
-//     }
-//     
-//     .hg-button.tab, .hg-button.backtick {
-//       width: 58px;
-//       min-width: 58px;
-//       max-width: 58px;
-//     }
-//     
-//     .hg-button.backtick {
-//       width: 100%;
-//       min-width: 35px;
-//       max-width: none;
-//     }
-//   }
-// }
-
-// Add responsive scaling only for smaller screens to ensure proper fit
-@media (max-height: 800px) {
+// add responsive scaling only for smaller screens to ensure proper fit
+@media (max-height: 880px) {
   .verbatim-kb {
-    margin-top: 12px !important;
-    padding: 12px !important;
-    min-width: 520px !important;
-    max-width: 80vw !important;
-    transform: scale(0.85) !important; // Scale down proportionally
+    margin-top: 10px !important;
+    padding: 11px !important;
+    min-width: 550px !important;
+    max-width: 82vw !important;
+    transform: scale(0.9) !important; // scale down slightly
     transform-origin: center top !important;
     
     .hg-button {
-      font-size: 1.25em !important; // Keep original font size
+      font-size: 1.25em !important; // keep original font size
+    }
+    
+    .hg-button.alphabet {
+      width: 40px !important; // keep original proportions
+      min-width: 40px !important;
+      max-width: 40px !important;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 66px !important; // keep original proportions
+      min-width: 66px !important;
+      max-width: 66px !important;
+    }
+    
+    .hg-button.backtick {
+      width: 100% !important;
+      min-width: 40px !important;
+      max-width: none !important;
+    }
+  }
+}
+
+@media (max-height: 850px) {
+  .verbatim-kb {
+    margin-top: 11px !important;
+    padding: 11.5px !important;
+    min-width: 535px !important;
+    max-width: 81vw !important;
+    transform: scale(0.87) !important; // scale down slightly more
+    transform-origin: center top !important;
+    
+    .hg-button {
+      font-size: 1.25em !important; // keep original font size
     }
     
     .hg-button.alphabet {
@@ -151,7 +152,73 @@ $text-lg: #282640;
     }
     
     .hg-button.tab, .hg-button.backtick {
-      width: 66px !important; // Keep original proportions
+      width: 66px !important; // keep original proportions
+      min-width: 66px !important;
+      max-width: 66px !important;
+    }
+    
+    .hg-button.backtick {
+      width: 100% !important;
+      min-width: 40px !important;
+      max-width: none !important;
+    }
+  }
+}
+
+@media (max-height: 830px) {
+  .verbatim-kb {
+    margin-top: 12px !important;
+    padding: 12px !important;
+    min-width: 525px !important;
+    max-width: 80.5vw !important;
+    transform: scale(0.82) !important; // scale down more for this range
+    transform-origin: center top !important;
+    
+    .hg-button {
+      font-size: 1.25em !important; // keep original font size
+    }
+    
+    .hg-button.alphabet {
+      width: 40px !important; // keep original proportions
+      min-width: 40px !important;
+      max-width: 40px !important;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 66px !important; // keep original proportions
+      min-width: 66px !important;
+      max-width: 66px !important;
+    }
+    
+    .hg-button.backtick {
+      width: 100% !important;
+      min-width: 40px !important;
+      max-width: none !important;
+    }
+  }
+}
+
+@media (max-height: 800px) {
+  .verbatim-kb {
+    margin-top: 12px !important;
+    padding: 12px !important;
+    min-width: 525px !important;
+    max-width: 80.5vw !important;
+    transform: scale(0.82) !important; // same as 800px-830px range
+    transform-origin: center top !important;
+    
+    .hg-button {
+      font-size: 1.25em !important; // keep original font size
+    }
+    
+    .hg-button.alphabet {
+      width: 40px !important; // keep original proportions
+      min-width: 40px !important;
+      max-width: 40px !important;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 66px !important; // keep original proportions
       min-width: 66px !important;
       max-width: 66px !important;
     }
@@ -170,21 +237,21 @@ $text-lg: #282640;
     padding: 10px !important;
     min-width: 450px !important;
     max-width: 75vw !important;
-    transform: scale(0.75) !important; // Scale down more
+    transform: scale(0.75) !important; // scale down more
     transform-origin: center top !important;
     
     .hg-button {
-      font-size: 1.25em !important; // Keep original font size
+      font-size: 1.25em !important; // keep original font size
     }
     
     .hg-button.alphabet {
-      width: 40px !important; // Keep original proportions
+      width: 40px !important; // keep original proportions
       min-width: 40px !important;
       max-width: 40px !important;
     }
     
     .hg-button.tab, .hg-button.backtick {
-      width: 66px !important; // Keep original proportions
+      width: 66px !important; // keep original proportions
       min-width: 66px !important;
       max-width: 66px !important;
     }
@@ -207,17 +274,17 @@ $text-lg: #282640;
     transform-origin: center top !important;
     
     .hg-button {
-      font-size: 1.25em !important; // Keep original font size
+      font-size: 1.25em !important; // keep original font size
     }
     
     .hg-button.alphabet {
-      width: 40px !important; // Keep original proportions
+      width: 40px !important; // keep original proportions
       min-width: 40px !important;
       max-width: 40px !important;
     }
     
     .hg-button.tab, .hg-button.backtick {
-      width: 66px !important; // Keep original proportions
+      width: 66px !important; // keep original proportions
       min-width: 66px !important;
       max-width: 66px !important;
     }
@@ -236,21 +303,21 @@ $text-lg: #282640;
     padding: 6px !important;
     min-width: 350px !important;
     max-width: 65vw !important;
-    transform: scale(0.55) !important; // Scale down even more
+    transform: scale(0.55) !important; // scale down even more
     transform-origin: center top !important;
     
     .hg-button {
-      font-size: 1.25em !important; // Keep original font size
+      font-size: 1.25em !important; // keep original font size
     }
     
     .hg-button.alphabet {
-      width: 40px !important; // Keep original proportions
+      width: 40px !important; // keep original proportions
       min-width: 40px !important;
       max-width: 40px !important;
     }
     
     .hg-button.tab, .hg-button.backtick {
-      width: 66px !important; // Keep original proportions
+      width: 66px !important; // keep original proportions
       min-width: 66px !important;
       max-width: 66px !important;
     }
