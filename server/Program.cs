@@ -18,7 +18,7 @@ builder.Services.AddCors(options =>
 	options.AddDefaultPolicy(
 		policy =>
 		{
-			policy.WithOrigins("http://localhost:4200", "https://verbatim-six.vercel.app", "https://verbatim-api.up.railway.app", "https://verbatim.pro")
+			policy.WithOrigins("http://localhost:4200", "https://verbatim-six.vercel.app", "https://verbatim-api.up.railway.app", "https://verbatim.pro", "https://www.verbatim.pro")
 			.AllowAnyHeader()
 			.AllowAnyMethod();
 		}
