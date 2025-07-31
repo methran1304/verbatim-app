@@ -29,6 +29,8 @@ namespace server.Services
         {
             string microserviceUrl = _configuration.GetValue<string>("FuzzySearchMicroservice:ConnectionString")!;
 
+            Console.WriteLine(microserviceUrl);
+
             List<string> difficultyFilteredWords = _wordPoolManager.GetWordsByDifficulty(drillDifficulty.ToString());
 
             FuzzySearchRequest request = new FuzzySearchRequest
