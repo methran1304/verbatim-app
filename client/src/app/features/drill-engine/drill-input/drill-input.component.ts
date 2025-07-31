@@ -28,12 +28,25 @@ export class DrillInputComponent implements AfterViewInit, OnDestroy {
         this.focusMonitor.monitor(this.drillInput).subscribe((origin) => {
             if (origin) {
                 this.focusEvent.emit();
+                // Prevent scroll on focus
+                setTimeout(() => {
+                    window.scrollTo(0, 0);
+                }, 0);
             } else {
                 this.blurEvent.emit();
             }
         });
 
         this.focusInput();
+        
+        // Add focus event listener to prevent scroll
+        this.drillInput.nativeElement.addEventListener('focus', (event) => {
+            event.preventDefault();
+            // Prevent any scroll behavior
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 0);
+        });
     }
 
     ngOnDestroy(): void {

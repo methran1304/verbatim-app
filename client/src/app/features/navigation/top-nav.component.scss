@@ -289,38 +289,6 @@
 // Add responsive height reduction for smaller screens
 @media (max-height: 800px) {
   .top-nav-header {
-    height: 60px !important;
-  }
-  
-  .nav-button {
-    height: 40px !important;
-  }
-  
-  .user-button {
-    height: 36px !important;
-  }
-}
-
-@media (max-height: 700px) {
-  .top-nav-header {
-    height: 55px !important;
-  }
-  
-  .nav-button {
-    height: 38px !important;
-  }
-  
-  .user-button {
-    height: 34px !important;
-  }
-  
-  .logo-text {
-    font-size: 1.4rem !important;
-  }
-}
-
-@media (max-height: 650px) {
-  .top-nav-header {
     height: 50px !important;
   }
   
@@ -334,24 +302,6 @@
   
   .logo-text {
     font-size: 1.3rem !important;
-  }
-}
-
-@media (max-height: 600px) {
-  .top-nav-header {
-    height: 45px !important;
-  }
-  
-  .nav-button {
-    height: 34px !important;
-  }
-  
-  .user-button {
-    height: 30px !important;
-  }
-  
-  .logo-text {
-    font-size: 1.2rem !important;
   }
 }
 

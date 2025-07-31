@@ -57,6 +57,13 @@ body {
     background: var(--color-bg);
     color: var(--color-text);
     overflow: hidden; // Prevent any scrolling
+    scroll-behavior: none; // Prevent smooth scrolling on focus
+    position: fixed; // Lock the viewport completely
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
 }
 
 // Ensure drill page is completely contained within viewport
@@ -68,6 +75,37 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
+}
+
+// Prevent any focus-based scrolling
+* {
+    scroll-behavior: none !important;
+}
+
+// Ensure the app container doesn't move
+app-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+// Prevent any scroll on focus for all elements
+input:focus,
+textarea:focus,
+select:focus,
+button:focus,
+div:focus {
+    scroll-behavior: none !important;
+}
+
+// Lock viewport completely
+html, body {
+    scroll-behavior: none !important;
+    -webkit-overflow-scrolling: auto !important;
+    overscroll-behavior: none !important;
 }
 
 // theme-consistent ng-zorro notification styles

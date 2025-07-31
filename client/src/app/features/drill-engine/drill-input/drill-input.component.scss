@@ -23,4 +23,13 @@ input:focus {
     width: 0;
     height: 0;
     z-index: -1;
+    top: 0;
+    left: 0;
+    pointer-events: none; // Prevent any interaction
+    user-select: none; // Prevent text selection
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    scroll-behavior: none; // Prevent scroll on focus
+    transform: translateZ(0); // Force hardware acceleration
 }

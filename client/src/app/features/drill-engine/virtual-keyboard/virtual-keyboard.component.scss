@@ -137,26 +137,28 @@ $text-lg: #282640;
     padding: 12px !important;
     min-width: 520px !important;
     max-width: 80vw !important;
+    transform: scale(0.85) !important; // Scale down proportionally
+    transform-origin: center top !important;
     
     .hg-button {
-      font-size: 1em !important;
+      font-size: 1.25em !important; // Keep original font size
     }
     
     .hg-button.alphabet {
-      width: 30px !important;
-      min-width: 30px !important;
-      max-width: 30px !important;
+      width: 40px !important; // Keep original proportions
+      min-width: 40px !important;
+      max-width: 40px !important;
     }
     
     .hg-button.tab, .hg-button.backtick {
-      width: 50px !important;
-      min-width: 50px !important;
-      max-width: 50px !important;
+      width: 66px !important; // Keep original proportions
+      min-width: 66px !important;
+      max-width: 66px !important;
     }
     
     .hg-button.backtick {
       width: 100% !important;
-      min-width: 30px !important;
+      min-width: 40px !important;
       max-width: none !important;
     }
   }
@@ -168,26 +170,28 @@ $text-lg: #282640;
     padding: 10px !important;
     min-width: 450px !important;
     max-width: 75vw !important;
+    transform: scale(0.75) !important; // Scale down more
+    transform-origin: center top !important;
     
     .hg-button {
-      font-size: 0.9em !important;
+      font-size: 1.25em !important; // Keep original font size
     }
     
     .hg-button.alphabet {
-      width: 26px !important;
-      min-width: 26px !important;
-      max-width: 26px !important;
+      width: 40px !important; // Keep original proportions
+      min-width: 40px !important;
+      max-width: 40px !important;
     }
     
     .hg-button.tab, .hg-button.backtick {
-      width: 44px !important;
-      min-width: 44px !important;
-      max-width: 44px !important;
+      width: 66px !important; // Keep original proportions
+      min-width: 66px !important;
+      max-width: 66px !important;
     }
     
     .hg-button.backtick {
       width: 100% !important;
-      min-width: 26px !important;
+      min-width: 40px !important;
       max-width: none !important;
     }
   }
@@ -199,26 +203,28 @@ $text-lg: #282640;
     padding: 8px !important;
     min-width: 400px !important;
     max-width: 70vw !important;
+    transform: scale(0.65) !important; // Scale down even more
+    transform-origin: center top !important;
     
     .hg-button {
-      font-size: 0.8em !important;
+      font-size: 1.25em !important; // Keep original font size
     }
     
     .hg-button.alphabet {
-      width: 24px !important;
-      min-width: 24px !important;
-      max-width: 24px !important;
-    }
-    
-    .hg-button.tab, .hg-button.backtick {
-      width: 40px !important;
+      width: 40px !important; // Keep original proportions
       min-width: 40px !important;
       max-width: 40px !important;
     }
     
+    .hg-button.tab, .hg-button.backtick {
+      width: 66px !important; // Keep original proportions
+      min-width: 66px !important;
+      max-width: 66px !important;
+    }
+    
     .hg-button.backtick {
       width: 100% !important;
-      min-width: 24px !important;
+      min-width: 40px !important;
       max-width: none !important;
     }
   }
@@ -230,26 +236,28 @@ $text-lg: #282640;
     padding: 6px !important;
     min-width: 350px !important;
     max-width: 65vw !important;
+    transform: scale(0.55) !important; // Scale down even more
+    transform-origin: center top !important;
     
     .hg-button {
-      font-size: 0.7em !important;
+      font-size: 1.25em !important; // Keep original font size
     }
     
     .hg-button.alphabet {
-      width: 22px !important;
-      min-width: 22px !important;
-      max-width: 22px !important;
+      width: 40px !important; // Keep original proportions
+      min-width: 40px !important;
+      max-width: 40px !important;
     }
     
     .hg-button.tab, .hg-button.backtick {
-      width: 36px !important;
-      min-width: 36px !important;
-      max-width: 36px !important;
+      width: 66px !important; // Keep original proportions
+      min-width: 66px !important;
+      max-width: 66px !important;
     }
     
     .hg-button.backtick {
       width: 100% !important;
-      min-width: 22px !important;
+      min-width: 40px !important;
       max-width: none !important;
     }
   }
