@@ -30,6 +30,6 @@ namespace server.Data.Mongo
 		public IMongoCollection<Room> Rooms => _mongoDatabase.GetCollection<Room>("rooms");
 
 		// Logging
-		public IMongoCollection<ErrorLog> ErrorLog => _mongoDatabase.GetCollection<ErrorLog>("error_log");
+		public IMongoCollection<ErrorLog> ErrorLog => _mongoDatabase.GetCollection<ErrorLog>("errorLog");
 	}
 }
