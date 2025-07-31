@@ -56,6 +56,18 @@ body {
     height: 100%;
     background: var(--color-bg);
     color: var(--color-text);
+    overflow: hidden; // Prevent any scrolling
+}
+
+// Ensure drill page is completely contained within viewport
+.drill-page {
+    height: 100vh;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 // theme-consistent ng-zorro notification styles

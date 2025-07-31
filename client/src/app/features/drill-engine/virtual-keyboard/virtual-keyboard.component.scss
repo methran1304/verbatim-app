@@ -40,6 +40,11 @@ $text-lg: #282640;
   color: $text-lg;
   box-shadow: 0 2px 16px rgba(0,0,0,0.18);
   padding: 15px;
+  // Add max-width to prevent stretching on wide screens
+  max-width: 90vw;
+  // Center the keyboard
+  margin-left: auto;
+  margin-right: auto;
 
   .hg-button {
     border-radius: 4px;
@@ -93,102 +98,45 @@ $text-lg: #282640;
   }
 }
 
-// width-based responsive scaling
-@media (max-width: 1024px) {
-  .verbatim-kb {
-    min-width: 600px;
-    padding: 12px;
-    margin-top: 14px;
-    
-    .hg-button {
-      font-size: 1.1em;
-    }
-    
-    .hg-button.alphabet {
-      width: 35px;
-      min-width: 35px;
-      max-width: 35px;
-    }
-    
-    .hg-button.tab, .hg-button.backtick {
-      width: 58px;
-      min-width: 58px;
-      max-width: 58px;
-    }
-    
-    .hg-button.backtick {
-      width: 100%;
-      min-width: 35px;
-      max-width: none;
-    }
-  }
-}
+// Remove all responsive scaling - maintain consistent sizing
+// @media (max-width: 1200px) {
+//   .verbatim-kb {
+//     min-width: 600px;
+//     max-width: 85vw;
+//     padding: 12px;
+//     margin-top: 14px;
+//     
+//     .hg-button {
+//       font-size: 1.1em;
+//     }
+//     
+//     .hg-button.alphabet {
+//       width: 35px;
+//       min-width: 35px;
+//       max-width: 35px;
+//     }
+//     
+//     .hg-button.tab, .hg-button.backtick {
+//       width: 58px;
+//       min-width: 58px;
+//       max-width: 58px;
+//     }
+//     
+//     .hg-button.backtick {
+//       width: 100%;
+//       min-width: 35px;
+//       max-width: none;
+//     }
+//   }
+// }
 
-@media (max-width: 900px) {
+// Add responsive scaling only for smaller screens to ensure proper fit
+@media (max-height: 800px) {
   .verbatim-kb {
-    min-width: 520px;
-    padding: 10px;
-    margin-top: 12px;
-    
-    .hg-button {
-      font-size: 1em;
-    }
-    
-    .hg-button.alphabet {
-      width: 30px;
-      min-width: 30px;
-      max-width: 30px;
-    }
-    
-    .hg-button.tab, .hg-button.backtick {
-      width: 50px;
-      min-width: 50px;
-      max-width: 50px;
-    }
-    
-    .hg-button.backtick {
-      width: 100%;
-      min-width: 30px;
-      max-width: none;
-    }
-  }
-}
-
-@media (max-width: 800px) {
-  .verbatim-kb {
-    min-width: 450px;
-    padding: 8px;
-    margin-top: 10px;
-    
-    .hg-button {
-      font-size: 0.9em;
-    }
-    
-    .hg-button.alphabet {
-      width: 26px;
-      min-width: 26px;
-      max-width: 26px;
-    }
-    
-    .hg-button.tab, .hg-button.backtick {
-      width: 44px;
-      min-width: 44px;
-      max-width: 44px;
-    }
-    
-    .hg-button.backtick {
-      width: 100%;
-      min-width: 26px;
-      max-width: none;
-    }
-  }
-}
-
-@media (max-height: 700px) {
-  .verbatim-kb {
-    margin-top: 8px !important;
-    padding: 10px !important;
+    margin-top: 12px !important;
+    padding: 12px !important;
     min-width: 520px !important;
+    max-width: 80vw !important;
     
     .hg-button {
       font-size: 1em !important;
@@ -214,11 +162,12 @@ $text-lg: #282640;
   }
 }
 
-@media (max-height: 650px) {
+@media (max-height: 700px) {
   .verbatim-kb {
-    margin-top: 6px !important;
-    padding: 8px !important;
+    margin-top: 8px !important;
+    padding: 10px !important;
     min-width: 450px !important;
+    max-width: 75vw !important;
     
     .hg-button {
       font-size: 0.9em !important;
@@ -244,11 +193,12 @@ $text-lg: #282640;
   }
 }
 
-@media (max-height: 600px) {
+@media (max-height: 650px) {
   .verbatim-kb {
-    margin-top: 4px !important;
-    padding: 6px !important;
+    margin-top: 6px !important;
+    padding: 8px !important;
     min-width: 400px !important;
+    max-width: 70vw !important;
     
     .hg-button {
       font-size: 0.8em !important;
@@ -269,6 +219,37 @@ $text-lg: #282640;
     .hg-button.backtick {
       width: 100% !important;
       min-width: 24px !important;
+      max-width: none !important;
+    }
+  }
+}
+
+@media (max-height: 600px) {
+  .verbatim-kb {
+    margin-top: 4px !important;
+    padding: 6px !important;
+    min-width: 350px !important;
+    max-width: 65vw !important;
+    
+    .hg-button {
+      font-size: 0.7em !important;
+    }
+    
+    .hg-button.alphabet {
+      width: 22px !important;
+      min-width: 22px !important;
+      max-width: 22px !important;
+    }
+    
+    .hg-button.tab, .hg-button.backtick {
+      width: 36px !important;
+      min-width: 36px !important;
+      max-width: 36px !important;
+    }
+    
+    .hg-button.backtick {
+      width: 100% !important;
+      min-width: 22px !important;
       max-width: none !important;
     }
   }

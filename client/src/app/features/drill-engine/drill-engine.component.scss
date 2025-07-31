@@ -18,14 +18,14 @@
     align-items: center;
     justify-content: flex-start;
 
-    min-height: calc(100vh - 70.4px);
+    height: 100vh; // Use full viewport height
     max-width: 1000px;
     width: 100%;
     margin: 0 auto; 
-    padding: 4rem 2rem 2rem 2rem;
+    padding: 2rem;
     box-sizing: border-box;
     position: relative;
-    overflow: visible; 
+    overflow: hidden; // Prevent any scrolling
 }
 
 .pause-overlay {
@@ -95,57 +95,6 @@
   button {
     margin: 0.55rem 0.55rem 0 0.55rem;
     min-width: 132px;
-  }
-}
-
-// width-based responsive scaling
-@media (max-width: 1024px) {
-  .drill-engine-center {
-    max-width: 900px;
-    padding: 1.5rem 1.5rem 1.5rem 1.5rem;
-  }
-}
-
-@media (max-width: 900px) {
-  .drill-engine-center {
-    max-width: 800px;
-    padding: 1rem 1rem 1rem 1rem;
-  }
-}
-
-@media (max-width: 800px) {
-  .drill-engine-center {
-    height: calc(100vh - 56px);
-    max-width: 750px;
-    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-  }
-}
-
-
-@media (max-height: 700px) {
-  .drill-engine-center {
-    padding: 0.75rem 2rem 0.75rem 2rem !important;
-    min-height: calc(100vh - 64px) !important;
-    height: calc(100vh - 64px) !important; // force fixed height
-    overflow: hidden !important; // prevent overflow
-  }
-}
-
-@media (max-height: 650px) {
-  .drill-engine-center {
-    padding: 0.5rem 2rem 0.5rem 2rem !important;
-    min-height: calc(100vh - 64px) !important;
-    height: calc(100vh - 64px) !important; // force fixed height
-    overflow: hidden !important; // prevent overflow
-  }
-}
-
-@media (max-height: 600px) {
-  .drill-engine-center {
-    padding: 0.25rem 2rem 0.25rem 2rem !important;
-    min-height: calc(100vh - 64px) !important;
-    height: calc(100vh - 64px) !important; // force fixed height
-    overflow: hidden !important; // prevent overflow
   }
 }
 
@@ -227,5 +176,53 @@
       color: var(--color-primary);
       background: var(--color-bg-blur);
     }
+  }
+}
+
+// Remove all responsive scaling - maintain consistent sizing
+// @media (max-width: 1024px) {
+//   .drill-engine-center {
+//     max-width: 900px;
+//     padding: 1.5rem 1.5rem 1.5rem 1.5rem;
+//   }
+// }
+
+// @media (max-width: 900px) {
+//   .drill-engine-center {
+//     max-width: 800px;
+//     padding: 1rem 1rem 1rem 1rem;
+//   }
+// }
+
+// @media (max-width: 800px) {
+//   .drill-engine-center {
+//     height: calc(100vh - 56px);
+//     max-width: 750px;
+//     padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+//   }
+// }
+
+// Add responsive scaling for smaller screens to ensure toolbar visibility
+@media (max-height: 800px) {
+  .drill-engine-center {
+    padding: 1.5rem 2rem 1.5rem 2rem !important;
+  }
+}
+
+@media (max-height: 700px) {
+  .drill-engine-center {
+    padding: 1rem 2rem 1rem 2rem !important;
+  }
+}
+
+@media (max-height: 650px) {
+  .drill-engine-center {
+    padding: 0.75rem 2rem 0.75rem 2rem !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .drill-engine-center {
+    padding: 0.5rem 2rem 0.5rem 2rem !important;
   }
 }
