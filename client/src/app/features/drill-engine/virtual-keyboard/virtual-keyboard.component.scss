@@ -329,3 +329,33 @@ $text-lg: #282640;
     }
   }
 }
+
+// handle width-based scaling for small layouts
+@media (max-width: 930px) {
+  .verbatim-kb {
+    transform: scale(0.85) !important;
+    transform-origin: center top !important;
+    min-width: 525px !important;
+    max-width: 85vw !important;
+  }
+}
+
+// additional scaling for very narrow screens
+@media (max-width: 870px) {
+  .verbatim-kb {
+    transform: scale(0.75) !important;
+    transform-origin: center top !important;
+    min-width: 500px !important;
+    max-width: 90vw !important;
+  }
+}
+
+// final scaling for extremely narrow screens
+@media (max-width: 800px) {
+  .verbatim-kb {
+    transform: scale(0.65) !important;
+    transform-origin: center top !important;
+    min-width: 480px !important;
+    max-width: 95vw !important;
+  }
+}
