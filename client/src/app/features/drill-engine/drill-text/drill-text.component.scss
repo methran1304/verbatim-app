@@ -199,7 +199,7 @@
   font-size: 1.375rem;
   font-family: monospace;
   line-height: 2.97rem;
-  height: calc(2.97rem * 7); // exactly 7 lines - removed extra padding
+  height: calc(2.97rem * 7); // reduced from 7 to 6.5 lines for more compact display
   overflow-y: auto; // restore scroll functionality
   scrollbar-width: none; // hide scrollbar in Firefox
   -ms-overflow-style: none; // hide scrollbar in IE/Edge
@@ -245,7 +245,7 @@
 .word {
   display: inline-flex;
   align-items: center;
-  margin: 0 0.44rem 0.44rem 0;
+  margin: 0 0.44rem 0.64rem 0;
   padding: 0.132rem 0.605rem;
   border-radius: 8px;
   background: var(--color-bg-secondary);
