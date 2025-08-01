@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using server.Entities.Enums;
 
 namespace server.Entities
 {
@@ -24,6 +25,9 @@ namespace server.Entities
 		[BsonElement("created_by")]
 		[BsonRepresentation(BsonType.ObjectId)]
 		public string CreatedBy { get; set; } = null!;
+
+		[BsonElement("state")]
+		public DrillState State { get; set; } = DrillState.NotStarted;
 
 		[BsonElement("players")]
 		public List<CompetitiveDrillPlayer> Players { get; set; } = new();
@@ -50,5 +54,8 @@ namespace server.Entities
 		[BsonElement("drill_id")]
 		[BsonRepresentation(BsonType.ObjectId)]
 		public string DrillId { get; set; } = null!;
+
+		[BsonElement("state")]
+		public PlayerState State { get; set; } = PlayerState.Connected;
 	}
 }

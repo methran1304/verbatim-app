@@ -118,7 +118,7 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
               .GroupBy(d => d.DrillDifficulty)
               .Select(g => new DifficultyAnalysisDTO
               {
-                Difficulty = g.Key!.ToString(),
+                Difficulty = g.Key?.ToString() ?? "Unknown",
                 Count = g.Count(),
                 AverageWPM = g.Average(d => d.Statistics.WPM),
                 AverageAccuracy = g.Average(d => d.Statistics.Accuracy),

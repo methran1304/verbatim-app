@@ -9,4 +9,10 @@ namespace server.Entities.Enums
 		Competitive,
 		Marathon
 	}
+
+	public enum CompetitiveDrillType
+	{
+		Timed,
+		Marathon
+	}
 }

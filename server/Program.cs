@@ -7,11 +7,14 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using server.Config;
 using server.Data.Mongo;
+using server.Hubs;
 using server.Middleware;
 using server.Services;
 using server.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddMemoryCache();
 
 builder.Services.AddCors(options =>
 {
@@ -25,6 +28,8 @@ builder.Services.AddCors(options =>
 	);
 });
 
+// Add signalR
+builder.Services.AddSignalR();
 
 builder.Services.Configure<MongoDbSettings>(
 	builder.Configuration.GetSection("MongoDbSettings"));
@@ -35,6 +40,9 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<IDrillInputService, DrillInputService>();
 builder.Services.AddScoped<IDrillSourceTextService, DrillSourceTextService>();
+builder.Services.AddScoped<ICompetitiveDrillService, CompetitiveDrillService>();
+builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddHttpClient<IFeedbackService, FeedbackService>(client =>
 {
 	client.Timeout = TimeSpan.FromSeconds(120);
@@ -47,6 +55,14 @@ builder.Services.AddHttpClient<IFuzzySearchService, FuzzySearchService>(client =
 });
 builder.Services.AddScoped<IAdaptiveService, AdaptiveService>();
 builder.Services.AddScoped<server.Utils.WordPoolManager>();
+
+// Competitive Drill Services
+builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<ICompetitiveDrillService, CompetitiveDrillService>();
+builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IAFKDetectionService, AFKDetectionService>();
+builder.Services.AddScoped<IDrillTextService, DrillTextService>();
+builder.Services.AddScoped<ICompetitiveDrillOrchestrator, CompetitiveDrillOrchestrator>();
 
 
 builder.Services.AddControllers()
@@ -100,6 +116,8 @@ if (app.Environment.IsDevelopment())
 	app.MapScalarApiReference();
 	app.MapOpenApi();
 }
+
+app.MapHub<CompetitiveDrillHub>("/competitive-hub");
 
 // Railway uses PORT environment variable
 var port = Environment.GetEnvironmentVariable("PORT");
