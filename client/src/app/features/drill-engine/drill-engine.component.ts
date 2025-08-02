@@ -29,6 +29,7 @@ import { DrillSubmissionRequest, DrillSubmissionResponse } from '../../models/in
 import { AdaptiveDrillResponse, ErrorProneWordsResponse, AdaptiveService } from '../../services/adaptive.service';
 import { DrillStatisticsService } from '../../services/drill-statistics.service';
 import { DrillSubmissionService } from '../../services/drill-submission.service';
+import { TimerManagementService, TimerState } from '../../services/timer-management.service';
 
 
 
@@ -61,12 +62,8 @@ export class DrillEngineComponent implements OnInit {
     currentWordIndex: number = 0;
     currentCharIndex: number = 0;
 
-    startTime: number = 0;
-    totalTimeInSeconds: number = 10;
-    remainingTime: string = '01:00';
-    remainingSeconds: number = 60;
-    private endTime: number = 0;
-    timerInterval!: any;
+    // timer state will be managed by TimerManagementService
+    timerState: TimerState | null = null;
 
     wpm: number = 0;
     accuracy: number = 100;
@@ -124,6 +121,7 @@ export class DrillEngineComponent implements OnInit {
         private adaptiveService: AdaptiveService,
         private drillStatisticsService: DrillStatisticsService,
         private drillSubmissionService: DrillSubmissionService,
+        private timerManagementService: TimerManagementService,
         private ngZone: NgZone,
         private themeService: ThemeService,
         private navigationService: NavigationService,
@@ -161,6 +159,11 @@ export class DrillEngineComponent implements OnInit {
         // initialize timer with current preferences
         this.resetDrillStats();
 
+        // subscribe to timer state updates
+        this.timerManagementService.getTimerState().subscribe(timerState => {
+            this.timerState = timerState;
+        });
+
         // get drill type from url query parameters
         this.route.queryParams.subscribe(params => {
             const drillType = params['type'];
@@ -192,14 +195,6 @@ export class DrillEngineComponent implements OnInit {
         this.isDrillActive = true;
         let words: string[] = [];
 
-        // set timer duration from drill preferences for timed drills
-        if (this.drillPreferences.drillType === DrillType.Timed) {
-            this.totalTimeInSeconds = this.drillPreferences.drillDuration;
-            this.remainingSeconds = this.totalTimeInSeconds;
-            const minutes = Math.floor(this.totalTimeInSeconds / 60);
-            const seconds = this.totalTimeInSeconds % 60;
-            this.remainingTime = `${this.drillStatisticsService.pad(minutes)}:${this.drillStatisticsService.pad(seconds)}`;
-        }
 
         // for timed drills, always use marathon length to ensure enough text
         const drillLength = this.drillPreferences.drillType === DrillType.Timed
@@ -247,10 +242,11 @@ export class DrillEngineComponent implements OnInit {
         this.stopInactivityMonitoring();
 
         // add final data point if drill was active
-        if (this.startTime > 0) {
+        const currentTimerState = this.timerManagementService.getCurrentTimerState();
+        if (currentTimerState.startTime > 0) {
             const finalTimePoint = this.drillPreferences.drillType === DrillType.Timed
-                ? this.totalTimeInSeconds
-                : Math.floor((Date.now() - this.startTime) / 1000);
+                ? currentTimerState.totalTimeInSeconds
+                : Math.floor((Date.now() - currentTimerState.startTime) / 1000);
             this.addTimeSeriesDataPoint(finalTimePoint);
         }
 
@@ -313,7 +309,8 @@ export class DrillEngineComponent implements OnInit {
         this.setTypingState(true);
 
         // start timer on first keystroke
-        if (!this.startTime) this.startTimer();
+        const currentTimerState = this.timerManagementService.getCurrentTimerState();
+        if (!currentTimerState.startTime) this.startTimer();
 
         const currentWord = this.sourceText[this.currentWordIndex];
 
@@ -438,76 +435,53 @@ export class DrillEngineComponent implements OnInit {
     }
 
     updateWPMAndAccuracy(): void {
-        const result = this.drillStatisticsService.updateWPMAndAccuracy(this.typedText, this.startTime);
+        const currentTimerState = this.timerManagementService.getCurrentTimerState();
+        const result = this.drillStatisticsService.updateWPMAndAccuracy(this.typedText, currentTimerState.startTime);
         this.wpm = result.wpm;
         this.accuracy = result.accuracy;
     }
 
     startTimer(): void {
-        this.startTime = Date.now();
-        this.lastActivityTime = this.startTime;
-
         // initialize first data point at time 0
         this.lastDataPointTime = 0;
         this.addTimeSeriesDataPoint(0);
-
-        // only set end time for timed drills
-        if (this.drillPreferences.drillType === DrillType.Timed) {
-            this.endTime = this.startTime + this.totalTimeInSeconds * 1000;
-        }
 
         // start inactivity monitoring for non-timed drills
         if (this.drillPreferences.drillType !== DrillType.Timed) {
             this.startInactivityMonitoring();
         }
 
-        this.timerInterval = setInterval(() => {
-            if (this.drillPreferences.drillType === DrillType.Timed) {
-                // timed drill logic
-                const msLeft = this.endTime - Date.now();
-                const secondsLeft = Math.max(0, Math.floor(msLeft / 1000));
-                const minutes = Math.floor(secondsLeft / 60);
-                const seconds = secondsLeft % 60;
-
-                this.remainingTime = `${this.drillStatisticsService.pad(minutes)}:${this.drillStatisticsService.pad(seconds)}`;
-                this.remainingSeconds = secondsLeft;
+        // start timer using the service
+        this.timerManagementService.startTimer(this.drillPreferences, {
+            onTick: (timerState: TimerState) => {
+                this.timerState = timerState;
                 this.updateWPMAndAccuracy();
-
-                const currentTimePoint = this.totalTimeInSeconds - secondsLeft;
-                this.addTimeSeriesDataPoint(currentTimePoint);
-
-                if (msLeft <= 0) {
-                    this.stopDrill();
+                
+                // add time series data point
+                if (this.drillPreferences.drillType === DrillType.Timed) {
+                    const currentTimePoint = timerState.totalTimeInSeconds - timerState.remainingSeconds;
+                    this.addTimeSeriesDataPoint(currentTimePoint);
+                } else {
+                    // only add data points if user is active or within reasonable inactivity period
+                    if (!this.isUserInactive || timerState.elapsedSeconds <= this.MAX_INACTIVITY_SECONDS) {
+                        this.addTimeSeriesDataPoint(timerState.elapsedSeconds);
+                    }
                 }
-            } else {
-                // non-timed drill logic - just track elapsed time for wpm
-                const elapsedMs = Date.now() - this.startTime;
-                const elapsedSeconds = Math.floor(elapsedMs / 1000);
-                const minutes = Math.floor(elapsedSeconds / 60);
-                const seconds = elapsedSeconds % 60;
-
-                this.remainingTime = `${this.drillStatisticsService.pad(minutes)}:${this.drillStatisticsService.pad(seconds)}`;
-                this.remainingSeconds = elapsedSeconds;
-                this.updateWPMAndAccuracy();
-
-                // only add data points if user is active or within reasonable inactivity period
-                if (!this.isUserInactive || elapsedSeconds <= this.MAX_INACTIVITY_SECONDS) {
-                    this.addTimeSeriesDataPoint(elapsedSeconds);
-                }
-
-                // check for maximum drill duration (2 hours)
-                if (elapsedSeconds >= 7200) {
-                    this.notificationService.createNotification('warning', 'Drill Timeout', 'Maximum drill duration reached. Your progress will be saved.');
-                    this.stopDrill();
-                }
+            },
+            onTimeout: () => {
+                this.stopDrill();
+            },
+            onMaxDurationReached: () => {
+                this.stopDrill();
             }
-        }, 1000);
+        });
     }
 
     stopTimer(): void {
-        clearInterval(this.timerInterval);
-        if (this.drillStatistic && this.startTime) {
-            this.drillStatistic.duration = Math.floor((Date.now() - this.startTime) / 1000);
+        this.timerManagementService.stopTimer();
+        const currentTimerState = this.timerManagementService.getCurrentTimerState();
+        if (this.drillStatistic && currentTimerState.startTime) {
+            this.drillStatistic.duration = Math.floor((Date.now() - currentTimerState.startTime) / 1000);
         }
     }
 
@@ -686,8 +660,6 @@ export class DrillEngineComponent implements OnInit {
 
         this.wpm = 0;
         this.accuracy = 100;
-        this.startTime = 0;
-        this.endTime = 0;
 
         // reset time series data
         this.realTimeData = [];
@@ -703,18 +675,8 @@ export class DrillEngineComponent implements OnInit {
         this.afkReason = '';
         this.stopInactivityMonitoring();
 
-        // set timer duration from drill preferences for timed drills
-        if (this.drillPreferences.drillType === DrillType.Timed) {
-            this.totalTimeInSeconds = this.drillPreferences.drillDuration;
-            this.remainingSeconds = this.totalTimeInSeconds;
-            const minutes = Math.floor(this.totalTimeInSeconds / 60);
-            const seconds = this.totalTimeInSeconds % 60;
-            this.remainingTime = `${this.drillStatisticsService.pad(minutes)}:${this.drillStatisticsService.pad(seconds)}`;
-        } else {
-            this.remainingTime = '01:00';
-            this.totalTimeInSeconds = 10;
-            this.remainingSeconds = 60;
-        }
+        // reset timer using the service
+        this.timerManagementService.resetTimer(this.drillPreferences);
     }
 
     fillRandomDrillText(): void {
@@ -809,7 +771,8 @@ export class DrillEngineComponent implements OnInit {
 
         // if user was inactive and now becomes active, clear the current afk state but keep the permanent flag
         // only show notification if drill is actually active and started
-        if (this.isUserInactive && this.isDrillActive && this.startTime > 0) {
+        const timerState = this.timerManagementService.getCurrentTimerState();
+        if (this.isUserInactive && this.isDrillActive && timerState.startTime > 0) {
             this.isUserInactive = false;
             this.notificationService.createNotification('info', 'Activity Resumed', 'You can continue typing, but this drill cannot be submitted due to previous inactivity.');
         } else if (this.isUserInactive) {
@@ -823,7 +786,8 @@ export class DrillEngineComponent implements OnInit {
         }
 
         // set new inactivity timeout only if drill is active
-        if (this.isDrillActive && this.startTime > 0) {
+        const currentTimerState = this.timerManagementService.getCurrentTimerState();
+        if (this.isDrillActive && currentTimerState.startTime > 0) {
             this.inactivityTimeout = setTimeout(() => {
                 this.isUserInactive = true;
                 this.hasBeenInactive = true;
@@ -837,7 +801,8 @@ export class DrillEngineComponent implements OnInit {
         // check for inactivity every 10 seconds
         this.inactivityCheckInterval = setInterval(() => {
             // only monitor if drill is active and has started
-            if (this.isDrillActive && this.startTime > 0) {
+            const currentTimerState = this.timerManagementService.getCurrentTimerState();
+            if (this.isDrillActive && currentTimerState.startTime > 0) {
                 const currentTime = Date.now();
                 const timeSinceLastActivity = (currentTime - this.lastActivityTime) / 1000;
 
@@ -871,7 +836,8 @@ export class DrillEngineComponent implements OnInit {
     @HostListener('document:touchstart', ['$event'])
     onGlobalActivity(): void {
         // only track activity if drill is active, started, and is a non-timed drill
-        if (this.isDrillActive && this.startTime > 0 && this.drillPreferences.drillType !== DrillType.Timed) {
+        const currentTimerState = this.timerManagementService.getCurrentTimerState();
+        if (this.isDrillActive && currentTimerState.startTime > 0 && this.drillPreferences.drillType !== DrillType.Timed) {
             this.updateUserActivity();
         }
     }

@@ -2,7 +2,7 @@
   <app-drill-toolbar
     [wpm]="wpm"
     [accuracy]="accuracy"
-    [remainingSeconds]="remainingSeconds"
+    [remainingSeconds]="timerState?.remainingSeconds || 0"
     [currentWordIndex]="currentWordIndex"
     [totalWords]="sourceText.length"
     [drillPreference]="drillPreferences"
