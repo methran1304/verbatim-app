@@ -83,6 +83,9 @@ export class DrillEngineComponent implements OnInit {
     private inactivityCheckInterval: any;
     public afkReason: string = '';
 
+    // competitive
+    public showRoomOverlay: boolean = false;
+
 
     constructor(
         public adaptiveService: AdaptiveService,
@@ -204,6 +207,7 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onKeyTyped(value: string): void {
+
         if (value === 'CTRL_BACKSPACE') {
             this.clearCurrentWord();
             return;
@@ -443,10 +447,16 @@ export class DrillEngineComponent implements OnInit {
         this.adaptiveService.resetAdaptiveState();
         this.drillStateManagementService.resetDrillStats(this.drillPreferences);
 
+        this.stopInactivityMonitoring();
+
         this.stopTimer();
 
+        // handle competitive mode differently - no drill should be active yet
+        if (this.isCompetitive) {
+            this.onNewCompetitiveDrill();
+        }
         // only focus input after word generation is complete for adaptive drills
-        if (this.drillPreferences.drillType === DrillType.Adaptive) {
+        else if (this.drillPreferences.drillType === DrillType.Adaptive) {
             this.onNewAdaptiveDrill();
         }
         else {
@@ -456,6 +466,10 @@ export class DrillEngineComponent implements OnInit {
             this.startDrill();
             this.focusInput();
         }
+    }
+
+    onNewCompetitiveDrill(): void {
+        this.showRoomOverlay = true;
     }
 
     onNewAdaptiveDrill(): void {
@@ -469,8 +483,20 @@ export class DrillEngineComponent implements OnInit {
         this.adaptiveService.showErrorWordsModal();
     }
 
-    onViewErrorProneWords(): void {
-        this.adaptiveService.loadErrorProneWords(this.drillPreferences);
+    onViewErrorProneWords(settings?: {difficulty: DrillDifficulty, length: DrillLength}): void {
+        // Create a temporary drill preferences object with the selected settings
+        const tempPreferences = { ...this.drillPreferences };
+        if (settings) {
+            tempPreferences.drillDifficulty = settings.difficulty;
+            tempPreferences.drillLength = settings.length;
+        }
+        
+        this.adaptiveService.loadErrorProneWords(tempPreferences);
+    }
+
+    onChangePreference(): void {
+        // show the adaptive drill overlay
+        this.adaptiveService.showAdaptiveDrillOverlay();
     }
 
     onCloseErrorWordsModal(): void {
@@ -481,8 +507,14 @@ export class DrillEngineComponent implements OnInit {
         return this.adaptiveService.getErrorWords();
     }
 
-    onGenerateAdaptiveDrill(): void {
-        this.adaptiveService.generateAdaptiveDrill(this.drillPreferences).then(adaptiveWords => {
+    onGenerateAdaptiveDrill(settings?: {difficulty: DrillDifficulty, length: DrillLength}): void {
+        const tempPreferences = { ...this.drillPreferences };
+        if (settings) {
+            tempPreferences.drillDifficulty = settings.difficulty;
+            tempPreferences.drillLength = settings.length;
+        }
+        
+        this.adaptiveService.generateAdaptiveDrill(tempPreferences).then(adaptiveWords => {
             if (adaptiveWords.length > 0) {
                 this.startDrill(adaptiveWords);
                 this.drillStateManagementService.setInputFocusState(true);

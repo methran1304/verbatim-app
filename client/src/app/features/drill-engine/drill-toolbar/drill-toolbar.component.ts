@@ -43,6 +43,7 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
   @Output() newDrill = new EventEmitter<void>();
   @Output() viewErrorWords = new EventEmitter<void>();
   @Output() drillPreferenceChange = new EventEmitter<DrillPreference>();
+  @Output() changePreference = new EventEmitter<void>();
 
   selectedDuration: number = 30;
   selectedLength: DrillLength = DrillLength.Medium;
@@ -175,5 +176,9 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
     this.selectedLength = value;
     this.drillPreference = { ...this.drillPreference, drillLength: value };
     this.drillPreferenceChange.emit(this.drillPreference);
+  }
+
+  onChangePreference(): void {
+    this.changePreference.emit();
   }
 } 

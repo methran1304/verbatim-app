@@ -4,9 +4,21 @@
   [show]="showAdaptiveDrillOverlay"
   [isLoadingErrorWords]="isLoadingErrorWords"
   [isGeneratingAdaptive]="isGeneratingAdaptive"
-  (viewErrorProneWords)="viewErrorProneWords.emit()"
-  (generateAdaptiveDrill)="generateAdaptiveDrill.emit()">
+  [currentDifficulty]="currentDifficulty"
+  [currentLength]="currentLength"
+  (viewErrorProneWords)="viewErrorProneWords.emit($event)"
+  (generateAdaptiveDrill)="generateAdaptiveDrill.emit($event)">
 </app-adaptive-drill-overlay>
+
+<app-room-overlay 
+  [show]="showRoomOverlay"
+  [isCreatingRoom]="isCreatingRoom"
+  [isJoiningRoom]="isJoiningRoom"
+  (createRoom)="createRoom.emit()"
+  (joinRoom)="joinRoom.emit()"
+  (joinRoomWithCode)="joinRoomWithCode.emit($event)"
+  (goBack)="goBack.emit()">
+</app-room-overlay>
 
 <app-post-drill-overlay 
   [show]="showPostDrillOverlay"
@@ -19,7 +31,7 @@
 </app-post-drill-overlay>
 
 <div class="drill-text-wrapper"
-     [ngClass]="{'blur-background' : !isFocused || showPostDrillOverlay || showAdaptiveDrillOverlay, 'afk-cursor': delayedAfkOverlay && !showPostDrillOverlay}">
+     [ngClass]="{'blur-background' : !isFocused || showPostDrillOverlay || showAdaptiveDrillOverlay || showRoomOverlay, 'afk-cursor': delayedAfkOverlay && !showPostDrillOverlay}">
   <nz-card class="drill-text" #drillText>
     <div class="drill-text-inner">
       @for (word of sourceText; track wi; let wi = $index) {

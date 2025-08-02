@@ -38,7 +38,7 @@
 
     <button nzTooltipTitle="Restart the drill with the same settings and word list." nz-tooltip
       [nzTooltipMouseEnterDelay]="1.5" nz-button nzType="text" nzSize="small" (click)="onRestart()"
-      class="control-button" [disabled]="disabled || showAdaptiveDrillOverlay">
+      class="control-button" [disabled]="disabled">
       <span nz-icon nzType="reload" nzTheme="outline"></span>
       <span class="button-text">Restart</span>
     </button>
@@ -46,11 +46,23 @@
 
     <button nzTooltipTitle="Start a new drill with the same settings but newly generated words." nz-tooltip
       [nzTooltipMouseEnterDelay]="1.5" nz-button nzType="text" nzSize="small" (click)="onNewDrill()"
-      class="control-button" [disabled]="disabled || showAdaptiveDrillOverlay">
+      class="control-button" [disabled]="disabled">
       <span nz-icon nzType="plus" nzTheme="outline"></span>
       <span class="button-text">New Drill</span>
     </button>
 
+    <!-- Change Preference button for adaptive drills -->
+    @if (drillPreference.drillType === 'adaptive') {
+    <button nzTooltipTitle="Change difficulty and length settings for adaptive drills." nz-tooltip
+      [nzTooltipMouseEnterDelay]="1.5" nz-button nzType="text" nzSize="small" (click)="onChangePreference()"
+      class="control-button" [disabled]="disabled">
+      <span nz-icon nzType="setting" nzTheme="outline"></span>
+      <span class="button-text">Change Preference</span>
+    </button>
+    }
+
+    <!-- Difficulty select for non-adaptive drills -->
+    @if (drillPreference.drillType !== 'adaptive') {
     <nz-select
       nzTooltipTitle="Controls word complexity - including length, repetition, and rarity. Choose from Beginner, Intermediate, or Advanced."
       nz-tooltip [nzTooltipMouseEnterDelay]="1.5" [ngModel]="drillPreference.drillDifficulty"
@@ -60,6 +72,7 @@
       </nz-option>
       }
     </nz-select>
+    }
 
     @if (drillPreference.drillType === 'timed') {
     <nz-select nzTooltipTitle="Sets how long the drill lasts. Choose from 15s, 30s, 60s, or 120s." nz-tooltip
@@ -72,8 +85,8 @@
     </nz-select>
     }
 
-    <!-- Length select for non-timed drills -->
-    @if (drillPreference.drillType !== 'timed') {
+    <!-- Length select for non-timed and non-adaptive drills -->
+    @if (drillPreference.drillType !== 'timed' && drillPreference.drillType !== 'adaptive') {
     <nz-select nzTooltipTitle="Sets the number of generated words. Choose from Short (30), Medium (50), or Long (100)."
       nz-tooltip [nzTooltipMouseEnterDelay]="1.5" [ngModel]="selectedLength" (ngModelChange)="onLengthChange($event)"
       nzSize="small" class="control-select" [disabled]="disabled" nzPlaceHolder="Select length">

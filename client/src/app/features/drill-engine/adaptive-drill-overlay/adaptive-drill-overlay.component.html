@@ -3,8 +3,25 @@
     <div class="adaptive-content">
       <h2>Adaptive Drill</h2>
       <p>Adaptive drills help you practice words you commonly misspell. Choose your difficulty level and drill length to get personalized practice words tailored to your typing patterns.</p>
+      
+      <div class="adaptive-settings">
+        <div class="setting-row">
+          <nz-select [(ngModel)]="selectedDifficulty" class="setting-select" nzPlaceHolder="Difficulty">
+            @for (difficulty of drillDifficulties; track difficulty.value) {
+              <nz-option [nzValue]="difficulty.value" [nzLabel]="difficulty.label"></nz-option>
+            }
+          </nz-select>
+          
+          <nz-select [(ngModel)]="selectedLength" class="setting-select" nzPlaceHolder="Length">
+            @for (length of drillLengths; track length.value) {
+              <nz-option [nzValue]="length.value" [nzLabel]="length.label"></nz-option>
+            }
+          </nz-select>
+        </div>
+      </div>
+      
       <div class="post-drill-btn-row">
-        <span class="post-drill-btn" (click)="viewErrorProneWords.emit()" [class.disabled]="isLoadingErrorWords || isGeneratingAdaptive">
+        <span class="post-drill-btn" (click)="onViewErrorProneWords()" [class.disabled]="isLoadingErrorWords || isGeneratingAdaptive">
           @if (isLoadingErrorWords) {
             <span nz-icon nzType="loading" nzTheme="outline" style="font-size: 16px;"></span>
             <span class="button-text">Loading</span>
@@ -13,7 +30,7 @@
             <span class="button-text">Recent Misspelled</span>
           }
         </span>
-        <span class="post-drill-btn" (click)="generateAdaptiveDrill.emit()" [class.disabled]="isGeneratingAdaptive || isLoadingErrorWords">
+        <span class="post-drill-btn" (click)="onGenerateAdaptiveDrill()" [class.disabled]="isGeneratingAdaptive || isLoadingErrorWords">
           @if (isGeneratingAdaptive) {
             <span nz-icon nzType="loading" nzTheme="outline" style="font-size: 16px;"></span>
             <span class="button-text">Generating</span>

@@ -22,11 +22,14 @@ import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { AfkOverlayComponent } from '../afk-overlay/afk-overlay.component';
 import { PostDrillOverlayComponent } from '../post-drill-overlay/post-drill-overlay.component';
 import { AdaptiveDrillOverlayComponent } from '../adaptive-drill-overlay/adaptive-drill-overlay.component';
+import { RoomOverlayComponent } from '../room-overlay/room-overlay.component';
+import { DrillDifficulty } from '../../../models/enums/drill-difficulty.enum';
+import { DrillLength } from '../../../models/enums/drill-length.enum';
 
 @Component({
     selector: 'app-drill-text',
     standalone: true,
-    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule, NzToolTipModule, AfkOverlayComponent, PostDrillOverlayComponent, AdaptiveDrillOverlayComponent],
+    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule, NzToolTipModule, AfkOverlayComponent, PostDrillOverlayComponent, AdaptiveDrillOverlayComponent, RoomOverlayComponent],
     templateUrl: './drill-text.component.html',
     styleUrl: './drill-text.component.scss',
 })
@@ -45,10 +48,20 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
     @Input() afkReason: string = '';
     @Input() isGeneratingAdaptive: boolean = false;
     @Input() isLoadingErrorWords: boolean = false;
+    @Input() showRoomOverlay: boolean = false;
+    @Input() isCreatingRoom: boolean = false;
+    @Input() isJoiningRoom: boolean = false;
+    @Input() currentDifficulty: DrillDifficulty = DrillDifficulty.Intermediate;
+    @Input() currentLength: DrillLength = DrillLength.Medium;
+
     @Output() postDrillRestart = new EventEmitter<void>();
     @Output() postDrillSubmit = new EventEmitter<void>();
-    @Output() generateAdaptiveDrill = new EventEmitter<void>();
-    @Output() viewErrorProneWords = new EventEmitter<void>();
+    @Output() generateAdaptiveDrill = new EventEmitter<{difficulty: DrillDifficulty, length: DrillLength}>();
+    @Output() viewErrorProneWords = new EventEmitter<{difficulty: DrillDifficulty, length: DrillLength}>();
+    @Output() createRoom = new EventEmitter<void>();
+    @Output() joinRoom = new EventEmitter<void>();
+    @Output() joinRoomWithCode = new EventEmitter<string>();
+    @Output() goBack = new EventEmitter<void>();
 
     @ViewChildren('wordEl', { read: ElementRef }) wordElements!: QueryList<ElementRef<HTMLElement>>;
     @ViewChild('drillText', { read: ElementRef }) drillTextEl!: ElementRef<HTMLElement>;

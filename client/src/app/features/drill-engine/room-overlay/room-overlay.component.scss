@@ -1,4 +1,4 @@
-#adaptive-overlay {
+#room-overlay {
   display: block;
   position: absolute;
   top: 38%;
@@ -17,14 +17,14 @@
   text-align: center;
 }
 
-#adaptive-overlay .post-drill-btn-row {
+#room-overlay .room-btn-row {
   justify-content: center;
   width: auto;
   display: inline-flex;
   gap: 0.5rem;
 }
 
-#adaptive-overlay .post-drill-btn {
+#room-overlay .room-btn {
   min-width: auto;
   max-width: none;
   background: var(--color-bg-secondary);
@@ -39,12 +39,12 @@
   cursor: pointer;
 }
 
-#adaptive-overlay .post-drill-btn:hover {
+#room-overlay .room-btn:hover {
   background: var(--color-bg-blur);
   border-color: var(--color-primary);
 }
 
-.adaptive-content {
+.room-content {
   h2 {
     margin-bottom: 1rem;
     color: var(--color-text);
@@ -57,7 +57,7 @@
     color: var(--color-text);
   }
 
-  .generating-state {
+  .creating-state {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -67,16 +67,60 @@
     font-weight: 500;
   }
 
-  .adaptive-settings {
+  .room-input-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     margin-bottom: 1.5rem;
-    
-    .setting-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
+  }
+
+  .room-code-field {
+    width: 200px;
+    height: 30.8px;
+    padding: 0 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 1rem;
+    font-family: monospace;
+    text-align: center;
+    letter-spacing: 0.1em;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .room-code-field:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary-bg);
+  }
+
+  .room-code-field:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .room-code-field::placeholder {
+    color: var(--color-text-secondary);
+    transition: opacity 0.2s ease;
+  }
+
+  .room-code-field:focus::placeholder {
+    opacity: 0.3;
+  }
+
+  .room-settings {
+    margin-bottom: 1.5rem;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
   }
 
   .setting-select {

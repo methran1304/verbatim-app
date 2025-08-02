@@ -1,0 +1,105 @@
+@if (show) {
+  <nz-card id="room-overlay" #roomoverlay>
+    @if (currentView === 'main') {
+      <div class="room-content">
+        <h2>Competitive Drill</h2>
+        <p>Compete against other friends in a real-time typing challenge. Join an existing room with up to 4 players or create your own room to start a new competition.</p>
+        <div class="room-btn-row">
+          <span class="room-btn" (click)="onJoinRoomClick()" [class.disabled]="isJoiningRoom || isCreatingRoom">
+            @if (isJoiningRoom) {
+              <span nz-icon nzType="loading" nzTheme="outline" style="font-size: 16px;"></span>
+              <span class="button-text">Joining...</span>
+            } @else {
+              <span nz-icon nzType="team" nzTheme="outline" style="font-size: 16px;"></span>
+              <span class="button-text">Join Room</span>
+            }
+          </span>
+          <span class="room-btn" (click)="onCreateRoomClick()" [class.disabled]="isJoiningRoom">
+            <span nz-icon nzType="plus-circle" nzTheme="outline" style="font-size: 16px;"></span>
+            <span class="button-text">Create Room</span>
+          </span>
+        </div>
+      </div>
+    } @else if (currentView === 'join') {
+      <div class="room-content">
+        <h2>Join Room</h2>
+        <p>Enter the 6-character room code to join an existing competitive drill room. Room codes are case-insensitive and contain only letters and numbers.</p>
+        <div class="room-input-row">
+          <input 
+            type="text" 
+            [value]="roomCode"
+            (input)="onRoomCodeInput($event)"
+            placeholder="Room Code"
+            maxlength="6"
+            class="room-code-field"
+            [disabled]="isJoiningRoom"
+          />
+          <span class="room-btn" (click)="onJoinWithCode()" [class.disabled]="isJoiningRoom || roomCode.length !== 6">
+            @if (isJoiningRoom) {
+              <span nz-icon nzType="loading" nzTheme="outline" style="font-size: 16px;"></span>
+              <span class="button-text">Joining...</span>
+            } @else {
+              <span nz-icon nzType="team" nzTheme="outline" style="font-size: 16px;"></span>
+              <span class="button-text">Join</span>
+            }
+          </span>
+          <span class="room-btn" (click)="onGoBack()" [class.disabled]="isJoiningRoom">
+            <span nz-icon nzType="arrow-left" nzTheme="outline" style="font-size: 16px;"></span>
+            <span class="button-text">Go Back</span>
+          </span>
+        </div>
+      </div>
+    } @else if (currentView === 'create') {
+      <div class="room-content">
+        <h2>Create Room</h2>
+        <p>Choose between Timed or Marathon drills and configure your settings. Share the room code with your friends to start competing together.</p>
+        
+        <div class="room-settings">
+          <div class="setting-row">
+            <nz-select [(ngModel)]="selectedType" class="setting-select" nzPlaceHolder="Type">
+              @for (type of drillTypes; track type.value) {
+                <nz-option [nzValue]="type.value" [nzLabel]="type.label"></nz-option>
+              }
+            </nz-select>
+            
+            <nz-select [(ngModel)]="selectedDifficulty" class="setting-select" nzPlaceHolder="Difficulty">
+              @for (difficulty of drillDifficulties; track difficulty.value) {
+                <nz-option [nzValue]="difficulty.value" [nzLabel]="difficulty.label"></nz-option>
+              }
+            </nz-select>
+            
+            @if (selectedType === DrillType.Timed) {
+              <nz-select [(ngModel)]="selectedDuration" class="setting-select" nzPlaceHolder="Duration">
+                @for (duration of drillDurations; track duration.value) {
+                  <nz-option [nzValue]="duration.value" [nzLabel]="duration.label"></nz-option>
+                }
+              </nz-select>
+            } @else {
+              <nz-select [(ngModel)]="selectedLength" class="setting-select" nzPlaceHolder="Length">
+                @for (length of drillLengths; track length.value) {
+                  <nz-option [nzValue]="length.value" [nzLabel]="length.label"></nz-option>
+                }
+              </nz-select>
+            }
+          </div>
+        </div>
+        
+        <div class="room-btn-row">
+          <span class="room-btn" (click)="onCreateRoom()" [class.disabled]="isCreatingRoom">
+            @if (isCreatingRoom) {
+              <span nz-icon nzType="loading" nzTheme="outline" style="font-size: 16px;"></span>
+              <span class="button-text">Creating...</span>
+            } @else {
+              <span nz-icon nzType="plus-circle" nzTheme="outline" style="font-size: 16px;"></span>
+              <span class="button-text">Create</span>
+            }
+          </span>
+          <span class="room-btn" (click)="onGoBack()" [class.disabled]="isCreatingRoom">
+            <span nz-icon nzType="arrow-left" nzTheme="outline" style="font-size: 16px;"></span>
+            <span class="button-text">Go Back</span>
+          </span>
+        </div>
+      </div>
+    }
+  </nz-card>
+} 

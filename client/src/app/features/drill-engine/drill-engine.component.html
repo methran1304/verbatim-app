@@ -8,13 +8,14 @@
     [drillPreference]="drillPreferences"
     [isTyping]="isTyping"
     [disabled]="showPostDrillOverlay"
-    [forceCollapsed]="showPostDrillOverlay"
+    [forceCollapsed]="showPostDrillOverlay || showRoomOverlay || showAdaptiveDrillOverlay"
     [showAdaptiveDrillOverlay]="showAdaptiveDrillOverlay"
     [currentDrillType]="drillPreferences.drillType"
     (restart)="onRestart()"
     (newDrill)="onNewDrill()"
     (viewErrorWords)="onViewErrorWords()"
     (drillPreferenceChange)="onDrillPreferenceChange($event)"
+    (changePreference)="onChangePreference()"
   ></app-drill-toolbar>
 
   <app-drill-text
@@ -32,16 +33,19 @@
     [afkReason]="afkReason"
     [isGeneratingAdaptive]="isGeneratingAdaptive"
     [isLoadingErrorWords]="isLoadingErrorWords"
+    [showRoomOverlay]="showRoomOverlay"
+    [currentDifficulty]="drillPreferences.drillDifficulty"
+    [currentLength]="drillPreferences.drillLength"
     (postDrillRestart)="onRestart()"
     (postDrillSubmit)="onPostDrillSubmit()"
-    (generateAdaptiveDrill)="onGenerateAdaptiveDrill()"
-    (viewErrorProneWords)="onViewErrorProneWords()"
+    (generateAdaptiveDrill)="onGenerateAdaptiveDrill($event)"
+    (viewErrorProneWords)="onViewErrorProneWords($event)"
   ></app-drill-text>
 
-  @if (!isCompetitive) {
+  
   <app-virtual-keyboard [inputValue]="currentInput" [isDarkTheme]="isDarkMode">
   </app-virtual-keyboard>
-  }
+  
 
   @if (isDrillActive) {
   <app-drill-input (keyTyped)="onKeyTyped($event)" (focusEvent)="onInputFocus()"
