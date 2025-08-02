@@ -28,6 +28,7 @@ import { DrillService } from '../../services/drill.service';
 import { DrillSubmissionRequest, DrillSubmissionResponse } from '../../models/interfaces/drill-submission.interface';
 import { AdaptiveDrillResponse, ErrorProneWordsResponse, AdaptiveService } from '../../services/adaptive.service';
 import { DrillStatisticsService } from '../../services/drill-statistics.service';
+import { DrillSubmissionService } from '../../services/drill-submission.service';
 
 
 
@@ -111,7 +112,7 @@ export class DrillEngineComponent implements OnInit {
     public hasBeenInactive: boolean = false;
     private inactivityTimeout: any;
     private readonly MAX_INACTIVITY_SECONDS = 10;
-    private readonly MAX_DRILL_DURATION_SECONDS = 7200;
+
     private readonly INACTIVITY_CHECK_INTERVAL = 10000;
     private inactivityCheckInterval: any;
     public afkReason: string = '';
@@ -122,6 +123,7 @@ export class DrillEngineComponent implements OnInit {
         private drillService: DrillService,
         private adaptiveService: AdaptiveService,
         private drillStatisticsService: DrillStatisticsService,
+        private drillSubmissionService: DrillSubmissionService,
         private ngZone: NgZone,
         private themeService: ThemeService,
         private navigationService: NavigationService,
@@ -493,8 +495,8 @@ export class DrillEngineComponent implements OnInit {
                     this.addTimeSeriesDataPoint(elapsedSeconds);
                 }
 
-                // check for maximum drill duration
-                if (elapsedSeconds >= this.MAX_DRILL_DURATION_SECONDS) {
+                // check for maximum drill duration (2 hours)
+                if (elapsedSeconds >= 7200) {
                     this.notificationService.createNotification('warning', 'Drill Timeout', 'Maximum drill duration reached. Your progress will be saved.');
                     this.stopDrill();
                 }
@@ -770,14 +772,6 @@ export class DrillEngineComponent implements OnInit {
     onPostDrillSubmit(): void {
         // reset error state for new submit request
         this.submitError = '';
-        this.isSubmitting = true;
-
-        // validate drill submission before sending
-        if (!this.validateDrillSubmission()) {
-            this.submitError = 'Drill submission validation failed. Please try again.';
-            this.isSubmitting = false;
-            return;
-        }
 
         // convert source text to array of strings
         const sourceTextArray = this.sourceText.map(word => word.join('').trim());
@@ -796,26 +790,16 @@ export class DrillEngineComponent implements OnInit {
             drillStatistic: this.drillStatistic
         };
 
-        LoadingDelayUtil.withLoadingState(
-            this.drillService.submitDrillResult(drillSubmission),
-            (loading: boolean) => this.isSubmitting = loading,
-            800 // 800ms minimum loading time for submissions
-        ).then((result: DrillSubmissionResponse) => {
-            this.notificationService.createNotification('success', 'Drill completed!', 'Your results have been saved successfully.');
+        // use the submission service
+        this.drillSubmissionService.submitDrill(
+            drillSubmission,
+            this.drillPreferences,
+            this.hasBeenInactive,
+            (loading: boolean) => this.isSubmitting = loading
+        ).then(() => {
             this.showPostDrillOverlay = false;
-
-            // navigate to drill stats page with the results
-            this.router.navigate(['/drill-stats'], {
-                state: {
-                    drillStats: result,
-                    drillPreferences: this.drillPreferences,
-                    currentDrillStats: this.drillStatistic
-                }
-            });
         }).catch((error: any) => {
-            const errorMessage = ErrorHandlerUtil.handleError(error, 'drill');
-            this.notificationService.createNotification('error', 'Something went wrong!', errorMessage);
-            this.submitError = errorMessage;
+            this.submitError = error.message || 'An error occurred during submission.';
         });
     }
 
@@ -879,41 +863,7 @@ export class DrillEngineComponent implements OnInit {
         }
     }
 
-    private validateDrillSubmission(): boolean {
-        // check if user was afk during the drill (permanent flag)
-        if (this.hasBeenInactive) {
-            this.notificationService.createNotification('error', 'AFK Detected', 'Cannot submit drill due to inactivity. Please restart the drill.');
-            return false;
-        }
 
-        // check if drill duration is reasonable
-        const drillDuration = this.drillStatistic.duration;
-
-        if (drillDuration > this.MAX_DRILL_DURATION_SECONDS) {
-            this.notificationService.createNotification('error', 'Invalid Drill Duration', 'Drill duration exceeds maximum allowed time.');
-            return false;
-        }
-
-        // check if real-time data array is not excessively large
-        if (this.drillStatistic.realTimeData.length > this.MAX_DRILL_DURATION_SECONDS) {
-            this.notificationService.createNotification('error', 'Invalid Data', 'Real-time data array is too large. Please restart the drill.');
-            return false;
-        }
-
-        // for non-timed drills, check for suspicious inactivity patterns
-        if (this.drillPreferences.drillType !== DrillType.Timed) {
-            const totalTypedChars = this.drillStatistic.correctLetters + this.drillStatistic.incorrectLetters;
-            const charsPerSecond = drillDuration > 0 ? totalTypedChars / drillDuration : 0;
-
-            // if user typed less than 0.1 characters per second on average, it's suspicious
-            if (charsPerSecond < 0.1 && drillDuration > 60) {
-                this.notificationService.createNotification('error', 'Suspicious Activity', 'Very low typing activity detected. Please restart the drill.');
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     // host listener for global activity tracking
     @HostListener('document:keydown', ['$event'])
