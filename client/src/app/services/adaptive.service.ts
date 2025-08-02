@@ -67,23 +67,17 @@ export class AdaptiveService {
     return this.http.get<ErrorProneWordsResponse>(`${this.apiUrl}/adaptive/get-error-prone-words`, { params });
   }
 
-  /**
-   * Get adaptive drill state as observable
-   */
+  // get adaptive drill state as observable
   getAdaptiveState(): Observable<AdaptiveDrillState> {
     return this.adaptiveState$.asObservable();
   }
 
-  /**
-   * Get current adaptive drill state
-   */
+  // get current adaptive drill state
   getCurrentAdaptiveState(): AdaptiveDrillState {
     return this.adaptiveState$.value;
   }
 
-  /**
-   * Update adaptive drill state
-   */
+  // update adaptive drill state
   private updateAdaptiveState(updates: Partial<AdaptiveDrillState>): void {
     this.adaptiveState$.next({
       ...this.adaptiveState$.value,
@@ -91,9 +85,7 @@ export class AdaptiveService {
     });
   }
 
-  /**
-   * Show adaptive drill overlay
-   */
+  // show adaptive drill overlay
   showAdaptiveDrillOverlay(): void {
     this.updateAdaptiveState({
       showAdaptiveDrillOverlay: true,
@@ -101,36 +93,28 @@ export class AdaptiveService {
     });
   }
 
-  /**
-   * Hide adaptive drill overlay
-   */
+  // hide adaptive drill overlay
   hideAdaptiveDrillOverlay(): void {
     this.updateAdaptiveState({
       showAdaptiveDrillOverlay: false
     });
   }
 
-  /**
-   * Show error words modal
-   */
+  // show error words modal
   showErrorWordsModal(): void {
     this.updateAdaptiveState({
       showErrorWordsModal: true
     });
   }
 
-  /**
-   * Hide error words modal
-   */
+  // hide error words modal
   hideErrorWordsModal(): void {
     this.updateAdaptiveState({
       showErrorWordsModal: false
     });
   }
 
-  /**
-   * Generate adaptive drill words
-   */
+  // generate adaptive drill words
   async generateAdaptiveDrill(drillPreferences: DrillPreference): Promise<string[]> {
     this.updateAdaptiveState({ isGeneratingAdaptive: true });
 
@@ -162,9 +146,7 @@ export class AdaptiveService {
     }
   }
 
-  /**
-   * Load error-prone words
-   */
+  // load error-prone words
   async loadErrorProneWords(drillPreferences: DrillPreference): Promise<string[]> {
     this.updateAdaptiveState({ isLoadingErrorWords: true });
 
@@ -191,9 +173,7 @@ export class AdaptiveService {
     }
   }
 
-  /**
-   * Get error words for display
-   */
+  // get error words for display
   getErrorWords(): string[] {
     const currentState = this.adaptiveState$.value;
     
@@ -209,9 +189,7 @@ export class AdaptiveService {
     return Object.keys(currentState.currentAdaptiveResponse.fuzzySearchResponse.similarWords);
   }
 
-  /**
-   * Reset adaptive drill state
-   */
+  // reset adaptive drill state   
   resetAdaptiveState(): void {
     this.adaptiveState$.next({
       isGeneratingAdaptive: false,

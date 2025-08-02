@@ -9,12 +9,7 @@ export class DrillStatisticsService {
 
   constructor() { }
 
-  /**
-   * Updates WPM and accuracy based on typed text and elapsed time
-   * @param typedText - Array of typed keystrokes
-   * @param startTime - When the drill started
-   * @returns Object containing wpm and accuracy
-   */
+  // updates WPM and accuracy based on typed text and elapsed time
   updateWPMAndAccuracy(typedText: (KeyStroke | undefined)[][], startTime: number): { wpm: number; accuracy: number } {
     // only count actual typed characters
     const flattened = typedText.flat();
@@ -33,18 +28,7 @@ export class DrillStatisticsService {
     return { wpm, accuracy };
   }
 
-  /**
-   * Adds a time series data point for real-time statistics tracking
-   * @param timePoint - Current time point
-   * @param wpm - Current WPM
-   * @param accuracy - Current accuracy
-   * @param correctionsThisSecond - Corrections made this second
-   * @param wordsCompletedThisSecond - Words completed this second
-   * @param wordsIncorrectThisSecond - Words incorrect this second
-   * @param realTimeData - Existing real-time data array
-   * @param lastDataPointTime - Last data point time
-   * @returns Object containing updated realTimeData and lastDataPointTime
-   */
+  // adds a time series data point for real-time statistics tracking
   addTimeSeriesDataPoint(
     timePoint: number,
     wpm: number,
@@ -92,10 +76,7 @@ export class DrillStatisticsService {
     return { realTimeData, lastDataPointTime: newLastDataPointTime };
   }
 
-  /**
-   * Resets drill statistics to initial state
-   * @returns Fresh DrillStatistic object
-   */
+  // resets drill statistics to initial state
   resetDrillStats(): DrillStatistic {
     return {
       errorRate: 0,
@@ -121,11 +102,7 @@ export class DrillStatisticsService {
     };
   }
 
-  /**
-   * Pads a number with leading zeros
-   * @param num - Number to pad
-   * @returns Padded string
-   */
+  // pads a number with leading zeros
   pad(num: number): string {
     return num.toString().padStart(2, '0');
   }

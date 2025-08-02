@@ -26,9 +26,7 @@ export class DrillSubmissionService {
         private router: Router
     ) {}
 
-    /**
-     * Validates drill submission before sending to backend
-     */
+    // validates drill submission before sending to backend
     validateDrillSubmission(
         drillStatistic: DrillStatistic,
         drillPreferences: DrillPreference,
@@ -77,9 +75,7 @@ export class DrillSubmissionService {
         return { isValid: true };
     }
 
-    /**
-     * Submits drill results to backend and handles response
-     */
+    // submits drill results to backend and handles response
     async submitDrill(
         drillSubmission: DrillSubmissionRequest,
         drillPreferences: DrillPreference,

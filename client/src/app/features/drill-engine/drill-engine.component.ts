@@ -30,6 +30,7 @@ import { AdaptiveDrillResponse, ErrorProneWordsResponse, AdaptiveService } from 
 import { DrillStatisticsService } from '../../services/drill-statistics.service';
 import { DrillSubmissionService } from '../../services/drill-submission.service';
 import { TimerManagementService, TimerState } from '../../services/timer-management.service';
+import { DrillStateManagementService, DrillState } from '../../services/drill-state-management.service';
 
 
 
@@ -55,19 +56,12 @@ import { TimerManagementService, TimerState } from '../../services/timer-managem
 export class DrillEngineComponent implements OnInit {
     @ViewChild(DrillInputComponent) drillInputComponent!: DrillInputComponent;
 
-    isDrillActive: boolean = false;
-    sourceText: string[][] = [];
-    wordLocked: boolean[] = [];
-    typedText: (KeyStroke | undefined)[][] = [];
-    currentWordIndex: number = 0;
-    currentCharIndex: number = 0;
 
     // timer state will be managed by TimerManagementService
     timerState: TimerState | null = null;
 
     wpm: number = 0;
     accuracy: number = 100;
-    drillStatistic!: DrillStatistic;
 
     // Time series data collection
     realTimeData: PointTimeData[] = [];
@@ -75,9 +69,6 @@ export class DrillEngineComponent implements OnInit {
     private wordsCompletedThisSecond: number[] = [];
     private wordsIncorrectThisSecond: number[] = [];
     private correctionsThisSecond: number = 0;
-
-    isInputFocused: boolean = true;
-    currentInput: string = '';
 
     isDarkMode: boolean = false;
 
@@ -88,14 +79,7 @@ export class DrillEngineComponent implements OnInit {
     currentDrillType: DrillType = DrillType.Timed;
 
     // typing state for toolbar animation
-    isTyping: boolean = false;
     private typingTimeout: any;
-
-    showPostDrillOverlay: boolean = false;
-    isSubmitting: boolean = false;
-    submitError: string = '';
-    
-    // Adaptive drill state is now managed by AdaptiveService
 
     // afk protection and inactivity detection
     private lastActivityTime: number = 0;
@@ -116,6 +100,7 @@ export class DrillEngineComponent implements OnInit {
         private drillStatisticsService: DrillStatisticsService,
         private drillSubmissionService: DrillSubmissionService,
         private timerManagementService: TimerManagementService,
+        private drillStateManagementService: DrillStateManagementService,
         private ngZone: NgZone,
         private themeService: ThemeService,
         private navigationService: NavigationService,
@@ -163,6 +148,11 @@ export class DrillEngineComponent implements OnInit {
             // The template will access adaptive state through the service
         });
 
+        // subscribe to drill state updates
+        this.drillStateManagementService.getDrillState().subscribe(drillState => {
+            // The template will access drill state through getters
+        });
+
         // get drill type from url query parameters
         this.route.queryParams.subscribe(params => {
             const drillType = params['type'];
@@ -188,53 +178,11 @@ export class DrillEngineComponent implements OnInit {
     }
 
     startDrill(adaptiveWords: string[] = []): void {
-        this.showPostDrillOverlay = false;
-
-        // activate the drill
-        this.isDrillActive = true;
-        let words: string[] = [];
-
-
-        // for timed drills, always use marathon length to ensure enough text
-        const drillLength = this.drillPreferences.drillType === DrillType.Timed
-            ? DrillLength.Marathon
-            : this.drillPreferences.drillLength;
-
-
-        if (this.drillPreferences.drillType === DrillType.Adaptive) {
-            words = adaptiveWords;
-        }
-        else {
-            words = this.drillTextService.getRandomDrillText(
-                this.drillPreferences.drillDifficulty,
-                drillLength,
-            );
-        }
-
-        
-        // add space for every word except last
-        this.sourceText = words.map((word, i) => {
-            const chars = word.split('');
-            return i < words.length - 1 ? [...chars, ' '] : chars;
-        });
-
-        // create undefined 2d array with same source text structure
-        this.typedText = this.sourceText.map((word) =>
-            new Array(word.length).fill(undefined),
-        );
-
-        this.wordLocked = this.sourceText.map(() => false);
-
-        this.currentWordIndex = 0;
-        this.currentCharIndex = 0;
-
-        // construct drill stats 
-        this.drillStatistic = this.drillStatisticsService.resetDrillStats();
+        this.drillStateManagementService.startDrill(adaptiveWords, this.drillPreferences);
     }
 
     stopDrill(isAdaptive: boolean = false): void {
         // stop timer
-        this.isDrillActive = false;
         this.stopTimer();
 
         // stop inactivity monitoring
@@ -249,41 +197,37 @@ export class DrillEngineComponent implements OnInit {
             this.addTimeSeriesDataPoint(finalTimePoint);
         }
 
-        this.drillStatistic.realTimeData = [...this.realTimeData];
+        // Update drill statistic with final data
+        const updatedDrillStatistic = { ...this.drillStatistic };
+        updatedDrillStatistic.realTimeData = [...this.realTimeData];
+        updatedDrillStatistic.wpm = this.wpm;
+        updatedDrillStatistic.accuracy = this.accuracy;
 
-        // update wpm & accuracy in drill stats
-        this.drillStatistic.wpm = this.wpm;
-        this.drillStatistic.accuracy = this.accuracy;
-
-        this.drillStatistic.avgWPM = this.drillStatistic.realTimeData.length > 0
-            ? this.drillStatistic.realTimeData.reduce((acc, curr) => acc + curr.wpm, 0) / this.drillStatistic.realTimeData.length
+        updatedDrillStatistic.avgWPM = updatedDrillStatistic.realTimeData.length > 0
+            ? updatedDrillStatistic.realTimeData.reduce((acc, curr) => acc + curr.wpm, 0) / updatedDrillStatistic.realTimeData.length
             : 0;
 
-        this.drillStatistic.avgAccuracy = this.drillStatistic.realTimeData.length > 0
-            ? this.drillStatistic.realTimeData.reduce((acc, curr) => acc + curr.accuracy, 0) / this.drillStatistic.realTimeData.length
+        updatedDrillStatistic.avgAccuracy = updatedDrillStatistic.realTimeData.length > 0
+            ? updatedDrillStatistic.realTimeData.reduce((acc, curr) => acc + curr.accuracy, 0) / updatedDrillStatistic.realTimeData.length
             : 100;
 
-        this.drillStatistic.maxWPM = this.drillStatistic.realTimeData.reduce((acc, curr) => Math.max(acc, curr.wpm), 0);
-        this.drillStatistic.maxAccuracy = this.drillStatistic.realTimeData.reduce((acc, curr) => Math.max(acc, curr.accuracy), 0);
+        updatedDrillStatistic.maxWPM = updatedDrillStatistic.realTimeData.reduce((acc, curr) => Math.max(acc, curr.wpm), 0);
+        updatedDrillStatistic.maxAccuracy = updatedDrillStatistic.realTimeData.reduce((acc, curr) => Math.max(acc, curr.accuracy), 0);
 
         // wordscount equals the sum of correct and incorrect words
-        this.drillStatistic.wordsCount = this.drillStatistic.correctWords + this.drillStatistic.incorrectWords;
+        updatedDrillStatistic.wordsCount = updatedDrillStatistic.correctWords + updatedDrillStatistic.incorrectWords;
         // letterscount equals the sum of all letters in the source text
-        this.drillStatistic.lettersCount = this.drillStatistic.correctLetters + this.drillStatistic.incorrectLetters;
+        updatedDrillStatistic.lettersCount = updatedDrillStatistic.correctLetters + updatedDrillStatistic.incorrectLetters;
 
         // calculate error rate for this drill
-        this.drillStatistic.errorRate = this.drillStatistic.wordsCount > 0
-            ? (this.drillStatistic.incorrectWords / this.drillStatistic.wordsCount) * 100
+        updatedDrillStatistic.errorRate = updatedDrillStatistic.wordsCount > 0
+            ? (updatedDrillStatistic.incorrectWords / updatedDrillStatistic.wordsCount) * 100
             : 0;
 
-        if (!isAdaptive) {
-            this.showPostDrillOverlay = true;
-        }
-        console.log(this.drillStatistic);
-    }
+        this.drillStateManagementService.updateDrillStatistic(updatedDrillStatistic);
+        this.drillStateManagementService.stopDrill(isAdaptive);
 
-    resumeDrill(): void {
-        this.focusInput(); // refocus the hidden input
+        console.log(updatedDrillStatistic);
     }
 
     onKeyTyped(value: string): void {
@@ -333,12 +277,14 @@ export class DrillEngineComponent implements OnInit {
         if (this.currentCharIndex >= currentWord.length) return;
 
         // construct typedtext array for input to drilltext component
-        this.typedText[this.currentWordIndex][this.currentCharIndex] = {
+        const updatedTypedText = [...this.typedText];
+        updatedTypedText[this.currentWordIndex][this.currentCharIndex] = {
             key: value,
             correct: isCharCorrect,
         };
 
-        this.currentCharIndex++;
+        this.drillStateManagementService.updateTypedText(updatedTypedText);
+        this.drillStateManagementService.updateIndices(this.currentWordIndex, this.currentCharIndex + 1);
 
         // word complete
         if (this.currentCharIndex === currentWord.length) {
@@ -367,8 +313,7 @@ export class DrillEngineComponent implements OnInit {
             this.wordLocked[this.currentWordIndex] = isWordCorrect;
 
             this.drillInputComponent.clearDrillInput();
-            this.currentWordIndex++;
-            this.currentCharIndex = 0;
+            this.drillStateManagementService.updateIndices(this.currentWordIndex + 1, 0);
 
             if (this.currentWordIndex >= this.sourceText.length) {
                 this.stopDrill();
@@ -388,9 +333,10 @@ export class DrillEngineComponent implements OnInit {
             }
 
             const length = this.sourceText[prevIndex].length;
-            this.typedText[prevIndex] = new Array(length).fill(undefined);
-            this.currentWordIndex = prevIndex;
-            this.currentCharIndex = 0;
+            const updatedTypedText = [...this.typedText];
+            updatedTypedText[prevIndex] = new Array(length).fill(undefined);
+            this.drillStateManagementService.updateTypedText(updatedTypedText);
+            this.drillStateManagementService.updateIndices(prevIndex, 0);
             this.drillInputComponent.clearDrillInput();
             return;
         }
@@ -401,11 +347,13 @@ export class DrillEngineComponent implements OnInit {
         const wordLength = this.sourceText[this.currentWordIndex]?.length ?? 0;
 
         // clear typed state for current word
-        this.typedText[this.currentWordIndex] = new Array(wordLength).fill(
+        const updatedTypedText = [...this.typedText];
+        updatedTypedText[this.currentWordIndex] = new Array(wordLength).fill(
             undefined,
         );
 
-        this.currentCharIndex = 0;
+        this.drillStateManagementService.updateTypedText(updatedTypedText);
+        this.drillStateManagementService.updateIndices(this.currentWordIndex, 0);
         this.drillInputComponent.clearDrillInput();
     }
 
@@ -419,16 +367,22 @@ export class DrillEngineComponent implements OnInit {
             // cannot backtrack to a locked word
             if (this.wordLocked[prevIndex]) return;
 
-            this.currentWordIndex = prevIndex;
-            this.currentCharIndex = this.sourceText[prevIndex].length;
+            this.drillStateManagementService.updateIndices(prevIndex, this.sourceText[prevIndex].length);
         }
 
         // only increment corrections if we're actually moving the cursor back
         // and there's a character to delete (not at the beginning of the word)
         if (this.currentCharIndex > 0) {
-            this.currentCharIndex--;
-            this.typedText[this.currentWordIndex][this.currentCharIndex] = undefined;
-            this.drillStatistic.totalCorrections++;
+            const newCharIndex = this.currentCharIndex - 1;
+            const updatedTypedText = [...this.typedText];
+            updatedTypedText[this.currentWordIndex][newCharIndex] = undefined;
+            this.drillStateManagementService.updateTypedText(updatedTypedText);
+            this.drillStateManagementService.updateIndices(this.currentWordIndex, newCharIndex);
+            
+            // Update drill statistic
+            const updatedDrillStatistic = { ...this.drillStatistic };
+            updatedDrillStatistic.totalCorrections++;
+            this.drillStateManagementService.updateDrillStatistic(updatedDrillStatistic);
             this.correctionsThisSecond++;
         }
     }
@@ -515,7 +469,7 @@ export class DrillEngineComponent implements OnInit {
         this.ngZone.runOutsideAngular(() => {
             setTimeout(() => {
                 this.ngZone.run(() => {
-                    this.isInputFocused = true;
+                    this.drillStateManagementService.setInputFocusState(true);
                 });
             });
         });
@@ -525,7 +479,7 @@ export class DrillEngineComponent implements OnInit {
         this.ngZone.runOutsideAngular(() => {
             setTimeout(() => {
                 this.ngZone.run(() => {
-                    this.isInputFocused = false;
+                    this.drillStateManagementService.setInputFocusState(false);
                 });
             });
         });
@@ -533,34 +487,23 @@ export class DrillEngineComponent implements OnInit {
 
     handleVirtualKeyPress = (button: string) => {
         this.onKeyTyped(button);
-        this.currentInput += button;
+        this.drillStateManagementService.setCurrentInput(this.currentInput + button);
     };
 
     // toolbar event handlers
     onRestart(): void {
         this.stopDrill();
         this.resetDrillStats();
-        this.currentWordIndex = 0;
-        this.currentCharIndex = 0;
-        this.typedText = this.sourceText.map((word) =>
-            new Array(word.length).fill(undefined),
-        );
-        this.wordLocked = this.sourceText.map(() => false);
-        this.isDrillActive = true;
-        this.showPostDrillOverlay = false;
-        this.adaptiveService.hideAdaptiveDrillOverlay();
+        this.drillStateManagementService.restartDrill();
         this.focusInput();
     }
 
     onNewDrill(): void {
         // reset all stats and state completely
         this.resetDrillStats();
-        this.isDrillActive = false;
-        this.showPostDrillOverlay = false;
         this.adaptiveService.resetAdaptiveState();
-        this.currentWordIndex = 0;
-        this.currentCharIndex = 0;
-        this.currentInput = '';
+        // Reset drill state using the service
+        this.drillStateManagementService.resetDrillStats(this.drillPreferences);
 
         // stop any existing timer
         this.stopTimer();
@@ -570,7 +513,7 @@ export class DrillEngineComponent implements OnInit {
             this.onNewAdaptiveDrill();
         }
         else {
-            this.isInputFocused = true;
+            this.drillStateManagementService.setInputFocusState(true);
 
             // start fresh drill
             this.startDrill();
@@ -606,14 +549,15 @@ export class DrillEngineComponent implements OnInit {
         this.adaptiveService.generateAdaptiveDrill(this.drillPreferences).then(adaptiveWords => {
             if (adaptiveWords.length > 0) {
                 this.startDrill(adaptiveWords);
-                this.isInputFocused = true;
+                this.drillStateManagementService.setInputFocusState(true);
                 this.focusInput();
             }
         });
     }
 
     private resetDrillStats(): void {
-        this.drillStatistic = this.drillStatisticsService.resetDrillStats();
+        // Update drill statistic using the service
+        this.drillStateManagementService.updateDrillStatistic(this.drillStatisticsService.resetDrillStats());
 
         this.wpm = 0;
         this.accuracy = 100;
@@ -640,15 +584,7 @@ export class DrillEngineComponent implements OnInit {
     }
 
     fillRandomDrillText(): void {
-        const words = this.drillTextService.getRandomDrillText(
-            this.drillPreferences.drillDifficulty,
-            this.drillPreferences.drillLength,
-        );
-
-        this.sourceText = words.map((word, i) => {
-            const chars = word.split('');
-            return i < words.length - 1 ? [...chars, ' '] : chars;
-        });
+        this.drillStateManagementService.fillRandomDrillText(this.drillPreferences);
     }
 
     onDrillPreferenceChange(preference: DrillPreference): void {
@@ -681,19 +617,19 @@ export class DrillEngineComponent implements OnInit {
             clearTimeout(this.typingTimeout);
         }
 
-        this.isTyping = isTyping;
+        this.drillStateManagementService.setTypingState(isTyping);
 
         if (isTyping) {
             // reset typing state after 2 seconds of no typing
             this.typingTimeout = setTimeout(() => {
-                this.isTyping = false;
+                this.drillStateManagementService.setTypingState(false);
             }, 2000);
         }
     }
 
     onPostDrillSubmit(): void {
         // reset error state for new submit request
-        this.submitError = '';
+        this.drillStateManagementService.setSubmissionState(false, '');
 
         // convert source text to array of strings
         const sourceTextArray = this.sourceText.map(word => word.join('').trim());
@@ -717,11 +653,11 @@ export class DrillEngineComponent implements OnInit {
             drillSubmission,
             this.drillPreferences,
             this.hasBeenInactive,
-            (loading: boolean) => this.isSubmitting = loading
+            (loading: boolean) => this.drillStateManagementService.setSubmissionState(loading)
         ).then(() => {
-            this.showPostDrillOverlay = false;
+            this.drillStateManagementService.hidePostDrillOverlay();
         }).catch((error: any) => {
-            this.submitError = error.message || 'An error occurred during submission.';
+            this.drillStateManagementService.setSubmissionState(false, error.message || 'An error occurred during submission.');
         });
     }
 
@@ -821,5 +757,58 @@ export class DrillEngineComponent implements OnInit {
 
     get isGeneratingAdaptive(): boolean {
         return this.adaptiveService.getCurrentAdaptiveState().isGeneratingAdaptive;
+    }
+
+    // Drill state getters for template
+    get isDrillActive(): boolean {
+        return this.drillStateManagementService.getCurrentDrillState().isDrillActive;
+    }
+
+    get sourceText(): string[][] {
+        return this.drillStateManagementService.getCurrentDrillState().sourceText;
+    }
+
+    get wordLocked(): boolean[] {
+        return this.drillStateManagementService.getCurrentDrillState().wordLocked;
+    }
+
+    get typedText(): (any | undefined)[][] {
+        return this.drillStateManagementService.getCurrentDrillState().typedText;
+    }
+
+    get currentWordIndex(): number {
+        return this.drillStateManagementService.getCurrentDrillState().currentWordIndex;
+    }
+
+    get currentCharIndex(): number {
+        return this.drillStateManagementService.getCurrentDrillState().currentCharIndex;
+    }
+
+    get drillStatistic(): DrillStatistic {
+        return this.drillStateManagementService.getCurrentDrillState().drillStatistic;
+    }
+
+    get isInputFocused(): boolean {
+        return this.drillStateManagementService.getCurrentDrillState().isInputFocused;
+    }
+
+    get currentInput(): string {
+        return this.drillStateManagementService.getCurrentDrillState().currentInput;
+    }
+
+    get isTyping(): boolean {
+        return this.drillStateManagementService.getCurrentDrillState().isTyping;
+    }
+
+    get showPostDrillOverlay(): boolean {
+        return this.drillStateManagementService.getCurrentDrillState().showPostDrillOverlay;
+    }
+
+    get isSubmitting(): boolean {
+        return this.drillStateManagementService.getCurrentDrillState().isSubmitting;
+    }
+
+    get submitError(): string {
+        return this.drillStateManagementService.getCurrentDrillState().submitError;
     }
 }

@@ -37,8 +37,8 @@ export class DrillTextService {
                 break;
         }
 
-        // For all difficulties, use words from the appropriate difficulty category
-        // Mix with some beginner words for variety (except for beginner difficulty)
+        // for all difficulties, use words from the appropriate difficulty category
+        // mix with some beginner words for variety (except for beginner difficulty)
         if (difficulty === DrillDifficulty.Beginner) {
             // Beginner difficulty: use only beginner words
             const shuffledWords = [...difficultyWords].sort(() => Math.random() - 0.5);
