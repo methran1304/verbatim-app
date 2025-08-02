@@ -92,16 +92,10 @@ export class DrillEngineComponent implements OnInit {
     private typingTimeout: any;
 
     showPostDrillOverlay: boolean = false;
-    showAdaptiveDrillOverlay: boolean = false;
-    isGeneratingAdaptive: boolean = false;
     isSubmitting: boolean = false;
     submitError: string = '';
     
-    // adaptive drill data
-    currentAdaptiveResponse?: AdaptiveDrillResponse;
-    showErrorWordsModal: boolean = false;
-    isLoadingErrorWords: boolean = false;
-    errorProneWords: string[] = [];
+    // Adaptive drill state is now managed by AdaptiveService
 
     // afk protection and inactivity detection
     private lastActivityTime: number = 0;
@@ -118,7 +112,7 @@ export class DrillEngineComponent implements OnInit {
     constructor(
         private drillTextService: DrillTextService,
         private drillService: DrillService,
-        private adaptiveService: AdaptiveService,
+        public adaptiveService: AdaptiveService,
         private drillStatisticsService: DrillStatisticsService,
         private drillSubmissionService: DrillSubmissionService,
         private timerManagementService: TimerManagementService,
@@ -162,6 +156,11 @@ export class DrillEngineComponent implements OnInit {
         // subscribe to timer state updates
         this.timerManagementService.getTimerState().subscribe(timerState => {
             this.timerState = timerState;
+        });
+
+        // subscribe to adaptive drill state updates
+        this.adaptiveService.getAdaptiveState().subscribe(adaptiveState => {
+            // The template will access adaptive state through the service
         });
 
         // get drill type from url query parameters
@@ -549,8 +548,7 @@ export class DrillEngineComponent implements OnInit {
         this.wordLocked = this.sourceText.map(() => false);
         this.isDrillActive = true;
         this.showPostDrillOverlay = false;
-        this.showAdaptiveDrillOverlay = false;
-        this.isGeneratingAdaptive = false;
+        this.adaptiveService.hideAdaptiveDrillOverlay();
         this.focusInput();
     }
 
@@ -559,8 +557,7 @@ export class DrillEngineComponent implements OnInit {
         this.resetDrillStats();
         this.isDrillActive = false;
         this.showPostDrillOverlay = false;
-        this.showAdaptiveDrillOverlay = false;
-        this.isGeneratingAdaptive = false;
+        this.adaptiveService.resetAdaptiveState();
         this.currentWordIndex = 0;
         this.currentCharIndex = 0;
         this.currentInput = '';
@@ -586,72 +583,32 @@ export class DrillEngineComponent implements OnInit {
             this.fillRandomDrillText();
         }
 
-        this.isGeneratingAdaptive = false;
-        this.showAdaptiveDrillOverlay = true;
+        this.adaptiveService.showAdaptiveDrillOverlay();
     }
 
     onViewErrorWords(): void {
-        this.showErrorWordsModal = true;
+        this.adaptiveService.showErrorWordsModal();
     }
 
     onViewErrorProneWords(): void {
-        this.isLoadingErrorWords = true;
-        this.errorProneWords = [];
-        
-        LoadingDelayUtil.withLoadingState(
-            this.adaptiveService.getErrorProneWords(this.drillPreferences.drillDifficulty),
-            (loading: boolean) => this.isLoadingErrorWords = loading,
-            500 // 500ms minimum loading time
-        ).then((result: ErrorProneWordsResponse) => {
-            if (result.success && result.errorProneWords) {
-                this.errorProneWords = result.errorProneWords;
-                this.showErrorWordsModal = true;
-            } else {
-                this.notificationService.createNotification('error', 'Error', result.message || 'Failed to fetch error-prone words.');
-            }
-        }).catch((error: any) => {
-            this.notificationService.createNotification('error', 'Error', 'Failed to fetch error-prone words. Please try again.');
-        });
+        this.adaptiveService.loadErrorProneWords(this.drillPreferences);
     }
 
     onCloseErrorWordsModal(): void {
-        this.showErrorWordsModal = false;
+        this.adaptiveService.hideErrorWordsModal();
     }
 
     getErrorWords(): string[] {
-        // If we have error-prone words from the API, use those
-        if (this.errorProneWords.length > 0) {
-            return this.errorProneWords;
-        }
-        
-        // Fallback to adaptive response data if available
-        if (!this.currentAdaptiveResponse?.fuzzySearchResponse?.similarWords) {
-            return [];
-        }
-        return Object.keys(this.currentAdaptiveResponse.fuzzySearchResponse.similarWords);
+        return this.adaptiveService.getErrorWords();
     }
 
     onGenerateAdaptiveDrill(): void {
-        LoadingDelayUtil.withLoadingState(
-            this.adaptiveService.getAdaptiveDrillWords(
-                this.drillPreferences.drillDifficulty,
-                DrillLengthWordCount[this.drillPreferences.drillLength]
-            ),
-            (loading: boolean) => this.isGeneratingAdaptive = loading,
-            500 // 500ms minimum loading time
-        ).then((result: AdaptiveDrillResponse) => {
-            if (result.success) {
-                this.currentAdaptiveResponse = result; // Store the response for error words display
-                const adaptiveWords = Object.values(result.fuzzySearchResponse?.similarWords ?? {}).flat();
+        this.adaptiveService.generateAdaptiveDrill(this.drillPreferences).then(adaptiveWords => {
+            if (adaptiveWords.length > 0) {
                 this.startDrill(adaptiveWords);
-                this.showAdaptiveDrillOverlay = false;
                 this.isInputFocused = true;
                 this.focusInput();
-            } else {
-                this.notificationService.createNotification('error', 'Error', result.message);
             }
-        }).catch((error: any) => {
-            this.notificationService.createNotification('error', 'Error', 'Failed to generate adaptive drill. Please try again.');
         });
     }
 
@@ -677,6 +634,9 @@ export class DrillEngineComponent implements OnInit {
 
         // reset timer using the service
         this.timerManagementService.resetTimer(this.drillPreferences);
+        
+        // reset adaptive drill state
+        this.adaptiveService.resetAdaptiveState();
     }
 
     fillRandomDrillText(): void {
@@ -840,5 +800,26 @@ export class DrillEngineComponent implements OnInit {
         if (this.isDrillActive && currentTimerState.startTime > 0 && this.drillPreferences.drillType !== DrillType.Timed) {
             this.updateUserActivity();
         }
+    }
+
+    // Adaptive drill state getters for template
+    get showAdaptiveDrillOverlay(): boolean {
+        return this.adaptiveService.getCurrentAdaptiveState().showAdaptiveDrillOverlay;
+    }
+
+    get showErrorWordsModal(): boolean {
+        return this.adaptiveService.getCurrentAdaptiveState().showErrorWordsModal;
+    }
+
+    get isLoadingErrorWords(): boolean {
+        return this.adaptiveService.getCurrentAdaptiveState().isLoadingErrorWords;
+    }
+
+    get errorProneWords(): string[] {
+        return this.adaptiveService.getCurrentAdaptiveState().errorProneWords;
+    }
+
+    get isGeneratingAdaptive(): boolean {
+        return this.adaptiveService.getCurrentAdaptiveState().isGeneratingAdaptive;
     }
 }
