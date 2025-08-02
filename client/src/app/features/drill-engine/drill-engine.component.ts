@@ -4,11 +4,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DrillTextComponent } from './drill-text/drill-text.component';
 import { DrillInputComponent } from './drill-input/drill-input.component';
 import { DrillTextService } from '../../services/drill-text.service';
-import { KeyStroke } from '../../models/interfaces/typed-char.interface';
 import { SpecialKeys } from '../../core/constants/keys.constant';
 import { DrillDifficulty } from '../../models/enums/drill-difficulty.enum';
-import { DrillLength, DrillLengthWordCount } from '../../models/enums/drill-length.enum';
-import { DrillStatistic, PointTimeData } from '../../models/interfaces/drill-stats.interface';
+import { DrillLength } from '../../models/enums/drill-length.enum';
+import { DrillStatistic } from '../../models/interfaces/drill-stats.interface';
 import { CommonModule } from '@angular/common';
 import { VirtualKeyboardComponent } from './virtual-keyboard/virtual-keyboard.component';
 import { DrillToolbarComponent } from './drill-toolbar/drill-toolbar.component';
@@ -22,18 +21,14 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { DrillPreference } from '../../models/interfaces/drill-preference.interface';
 import { DrillType } from '../../models/enums/drill-type.enum';
 import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service.ts.service';
-import { ErrorHandlerUtil } from '../../core/utils/error-handler.util';
-import { LoadingDelayUtil } from '../../core/utils/loading-delay.util';
 import { DrillService } from '../../services/drill.service';
-import { DrillSubmissionRequest, DrillSubmissionResponse } from '../../models/interfaces/drill-submission.interface';
-import { AdaptiveDrillResponse, ErrorProneWordsResponse, AdaptiveService } from '../../services/adaptive.service';
+import { DrillSubmissionRequest } from '../../models/interfaces/drill-submission.interface';
+import { AdaptiveService } from '../../services/adaptive.service';
 import { DrillStatisticsService } from '../../services/drill-statistics.service';
 import { DrillSubmissionService } from '../../services/drill-submission.service';
 import { TimerManagementService, TimerState } from '../../services/timer-management.service';
-import { DrillStateManagementService, DrillState } from '../../services/drill-state-management.service';
+import { DrillStateManagementService } from '../../services/drill-state-management.service';
 import { RealTimeDataService } from '../../services/real-time-data.service';
-
-
 
 @Component({
     selector: 'app-drill-engine',
@@ -91,8 +86,6 @@ export class DrillEngineComponent implements OnInit {
 
 
     constructor(
-        private drillTextService: DrillTextService,
-        private drillService: DrillService,
         public adaptiveService: AdaptiveService,
         private drillStatisticsService: DrillStatisticsService,
         private drillSubmissionService: DrillSubmissionService,
@@ -103,7 +96,6 @@ export class DrillEngineComponent implements OnInit {
         private themeService: ThemeService,
         private navigationService: NavigationService,
         private route: ActivatedRoute,
-        private router: Router,
         private notificationService: ZorroNotificationServiceTsService
     ) {
         // get drill preference
@@ -133,23 +125,15 @@ export class DrillEngineComponent implements OnInit {
         // set initial drill type from preferences
         this.navigationService.setCurrentDrillType(this.currentDrillType);
 
-        // initialize timer with current preferences
         this.resetDrillStats();
 
-        // subscribe to timer state updates
         this.timerManagementService.getTimerState().subscribe(timerState => {
             this.timerState = timerState;
         });
 
-        // subscribe to adaptive drill state updates
-        this.adaptiveService.getAdaptiveState().subscribe(adaptiveState => {
-            // The template will access adaptive state through the service
-        });
+        this.adaptiveService.getAdaptiveState().subscribe(adaptiveState => {});
 
-        // subscribe to drill state updates
-        this.drillStateManagementService.getDrillState().subscribe(drillState => {
-            // The template will access drill state through getters
-        });
+        this.drillStateManagementService.getDrillState().subscribe(drillState => {});
 
         // get drill type from url query parameters
         this.route.queryParams.subscribe(params => {
@@ -180,13 +164,10 @@ export class DrillEngineComponent implements OnInit {
     }
 
     stopDrill(isAdaptive: boolean = false): void {
-        // stop timer
         this.stopTimer();
 
-        // stop inactivity monitoring
         this.stopInactivityMonitoring();
 
-        // add final data point if drill was active
         const currentTimerState = this.timerManagementService.getCurrentTimerState();
         if (currentTimerState.startTime > 0) {
             const finalTimePoint = this.drillPreferences.drillType === DrillType.Timed
@@ -195,7 +176,7 @@ export class DrillEngineComponent implements OnInit {
             this.realTimeDataService.addTimeSeriesDataPoint(finalTimePoint, this.wpm, this.accuracy);
         }
 
-        // Update drill statistic with final data
+        // update drill statistic with final data
         const updatedDrillStatistic = { ...this.drillStatistic };
         updatedDrillStatistic.realTimeData = [...this.realTimeDataService.getRealTimeData()];
         updatedDrillStatistic.wpm = this.wpm;
@@ -212,24 +193,18 @@ export class DrillEngineComponent implements OnInit {
         updatedDrillStatistic.maxWPM = updatedDrillStatistic.realTimeData.reduce((acc, curr) => Math.max(acc, curr.wpm), 0);
         updatedDrillStatistic.maxAccuracy = updatedDrillStatistic.realTimeData.reduce((acc, curr) => Math.max(acc, curr.accuracy), 0);
 
-        // wordscount equals the sum of correct and incorrect words
         updatedDrillStatistic.wordsCount = updatedDrillStatistic.correctWords + updatedDrillStatistic.incorrectWords;
-        // letterscount equals the sum of all letters in the source text
         updatedDrillStatistic.lettersCount = updatedDrillStatistic.correctLetters + updatedDrillStatistic.incorrectLetters;
 
-        // calculate error rate for this drill
         updatedDrillStatistic.errorRate = updatedDrillStatistic.wordsCount > 0
             ? (updatedDrillStatistic.incorrectWords / updatedDrillStatistic.wordsCount) * 100
             : 0;
 
         this.drillStateManagementService.updateDrillStatistic(updatedDrillStatistic);
         this.drillStateManagementService.stopDrill(isAdaptive);
-
-        console.log(updatedDrillStatistic);
     }
 
     onKeyTyped(value: string): void {
-
         if (value === 'CTRL_BACKSPACE') {
             this.clearCurrentWord();
             return;
@@ -243,7 +218,6 @@ export class DrillEngineComponent implements OnInit {
             return;
         }
 
-        // track user activity
         this.updateUserActivity();
 
         // set typing state for toolbar animation
@@ -297,13 +271,9 @@ export class DrillEngineComponent implements OnInit {
                 this.drillStatistic.errorMap.wordErrorMap[currentWordTrimmed] ??= 0;
                 this.drillStatistic.errorMap.wordErrorMap[currentWordTrimmed]++;
                 this.drillStatistic.incorrectWords++;
-
-                // track incorrect word for time series data
                 this.realTimeDataService.addWordIncorrectThisSecond(this.currentWordIndex);
             } else {
                 this.drillStatistic.correctWords++;
-
-                // track completed word for time series data
                 this.realTimeDataService.addWordCompletedThisSecond(this.currentWordIndex);
             }
 
@@ -377,7 +347,7 @@ export class DrillEngineComponent implements OnInit {
             this.drillStateManagementService.updateTypedText(updatedTypedText);
             this.drillStateManagementService.updateIndices(this.currentWordIndex, newCharIndex);
             
-            // Update drill statistic
+            // increment total corrections
             const updatedDrillStatistic = { ...this.drillStatistic };
             updatedDrillStatistic.totalCorrections++;
             this.drillStateManagementService.updateDrillStatistic(updatedDrillStatistic);
@@ -393,15 +363,12 @@ export class DrillEngineComponent implements OnInit {
     }
 
     startTimer(): void {
-        // initialize first data point at time 0
         this.realTimeDataService.addTimeSeriesDataPoint(0, this.wpm, this.accuracy);
 
-        // start inactivity monitoring for non-timed drills
         if (this.drillPreferences.drillType !== DrillType.Timed) {
             this.startInactivityMonitoring();
         }
 
-        // start timer using the service
         this.timerManagementService.startTimer(this.drillPreferences, {
             onTick: (timerState: TimerState) => {
                 this.timerState = timerState;
@@ -434,9 +401,6 @@ export class DrillEngineComponent implements OnInit {
             this.drillStatistic.duration = Math.floor((Date.now() - currentTimerState.startTime) / 1000);
         }
     }
-
-
-
 
     focusInput() {
         this.drillInputComponent?.focusInput();
@@ -476,13 +440,10 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onNewDrill(): void {
-        // reset all stats and state completely
         this.resetDrillStats();
         this.adaptiveService.resetAdaptiveState();
-        // Reset drill state using the service
         this.drillStateManagementService.resetDrillStats(this.drillPreferences);
 
-        // stop any existing timer
         this.stopTimer();
 
         // only focus input after word generation is complete for adaptive drills
@@ -502,7 +463,6 @@ export class DrillEngineComponent implements OnInit {
         if (this.sourceText.length === 0) {
             this.fillRandomDrillText();
         }
-
         this.adaptiveService.showAdaptiveDrillOverlay();
     }
 
@@ -533,26 +493,20 @@ export class DrillEngineComponent implements OnInit {
     }
 
     private resetDrillStats(): void {
-        // Update drill statistic using the service
         this.drillStateManagementService.updateDrillStatistic(this.drillStatisticsService.resetDrillStats());
 
         this.wpm = 0;
         this.accuracy = 100;
 
-        // reset time series data
         this.realTimeDataService.resetRealTimeData();
 
-        // reset inactivity tracking
         this.lastActivityTime = 0;
         this.isUserInactive = false;
         this.hasBeenInactive = false;
         this.afkReason = '';
-        this.stopInactivityMonitoring();
-
-        // reset timer using the service
-        this.timerManagementService.resetTimer(this.drillPreferences);
         
-        // reset adaptive drill state
+        this.stopInactivityMonitoring();
+        this.timerManagementService.resetTimer(this.drillPreferences);
         this.adaptiveService.resetAdaptiveState();
     }
 
@@ -564,7 +518,6 @@ export class DrillEngineComponent implements OnInit {
         this.drillPreferences = preference;
         localStorage.setItem('drillPreference', JSON.stringify(preference));
 
-        // update current drill type if it changed
         if (preference.drillType !== this.currentDrillType) {
             this.currentDrillType = preference.drillType;
             this.navigationService.setCurrentDrillType(this.currentDrillType);
@@ -601,18 +554,14 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onPostDrillSubmit(): void {
-        // reset error state for new submit request
         this.drillStateManagementService.setSubmissionState(false, '');
 
-        // convert source text to array of strings
         const sourceTextArray = this.sourceText.map(word => word.join('').trim());
 
-        // convert typed text to array of strings
         const typedWordsArray = this.typedText.map(word => {
             return word.map(char => char?.key?.trim() || '').join('');
         });
 
-        // create drill submission object
         const drillSubmission: DrillSubmissionRequest = {
             drillDifficulty: this.drillPreferences.drillDifficulty,
             drillType: this.drillPreferences.drillType,
@@ -621,7 +570,6 @@ export class DrillEngineComponent implements OnInit {
             drillStatistic: this.drillStatistic
         };
 
-        // use the submission service
         this.drillSubmissionService.submitDrill(
             drillSubmission,
             this.drillPreferences,
@@ -649,7 +597,6 @@ export class DrillEngineComponent implements OnInit {
             this.isUserInactive = false;
         }
 
-        // clear existing inactivity timeout
         if (this.inactivityTimeout) {
             clearTimeout(this.inactivityTimeout);
         }
@@ -667,7 +614,7 @@ export class DrillEngineComponent implements OnInit {
     }
 
     private startInactivityMonitoring(): void {
-        // check for inactivity every 10 seconds
+        // check for inactivity every INACTIVITY_CHECK_INTERVAL
         this.inactivityCheckInterval = setInterval(() => {
             // only monitor if drill is active and has started
             const currentTimerState = this.timerManagementService.getCurrentTimerState();
