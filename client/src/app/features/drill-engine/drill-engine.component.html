@@ -38,10 +38,10 @@
     (viewErrorProneWords)="onViewErrorProneWords()"
   ></app-drill-text>
 
-  <app-virtual-keyboard
-    [inputValue]="currentInput"
-    [isDarkTheme]="isDarkMode"
-  ></app-virtual-keyboard>
+  @if (!isCompetitive) {
+  <app-virtual-keyboard [inputValue]="currentInput" [isDarkTheme]="isDarkMode">
+  </app-virtual-keyboard>
+  }
 
   @if (isDrillActive) {
   <app-drill-input (keyTyped)="onKeyTyped($event)" (focusEvent)="onInputFocus()"

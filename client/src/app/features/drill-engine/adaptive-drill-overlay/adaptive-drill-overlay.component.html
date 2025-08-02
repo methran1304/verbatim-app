@@ -1,0 +1,28 @@
+@if (show) {
+  <nz-card id="adaptive-overlay" #adaptiveoverlay>
+    <div class="adaptive-content">
+      <h2>Adaptive Drill</h2>
+      <p>Adaptive drills help you practice words you commonly misspell. Choose your difficulty level and drill length to get personalized practice words tailored to your typing patterns.</p>
+      <div class="post-drill-btn-row">
+        <span class="post-drill-btn" (click)="viewErrorProneWords.emit()" [class.disabled]="isLoadingErrorWords || isGeneratingAdaptive">
+          @if (isLoadingErrorWords) {
+            <span nz-icon nzType="loading" nzTheme="outline" style="font-size: 16px;"></span>
+            <span class="button-text">Loading</span>
+          } @else {
+            <span nz-icon nzType="eye" nzTheme="outline" style="font-size: 16px;"></span>
+            <span class="button-text">Recent Misspelled</span>
+          }
+        </span>
+        <span class="post-drill-btn" (click)="generateAdaptiveDrill.emit()" [class.disabled]="isGeneratingAdaptive || isLoadingErrorWords">
+          @if (isGeneratingAdaptive) {
+            <span nz-icon nzType="loading" nzTheme="outline" style="font-size: 16px;"></span>
+            <span class="button-text">Generating</span>
+          } @else {
+            <span nz-icon nzType="robot" nzTheme="outline" style="font-size: 16px;"></span>
+            <span class="button-text">Generate</span>
+          }
+        </span>
+      </div>
+    </div>
+  </nz-card>
+} 

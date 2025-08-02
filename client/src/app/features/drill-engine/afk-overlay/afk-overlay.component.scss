@@ -1,0 +1,19 @@
+#afk-overlay {
+  display: block;
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 60px;
+  width: 250px;
+  z-index: 30;
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  box-shadow: var(--color-shadow);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+#afk-overlay p {
+  transform: translate(14px, -6px);
+} 

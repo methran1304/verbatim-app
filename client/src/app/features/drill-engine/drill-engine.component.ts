@@ -1,9 +1,8 @@
 // === drill-engine.component.ts ===
-import { Component, NgZone, OnInit, ViewChild, HostListener } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, NgZone, OnInit, ViewChild, HostListener, Input } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { DrillTextComponent } from './drill-text/drill-text.component';
 import { DrillInputComponent } from './drill-input/drill-input.component';
-import { DrillTextService } from '../../services/drill-text.service';
 import { SpecialKeys } from '../../core/constants/keys.constant';
 import { DrillDifficulty } from '../../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../../models/enums/drill-length.enum';
@@ -21,14 +20,13 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { DrillPreference } from '../../models/interfaces/drill-preference.interface';
 import { DrillType } from '../../models/enums/drill-type.enum';
 import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service.ts.service';
-import { DrillService } from '../../services/drill.service';
-import { DrillSubmissionRequest } from '../../models/interfaces/drill-submission.interface';
 import { AdaptiveService } from '../../services/adaptive.service';
 import { DrillStatisticsService } from '../../services/drill-statistics.service';
 import { DrillSubmissionService } from '../../services/drill-submission.service';
 import { TimerManagementService, TimerState } from '../../services/timer-management.service';
 import { DrillStateManagementService } from '../../services/drill-state-management.service';
 import { RealTimeDataService } from '../../services/real-time-data.service';
+import { DrillSubmissionRequest } from '../../models/interfaces/drill-submission.interface';
 
 @Component({
     selector: 'app-drill-engine',
@@ -50,6 +48,7 @@ import { RealTimeDataService } from '../../services/real-time-data.service';
     styleUrl: './drill-engine.component.scss',
 })
 export class DrillEngineComponent implements OnInit {
+    @Input() isCompetitive: boolean = false;
     @ViewChild(DrillInputComponent) drillInputComponent!: DrillInputComponent;
 
 

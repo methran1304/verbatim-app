@@ -19,11 +19,14 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { AfkOverlayComponent } from '../afk-overlay/afk-overlay.component';
+import { PostDrillOverlayComponent } from '../post-drill-overlay/post-drill-overlay.component';
+import { AdaptiveDrillOverlayComponent } from '../adaptive-drill-overlay/adaptive-drill-overlay.component';
 
 @Component({
     selector: 'app-drill-text',
     standalone: true,
-    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule, NzToolTipModule],
+    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule, NzToolTipModule, AfkOverlayComponent, PostDrillOverlayComponent, AdaptiveDrillOverlayComponent],
     templateUrl: './drill-text.component.html',
     styleUrl: './drill-text.component.scss',
 })
