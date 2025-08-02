@@ -31,6 +31,7 @@ import { DrillStatisticsService } from '../../services/drill-statistics.service'
 import { DrillSubmissionService } from '../../services/drill-submission.service';
 import { TimerManagementService, TimerState } from '../../services/timer-management.service';
 import { DrillStateManagementService, DrillState } from '../../services/drill-state-management.service';
+import { RealTimeDataService } from '../../services/real-time-data.service';
 
 
 
@@ -64,11 +65,7 @@ export class DrillEngineComponent implements OnInit {
     accuracy: number = 100;
 
     // Time series data collection
-    realTimeData: PointTimeData[] = [];
-    private lastDataPointTime: number = 0;
-    private wordsCompletedThisSecond: number[] = [];
-    private wordsIncorrectThisSecond: number[] = [];
-    private correctionsThisSecond: number = 0;
+    // real-time data collection is now managed by RealTimeDataService
 
     isDarkMode: boolean = false;
 
@@ -101,6 +98,7 @@ export class DrillEngineComponent implements OnInit {
         private drillSubmissionService: DrillSubmissionService,
         private timerManagementService: TimerManagementService,
         private drillStateManagementService: DrillStateManagementService,
+        private realTimeDataService: RealTimeDataService,
         private ngZone: NgZone,
         private themeService: ThemeService,
         private navigationService: NavigationService,
@@ -194,12 +192,12 @@ export class DrillEngineComponent implements OnInit {
             const finalTimePoint = this.drillPreferences.drillType === DrillType.Timed
                 ? currentTimerState.totalTimeInSeconds
                 : Math.floor((Date.now() - currentTimerState.startTime) / 1000);
-            this.addTimeSeriesDataPoint(finalTimePoint);
+            this.realTimeDataService.addTimeSeriesDataPoint(finalTimePoint, this.wpm, this.accuracy);
         }
 
         // Update drill statistic with final data
         const updatedDrillStatistic = { ...this.drillStatistic };
-        updatedDrillStatistic.realTimeData = [...this.realTimeData];
+        updatedDrillStatistic.realTimeData = [...this.realTimeDataService.getRealTimeData()];
         updatedDrillStatistic.wpm = this.wpm;
         updatedDrillStatistic.accuracy = this.accuracy;
 
@@ -301,12 +299,12 @@ export class DrillEngineComponent implements OnInit {
                 this.drillStatistic.incorrectWords++;
 
                 // track incorrect word for time series data
-                this.wordsIncorrectThisSecond.push(this.currentWordIndex);
+                this.realTimeDataService.addWordIncorrectThisSecond(this.currentWordIndex);
             } else {
                 this.drillStatistic.correctWords++;
 
                 // track completed word for time series data
-                this.wordsCompletedThisSecond.push(this.currentWordIndex);
+                this.realTimeDataService.addWordCompletedThisSecond(this.currentWordIndex);
             }
 
             // do not let user modify the completed correct words
@@ -383,7 +381,7 @@ export class DrillEngineComponent implements OnInit {
             const updatedDrillStatistic = { ...this.drillStatistic };
             updatedDrillStatistic.totalCorrections++;
             this.drillStateManagementService.updateDrillStatistic(updatedDrillStatistic);
-            this.correctionsThisSecond++;
+            this.realTimeDataService.incrementCorrectionsThisSecond();
         }
     }
 
@@ -396,8 +394,7 @@ export class DrillEngineComponent implements OnInit {
 
     startTimer(): void {
         // initialize first data point at time 0
-        this.lastDataPointTime = 0;
-        this.addTimeSeriesDataPoint(0);
+        this.realTimeDataService.addTimeSeriesDataPoint(0, this.wpm, this.accuracy);
 
         // start inactivity monitoring for non-timed drills
         if (this.drillPreferences.drillType !== DrillType.Timed) {
@@ -413,11 +410,11 @@ export class DrillEngineComponent implements OnInit {
                 // add time series data point
                 if (this.drillPreferences.drillType === DrillType.Timed) {
                     const currentTimePoint = timerState.totalTimeInSeconds - timerState.remainingSeconds;
-                    this.addTimeSeriesDataPoint(currentTimePoint);
+                    this.realTimeDataService.addTimeSeriesDataPoint(currentTimePoint, this.wpm, this.accuracy);
                 } else {
                     // only add data points if user is active or within reasonable inactivity period
                     if (!this.isUserInactive || timerState.elapsedSeconds <= this.MAX_INACTIVITY_SECONDS) {
-                        this.addTimeSeriesDataPoint(timerState.elapsedSeconds);
+                        this.realTimeDataService.addTimeSeriesDataPoint(timerState.elapsedSeconds, this.wpm, this.accuracy);
                     }
                 }
             },
@@ -438,26 +435,6 @@ export class DrillEngineComponent implements OnInit {
         }
     }
 
-    private addTimeSeriesDataPoint(timePoint: number): void {
-        const result = this.drillStatisticsService.addTimeSeriesDataPoint(
-            timePoint,
-            this.wpm,
-            this.accuracy,
-            this.correctionsThisSecond,
-            this.wordsCompletedThisSecond,
-            this.wordsIncorrectThisSecond,
-            this.realTimeData,
-            this.lastDataPointTime
-        );
-        
-        this.realTimeData = result.realTimeData;
-        this.lastDataPointTime = result.lastDataPointTime;
-
-        // reset the per-second tracking arrays
-        this.wordsCompletedThisSecond = [];
-        this.wordsIncorrectThisSecond = [];
-        this.correctionsThisSecond = 0;
-    }
 
 
 
@@ -563,11 +540,7 @@ export class DrillEngineComponent implements OnInit {
         this.accuracy = 100;
 
         // reset time series data
-        this.realTimeData = [];
-        this.lastDataPointTime = 0;
-        this.wordsCompletedThisSecond = [];
-        this.wordsIncorrectThisSecond = [];
-        this.correctionsThisSecond = 0;
+        this.realTimeDataService.resetRealTimeData();
 
         // reset inactivity tracking
         this.lastActivityTime = 0;

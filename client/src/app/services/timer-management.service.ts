@@ -43,23 +43,17 @@ export class TimerManagementService {
         private notificationService: ZorroNotificationServiceTsService
     ) {}
 
-    /**
-     * Get timer state as observable
-     */
+    // get timer state as observable
     getTimerState(): Observable<TimerState> {
         return this.timerState$.asObservable();
     }
 
-    /**
-     * Get current timer state
-     */
+    // get current timer state
     getCurrentTimerState(): TimerState {
         return this.timerState$.value;
     }
 
-    /**
-     * Start the timer based on drill preferences
-     */
+    // start the timer based on drill preferences
     startTimer(drillPreferences: DrillPreference, callbacks?: TimerCallback): void {
         const startTime = Date.now();
         let endTime = 0;
@@ -144,9 +138,7 @@ export class TimerManagementService {
         }, 1000);
     }
 
-    /**
-     * Stop the timer
-     */
+    // stop the timer
     stopTimer(): void {
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
@@ -160,9 +152,7 @@ export class TimerManagementService {
         });
     }
 
-    /**
-     * Reset the timer to initial state
-     */
+    // reset the timer to initial state
     resetTimer(drillPreferences: DrillPreference): void {
         this.stopTimer();
 
@@ -184,9 +174,7 @@ export class TimerManagementService {
         this.timerState$.next(resetState);
     }
 
-    /**
-     * Get the duration of the completed drill in seconds
-     */
+    // get the duration of the completed drill in seconds
     getDrillDuration(): number {
         const currentState = this.timerState$.value;
         if (currentState.startTime > 0) {
@@ -195,16 +183,12 @@ export class TimerManagementService {
         return 0;
     }
 
-    /**
-     * Check if timer is currently active
-     */
+    // check if timer is currently active
     isTimerActive(): boolean {
         return this.timerState$.value.isActive;
     }
 
-    /**
-     * Format time in MM:SS format
-     */
+    // format time in MM:SS format
     private formatTime(seconds: number): string {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = seconds % 60;
