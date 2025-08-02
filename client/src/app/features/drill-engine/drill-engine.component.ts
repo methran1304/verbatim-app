@@ -495,7 +495,12 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onChangePreference(): void {
-        // show the adaptive drill overlay
+        if (this.isDrillActive) {
+            this.stopDrill(true);
+        }
+        
+        this.resetDrillStats();
+        
         this.adaptiveService.showAdaptiveDrillOverlay();
     }
 
