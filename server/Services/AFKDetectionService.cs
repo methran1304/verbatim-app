@@ -9,10 +9,10 @@ namespace server.Services
 {
     public interface IAFKDetectionService
     {
-        void StartAFKMonitoring(string roomId, DrillSettings drillSettings);
-        void StopAFKMonitoring(string roomId);
-        Task CheckAFKPlayersAsync(string roomId, DrillSettings drillSettings);
-        Task HandleAFKPlayerAsync(string roomId, string userId);
+        void StartAFKMonitoring(string roomCode, DrillSettings drillSettings);
+        void StopAFKMonitoring(string roomCode);
+        Task CheckAFKPlayersAsync(string roomCode, DrillSettings drillSettings);
+        Task HandleAFKPlayerAsync(string roomCode, string userId);
         TimeSpan GetAFKTimeout(DrillSettings drillSettings);
     }
 
@@ -39,54 +39,54 @@ namespace server.Services
 
 
 
-        public void StartAFKMonitoring(string roomId, DrillSettings drillSettings)
+        public void StartAFKMonitoring(string roomCode, DrillSettings drillSettings)
         {
             lock (_timerLock)
             {
                 // stop existing timer if any
-                StopAFKMonitoring(roomId);
+                StopAFKMonitoring(roomCode);
 
                 // record drill start time
-                RecordDrillStartTime(roomId);
+                RecordDrillStartTime(roomCode);
 
                 // create new timer that checks every 10 seconds
-                var timer = new Timer(async _ => await CheckAFKPlayersAsync(roomId, drillSettings), 
+                var timer = new Timer(async _ => await CheckAFKPlayersAsync(roomCode, drillSettings), 
                     null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
                 
-                _afkTimers[roomId] = timer;
+                _afkTimers[roomCode] = timer;
             }
         }
 
-        public void StopAFKMonitoring(string roomId)
+        public void StopAFKMonitoring(string roomCode)
         {
             lock (_timerLock)
             {
-                if (_afkTimers.TryGetValue(roomId, out var timer))
+                if (_afkTimers.TryGetValue(roomCode, out var timer))
                 {
                     timer?.Dispose();
-                    _afkTimers.Remove(roomId);
+                    _afkTimers.Remove(roomCode);
                 }
             }
         }
 
-        public async Task CheckAFKPlayersAsync(string roomId, DrillSettings drillSettings)
+        public async Task CheckAFKPlayersAsync(string roomCode, DrillSettings drillSettings)
         {
             try
             {
-                var players = _playerService.GetPlayersInRoom(roomId);
+                var players = _playerService.GetPlayersInRoom(roomCode);
                 var now = DateTime.UtcNow;
                 var timeout = GetAFKTimeout(drillSettings);
-                var drillStartTime = GetDrillStartTime(roomId);
+                var drillStartTime = GetDrillStartTime(roomCode);
 
                 foreach (var player in players.Where(p => p.State == PlayerState.Typing))
                 {
-                    var lastActivity = GetLastActivity(roomId, player.UserId);
+                    var lastActivity = GetLastActivity(roomCode, player.UserId);
                     if (lastActivity.HasValue)
                     {
                         var inactiveTime = now - lastActivity.Value;
                         if (inactiveTime > timeout)
                         {
-                            await HandleAFKPlayerAsync(roomId, player.UserId);
+                            await HandleAFKPlayerAsync(roomCode, player.UserId);
                         }
                     }
                     else
@@ -95,7 +95,7 @@ namespace server.Services
                         var timeSinceDrillStart = now - drillStartTime;
                         if (timeSinceDrillStart > timeout)
                         {
-                            await HandleAFKPlayerAsync(roomId, player.UserId);
+                            await HandleAFKPlayerAsync(roomCode, player.UserId);
                         }
                     }
                 }
@@ -103,11 +103,11 @@ namespace server.Services
             catch (Exception ex)
             {
                 // log error but don't crash the timer
-                Console.WriteLine($"Error checking AFK players for room {roomId}: {ex.Message}");
+                Console.WriteLine($"Error checking AFK players for room {roomCode}: {ex.Message}");
             }
         }
 
-        public async Task HandleAFKPlayerAsync(string roomId, string userId)
+        public async Task HandleAFKPlayerAsync(string roomCode, string userId)
         {
             // mark player as disconnected
             var afkResult = new DrillResult
@@ -123,16 +123,16 @@ namespace server.Services
                 FinishedAt = DateTime.UtcNow
             };
 
-            _playerService.SetPlayerFinished(roomId, userId, afkResult);
+            _playerService.SetPlayerFinished(roomCode, userId, afkResult);
 
             // check if this was a marathon drill and if all remaining players are finished
-            var finishedCount = await _competitiveDrillService.GetFinishedPlayerCountAsync(roomId);
-            var activeCount = await _competitiveDrillService.GetActivePlayerCountAsync(roomId);
+            var finishedCount = await _competitiveDrillService.GetFinishedPlayerCountAsync(roomCode);
+            var activeCount = await _competitiveDrillService.GetActivePlayerCountAsync(roomCode);
 
             if (finishedCount == activeCount)
             {
                 // all remaining players are finished, end the drill
-                var room = await GetRoomByIdAsync(roomId);
+                var room = await GetRoomByCodeAsync(roomCode);
                 if (room?.ActiveCompetitiveDrillId != null)
                 {
                     var winnerId = await _competitiveDrillService.DetermineWinnerAsync(room.ActiveCompetitiveDrillId);
@@ -155,34 +155,34 @@ namespace server.Services
             };
         }
 
-        private DateTime? GetLastActivity(string roomId, string userId)
+        private DateTime? GetLastActivity(string roomCode, string userId)
         {
-            var key = GetActivityKey(roomId, userId);
+            var key = GetActivityKey(roomCode, userId);
             _cache.TryGetValue(key, out DateTime lastActivity);
             return lastActivity;
         }
 
-        private string GetActivityKey(string roomId, string userId)
+        private string GetActivityKey(string roomCode, string userId)
         {
-            return $"activity:{roomId}:{userId}";
+            return $"activity:{roomCode}:{userId}";
         }
 
-        private DateTime GetDrillStartTime(string roomId)
+        private DateTime GetDrillStartTime(string roomCode)
         {
-            var key = $"drill_start:{roomId}";
+            var key = $"drill_start:{roomCode}";
             _cache.TryGetValue(key, out DateTime startTime);
             return startTime;
         }
 
-        private void RecordDrillStartTime(string roomId)
+        private void RecordDrillStartTime(string roomCode)
         {
-            var key = $"drill_start:{roomId}";
+            var key = $"drill_start:{roomCode}";
             _cache.Set(key, DateTime.UtcNow, TimeSpan.FromHours(2));
         }
 
-        private async Task<Room?> GetRoomByIdAsync(string roomId)
+        private async Task<Room?> GetRoomByCodeAsync(string roomCode)
         {
-            return await _roomService.GetRoomByIdAsync(roomId);
+            return await _roomService.GetRoomByCodeAsync(roomCode);
         }
     }
 } 

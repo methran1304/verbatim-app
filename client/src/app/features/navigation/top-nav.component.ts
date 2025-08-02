@@ -178,8 +178,7 @@ export class TopNavComponent implements OnInit {
     if (key === 'leaderboard') {
       this.router.navigate(['/leaderboard']);
     } else if (key === 'compete') {
-      // TODO: Implement compete feature
-      // console.log('Compete feature coming soon');
+      this.router.navigate(['/competitive-drill']);
     }
   }
 

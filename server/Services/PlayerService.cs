@@ -21,9 +21,9 @@ namespace server.Services
             _userService = userService;
         }
 
-        public bool AddPlayerToRoom(string roomId, string userId)
+        public bool AddPlayerToRoom(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             
             if (players.Any(p => p.UserId == userId))
                 return false;
@@ -39,97 +39,97 @@ namespace server.Services
             };
 
             players.Add(newPlayer);
-            SetPlayersInRoomCache(roomId, players);
+            SetPlayersInRoomCache(roomCode, players);
             
             return true;
         }
 
-        public bool RemovePlayerFromRoom(string roomId, string userId)
+        public bool RemovePlayerFromRoom(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             var player = players.FirstOrDefault(p => p.UserId == userId);
             
             if (player == null)
                 return false;
 
             players.Remove(player);
-            SetPlayersInRoomCache(roomId, players);
+            SetPlayersInRoomCache(roomCode, players);
             
             return true;
         }
 
-        public List<CompetitiveDrillPlayer> GetPlayersInRoom(string roomId)
+        public List<CompetitiveDrillPlayer> GetPlayersInRoom(string roomCode)
         {
-            return GetPlayersInRoomFromCache(roomId);
+            return GetPlayersInRoomFromCache(roomCode);
         }
 
-        public bool UpdatePlayerStatistics(string roomId, string userId, PlayerStatistics stats)
+        public bool UpdatePlayerStatistics(string roomCode, string userId, PlayerStatistics stats)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             var player = players.FirstOrDefault(p => p.UserId == userId);
             
             if (player != null)
             {
                 player.WPM = stats.WPM;
                 player.Accuracy = stats.Accuracy;
-                SetPlayersInRoomCache(roomId, players);
+                SetPlayersInRoomCache(roomCode, players);
                 
                 // Record activity for AFK detection
-                RecordActivity(roomId, userId);
+                RecordActivity(roomCode, userId);
                 
                 return true;
             }
             return false;
         }
 
-        public bool IsPlayerInRoom(string roomId, string userId)
+        public bool IsPlayerInRoom(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             return players.Any(p => p.UserId == userId);
         }
 
-        public CompetitiveDrillPlayer? GetPlayer(string roomId, string userId)
+        public CompetitiveDrillPlayer? GetPlayer(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             return players.FirstOrDefault(p => p.UserId == userId);
         }
 
-        public bool SetPlayerReady(string roomId, string userId)
+        public bool SetPlayerReady(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             var player = players.FirstOrDefault(p => p.UserId == userId);
             
             if (player != null)
             {
                 player.State = PlayerState.Ready;
-                SetPlayersInRoomCache(roomId, players);
+                SetPlayersInRoomCache(roomCode, players);
                 return true;
             }
             return false;
         }
 
-        public bool StartPlayerTyping(string roomId, string userId)
+        public bool StartPlayerTyping(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             var player = players.FirstOrDefault(p => p.UserId == userId);
             
             if (player != null)
             {
                 player.State = PlayerState.Typing;
-                SetPlayersInRoomCache(roomId, players);
+                SetPlayersInRoomCache(roomCode, players);
                 
                 // Record initial activity when player starts typing
-                RecordActivity(roomId, userId);
+                RecordActivity(roomCode, userId);
                 
                 return true;
             }
             return false;
         }
 
-        public bool KickPlayerFromLobby(string roomId, string userId, string kickedByUserId)
+        public bool KickPlayerFromLobby(string roomCode, string userId, string kickedByUserId)
         {
             // only room creator can kick players
-            var room = _roomService.GetRoomByIdAsync(roomId).Result;
+            var room = _roomService.GetRoomByCodeAsync(roomCode).Result;
             if (room?.CreatedBy != kickedByUserId)
                 return false;
 
@@ -141,12 +141,12 @@ namespace server.Services
             if (room.State != RoomState.Waiting && room.State != RoomState.Ready)
                 return false;
 
-            return RemovePlayerFromRoom(roomId, userId);
+            return RemovePlayerFromRoom(roomCode, userId);
         }
 
-        public bool SetPlayerFinished(string roomId, string userId, DrillResult result)
+        public bool SetPlayerFinished(string roomCode, string userId, DrillResult result)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             var player = players.FirstOrDefault(p => p.UserId == userId);
             
             if (player != null)
@@ -156,47 +156,47 @@ namespace server.Services
                 player.Position = result.Position;
                 player.PointsChange = result.PointsChange;
                 player.State = PlayerState.Finished;
-                SetPlayersInRoomCache(roomId, players);
+                SetPlayersInRoomCache(roomCode, players);
                 return true;
             }
             return false;
         }
 
-        public List<CompetitiveDrillPlayer> GetReadyPlayers(string roomId)
+        public List<CompetitiveDrillPlayer> GetReadyPlayers(string roomCode)
         {
-            var players = GetPlayersInRoomFromCache(roomId);
+            var players = GetPlayersInRoomFromCache(roomCode);
             return players.Where(p => p.State == PlayerState.Ready).ToList();
         }
 
-		public bool AreAllPlayersReady(string roomId)
+		public bool AreAllPlayersReady(string roomCode)
 		{
-			var players = GetPlayersInRoomFromCache(roomId);
+			var players = GetPlayersInRoomFromCache(roomCode);
 			return players.Count > 0 && players.All(p => p.State == PlayerState.Ready);
 		}
 
-		public int GetPlayerCount(string roomId)
+		public int GetPlayerCount(string roomCode)
 		{
-			var players = GetPlayersInRoomFromCache(roomId);
+			var players = GetPlayersInRoomFromCache(roomCode);
 			return players.Count;
 		}
 
 		// Private cache methods
-		private List<CompetitiveDrillPlayer> GetPlayersInRoomFromCache(string roomId)
+		private List<CompetitiveDrillPlayer> GetPlayersInRoomFromCache(string roomCode)
         {
-            var cacheKey = string.Format(CachePatternConstants.RoomPlayers, roomId);
+            var cacheKey = string.Format(CachePatternConstants.RoomPlayers, roomCode);
             _cache.TryGetValue(cacheKey, out List<CompetitiveDrillPlayer>? players);
             return players ?? new List<CompetitiveDrillPlayer>();
         }
 
-        private void SetPlayersInRoomCache(string roomId, List<CompetitiveDrillPlayer> players)
+        private void SetPlayersInRoomCache(string roomCode, List<CompetitiveDrillPlayer> players)
         {
-            var cacheKey = string.Format(CachePatternConstants.RoomPlayers, roomId);
+            var cacheKey = string.Format(CachePatternConstants.RoomPlayers, roomCode);
             _cache.Set(cacheKey, players, TimeSpan.FromHours(2));
         }
 
-        private void RecordActivity(string roomId, string userId)
+        private void RecordActivity(string roomCode, string userId)
         {
-            var key = $"activity:{roomId}:{userId}";
+            var key = $"activity:{roomCode}:{userId}";
             _cache.Set(key, DateTime.UtcNow, TimeSpan.FromHours(2));
         }
 

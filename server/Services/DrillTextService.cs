@@ -9,8 +9,8 @@ namespace server.Services
     public interface IDrillTextService
     {
         List<string> GenerateDrillText(DrillSettings settings);
-        Task<bool> SetDrillTextForRoomAsync(string roomId, List<string> drillText);
-        Task<List<string>> GetDrillTextForRoomAsync(string roomId);
+        bool SetDrillTextForRoom(string roomCode, List<string> drillText);
+        List<string> GetDrillTextForRoom(string roomCode);
     }
 
     public class DrillTextService : IDrillTextService
@@ -29,18 +29,18 @@ namespace server.Services
             return _drillService.GetDrillText(settings.Difficulty, settings.Length);
         }
 
-        public Task<bool> SetDrillTextForRoomAsync(string roomId, List<string> drillText)
+        public bool SetDrillTextForRoom(string roomCode, List<string> drillText)
         {
-            var cacheKey = string.Format(CachePatternConstants.RoomDrillText, roomId);
+            var cacheKey = string.Format(CachePatternConstants.RoomDrillText, roomCode);
             _cache.Set(cacheKey, drillText, TimeSpan.FromHours(2));
-            return Task.FromResult(true);
+            return true;
         }
 
-        public Task<List<string>> GetDrillTextForRoomAsync(string roomId)
+        public List<string> GetDrillTextForRoom(string roomCode)
         {
-            var cacheKey = string.Format(CachePatternConstants.RoomDrillText, roomId);
+            var cacheKey = string.Format(CachePatternConstants.RoomDrillText, roomCode);
             _cache.TryGetValue(cacheKey, out List<string>? drillText);
-            return Task.FromResult(drillText ?? new List<string>());
+            return drillText ?? new List<string>();
         }
     }
 } 

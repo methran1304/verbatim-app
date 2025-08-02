@@ -22,10 +22,6 @@ namespace server.Services
         {
             var roomId = Guid.NewGuid().ToString();
 
-            // Generate drill text for the room
-            var drillText = _drillTextService.GenerateDrillText(settings);
-            await _drillTextService.SetDrillTextForRoomAsync(roomId, drillText);
-
             var room = new Room
             {
                 RoomId = roomId,
@@ -40,18 +36,22 @@ namespace server.Services
                 DrillSettings = settings,
             };
 
+			// Generate drill text for the room
+            var drillText = _drillTextService.GenerateDrillText(settings);
+            _drillTextService.SetDrillTextForRoom(room.RoomCode, drillText);
+
             await _rooms.InsertOneAsync(room);
 
             return room;
         }
 
-		public async Task<bool> DeleteRoomAsync(string roomId, string userId)
+		public async Task<bool> DeleteRoomAsync(string roomCode, string userId)
 		{
-			var room = await GetRoomByIdAsync(roomId);
+			var room = await GetRoomByCodeAsync(roomCode);
 			if (room == null || room.CreatedBy != userId)
 				return false;
 
-			var result = await _rooms.DeleteOneAsync(r => r.RoomId == roomId);
+			var result = await _rooms.DeleteOneAsync(r => r.RoomCode == roomCode);
 			return result.DeletedCount > 0;
 		}
 
@@ -60,47 +60,47 @@ namespace server.Services
 			return await _rooms.Find(r => r.IsActive).ToListAsync();
 		}
 
-		public async Task<Room?> GetRoomByIdAsync(string roomId)
+		public async Task<Room?> GetRoomByCodeAsync(string roomCode)
 		{
-			return await _rooms.Find(r => r.RoomId == roomId).FirstOrDefaultAsync();
+			return await _rooms.Find(r => r.RoomCode == roomCode).FirstOrDefaultAsync();
 		}
 
-		public async Task<bool> UpdateRoomAvailabilityAsync(string roomId, RoomAvailability availability)
+		public async Task<bool> UpdateRoomAvailabilityAsync(string roomCode, RoomAvailability availability)
 		{
 			var result = await _rooms.UpdateOneAsync(
-				r => r.RoomId == roomId,
+				r => r.RoomCode == roomCode,
 				Builders<Room>.Update.Set(r => r.Availability, availability)
 			);
 			return result.ModifiedCount > 0;
 		}
 
-		public async Task<bool> UpdateRoomStateAsync(string roomId, RoomState state)
+		public async Task<bool> UpdateRoomStateAsync(string roomCode, RoomState state)
 		{
 			var result = await _rooms.UpdateOneAsync(
-				r => r.RoomId == roomId,
+				r => r.RoomCode == roomCode,
 				Builders<Room>.Update.Set(r => r.State, state)
 			);
 			return result.ModifiedCount > 0;
 		}
 
-		public async Task<bool> IsRoomActiveAsync(string roomId)
+		public async Task<bool> IsRoomActiveAsync(string roomCode)
 		{
-			var room = await GetRoomByIdAsync(roomId);
+			var room = await GetRoomByCodeAsync(roomCode);
 			return room?.IsActive == true;
 		}
 
-		public async Task<bool> SetActiveCompetitiveDrillAsync(string roomId, string competitiveDrillId)
+		public async Task<bool> SetActiveCompetitiveDrillAsync(string roomCode, string competitiveDrillId)
 		{
 			var result = await _rooms.UpdateOneAsync(
-				r => r.RoomId == roomId,
+				r => r.RoomCode == roomCode,
 				Builders<Room>.Update.Set(r => r.ActiveCompetitiveDrillId, competitiveDrillId)
 			);
 			return result.ModifiedCount > 0;
 		}
 
-		public async Task<bool> IsRoomFullAsync(string roomId)
+		public async Task<bool> IsRoomFullAsync(string roomCode)
         {
-            var room = await GetRoomByIdAsync(roomId);
+            var room = await GetRoomByCodeAsync(roomCode);
             return room?.Availability == RoomAvailability.Full;
         }
 	}

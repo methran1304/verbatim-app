@@ -7,13 +7,13 @@ namespace server.Services.Interfaces
     public interface IRoomService
     {
         Task<Room> CreateRoomAsync(string userId, DrillSettings settings);
-        Task<Room?> GetRoomByIdAsync(string roomId);
-        Task<bool> UpdateRoomStateAsync(string roomId, RoomState state);
-        Task<bool> UpdateRoomAvailabilityAsync(string roomId, RoomAvailability availability);
-        Task<bool> SetActiveCompetitiveDrillAsync(string roomId, string competitiveDrillId);
-        Task<bool> DeleteRoomAsync(string roomId, string userId);
+        Task<Room?> GetRoomByCodeAsync(string roomCode);
+        Task<bool> UpdateRoomStateAsync(string roomCode, RoomState state);
+        Task<bool> UpdateRoomAvailabilityAsync(string roomCode, RoomAvailability availability);
+        Task<bool> SetActiveCompetitiveDrillAsync(string roomCode, string competitiveDrillId);
+        Task<bool> DeleteRoomAsync(string roomCode, string userId);
         Task<List<Room>> GetAllRoomsAsync();
-        Task<bool> IsRoomActiveAsync(string roomId);
-        Task<bool> IsRoomFullAsync(string roomId);
+        Task<bool> IsRoomActiveAsync(string roomCode);
+        Task<bool> IsRoomFullAsync(string roomCode);
     }
 }

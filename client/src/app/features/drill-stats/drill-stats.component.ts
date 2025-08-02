@@ -159,7 +159,7 @@ export class DrillStatsComponent implements OnInit, OnDestroy {
     
     // calculate level progress based on points
     const totalPoints = this.drillStats.userPoints.new;
-    const pointsPerLevel = 1000; // adjust based on your game design
+    const pointsPerLevel = 1000; // adjust based on game design requirements
     
     this.progressData.currentLevel = Math.floor(totalPoints / pointsPerLevel) + 1;
     this.progressData.nextLevel = this.progressData.currentLevel + 1;

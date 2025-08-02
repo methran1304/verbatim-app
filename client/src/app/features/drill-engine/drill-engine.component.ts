@@ -12,6 +12,7 @@ import { DrillStatistic, PointTimeData } from '../../models/interfaces/drill-sta
 import { CommonModule } from '@angular/common';
 import { VirtualKeyboardComponent } from './virtual-keyboard/virtual-keyboard.component';
 import { DrillToolbarComponent } from './drill-toolbar/drill-toolbar.component';
+import { AdaptiveDrillModalComponent } from './adaptive-drill-modal/adaptive-drill-modal.component';
 import { ThemeService } from '../../services/theme.service';
 import { NavigationService } from '../navigation/navigation.service';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -26,6 +27,7 @@ import { LoadingDelayUtil } from '../../core/utils/loading-delay.util';
 import { DrillService } from '../../services/drill.service';
 import { DrillSubmissionRequest, DrillSubmissionResponse } from '../../models/interfaces/drill-submission.interface';
 import { AdaptiveDrillResponse, ErrorProneWordsResponse, AdaptiveService } from '../../services/adaptive.service';
+import { DrillStatisticsService } from '../../services/drill-statistics.service';
 
 
 
@@ -38,6 +40,7 @@ import { AdaptiveDrillResponse, ErrorProneWordsResponse, AdaptiveService } from 
         DrillInputComponent,
         VirtualKeyboardComponent,
         DrillToolbarComponent,
+        AdaptiveDrillModalComponent,
         NzCardModule,
         NzButtonModule,
         NzModalModule,
@@ -118,6 +121,7 @@ export class DrillEngineComponent implements OnInit {
         private drillTextService: DrillTextService,
         private drillService: DrillService,
         private adaptiveService: AdaptiveService,
+        private drillStatisticsService: DrillStatisticsService,
         private ngZone: NgZone,
         private themeService: ThemeService,
         private navigationService: NavigationService,
@@ -192,7 +196,7 @@ export class DrillEngineComponent implements OnInit {
             this.remainingSeconds = this.totalTimeInSeconds;
             const minutes = Math.floor(this.totalTimeInSeconds / 60);
             const seconds = this.totalTimeInSeconds % 60;
-            this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
+            this.remainingTime = `${this.drillStatisticsService.pad(minutes)}:${this.drillStatisticsService.pad(seconds)}`;
         }
 
         // for timed drills, always use marathon length to ensure enough text
@@ -229,28 +233,7 @@ export class DrillEngineComponent implements OnInit {
         this.currentCharIndex = 0;
 
         // construct drill stats 
-        this.drillStatistic = {
-            errorRate: 0,
-            wpm: 0,
-            accuracy: 0,
-            avgWPM: 0,
-            avgAccuracy: 0,
-            maxWPM: 0,
-            maxAccuracy: 0,
-            errorMap: {
-                wordErrorMap: {},
-                charErrorMap: {},
-            },
-            totalCorrections: 0,
-            wordsCount: 0,
-            lettersCount: 0,
-            correctWords: 0,
-            correctLetters: 0,
-            incorrectWords: 0,
-            incorrectLetters: 0,
-            duration: 0,
-            realTimeData: [],
-        };
+        this.drillStatistic = this.drillStatisticsService.resetDrillStats();
     }
 
     stopDrill(isAdaptive: boolean = false): void {
@@ -453,19 +436,9 @@ export class DrillEngineComponent implements OnInit {
     }
 
     updateWPMAndAccuracy(): void {
-        // only count actual typed characters
-        const flattened = this.typedText.flat();
-        const typedChars = flattened.filter((k) => k !== undefined);
-        const correctChars = typedChars.filter((k) => k?.correct).length;
-
-        const elapsedMinutes = (Date.now() - this.startTime) / 60000;
-
-        this.wpm = Math.floor(correctChars / 5 / elapsedMinutes);
-
-        const totalKeystrokes = typedChars.length;
-        this.accuracy = totalKeystrokes
-            ? Math.floor((correctChars / totalKeystrokes) * 100)
-            : 100;
+        const result = this.drillStatisticsService.updateWPMAndAccuracy(this.typedText, this.startTime);
+        this.wpm = result.wpm;
+        this.accuracy = result.accuracy;
     }
 
     startTimer(): void {
@@ -494,7 +467,7 @@ export class DrillEngineComponent implements OnInit {
                 const minutes = Math.floor(secondsLeft / 60);
                 const seconds = secondsLeft % 60;
 
-                this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
+                this.remainingTime = `${this.drillStatisticsService.pad(minutes)}:${this.drillStatisticsService.pad(seconds)}`;
                 this.remainingSeconds = secondsLeft;
                 this.updateWPMAndAccuracy();
 
@@ -511,7 +484,7 @@ export class DrillEngineComponent implements OnInit {
                 const minutes = Math.floor(elapsedSeconds / 60);
                 const seconds = elapsedSeconds % 60;
 
-                this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
+                this.remainingTime = `${this.drillStatisticsService.pad(minutes)}:${this.drillStatisticsService.pad(seconds)}`;
                 this.remainingSeconds = elapsedSeconds;
                 this.updateWPMAndAccuracy();
 
@@ -537,39 +510,19 @@ export class DrillEngineComponent implements OnInit {
     }
 
     private addTimeSeriesDataPoint(timePoint: number): void {
-        const expectedTimePoints = Array.from({ length: timePoint + 1 }, (_, i) => i);
-
-        for (const expectedTimePoint of expectedTimePoints) {
-            // check if we already have this time point
-            const existingIndex = this.realTimeData.findIndex(dp => dp.timePoint === expectedTimePoint);
-
-            if (existingIndex === -1) {
-                // add missing time point
-                const dataPoint: PointTimeData = {
-                    timePoint: expectedTimePoint,
-                    wpm: this.wpm,
-                    accuracy: this.accuracy,
-                    corrections: this.correctionsThisSecond,
-                    incorrectWords: [...this.wordsIncorrectThisSecond],
-                    correctWords: [...this.wordsCompletedThisSecond]
-                };
-
-                this.realTimeData.push(dataPoint);
-            } else if (expectedTimePoint === timePoint) {
-                // update current time point with latest data
-                this.realTimeData[existingIndex] = {
-                    timePoint: expectedTimePoint,
-                    wpm: this.wpm,
-                    accuracy: this.accuracy,
-                    corrections: this.correctionsThisSecond,
-                    incorrectWords: [...this.wordsIncorrectThisSecond],
-                    correctWords: [...this.wordsCompletedThisSecond]
-                };
-            }
-        }
-
-        // update last data point time
-        this.lastDataPointTime = Math.max(this.lastDataPointTime, timePoint);
+        const result = this.drillStatisticsService.addTimeSeriesDataPoint(
+            timePoint,
+            this.wpm,
+            this.accuracy,
+            this.correctionsThisSecond,
+            this.wordsCompletedThisSecond,
+            this.wordsIncorrectThisSecond,
+            this.realTimeData,
+            this.lastDataPointTime
+        );
+        
+        this.realTimeData = result.realTimeData;
+        this.lastDataPointTime = result.lastDataPointTime;
 
         // reset the per-second tracking arrays
         this.wordsCompletedThisSecond = [];
@@ -577,9 +530,7 @@ export class DrillEngineComponent implements OnInit {
         this.correctionsThisSecond = 0;
     }
 
-    pad(num: number): string {
-        return num.toString().padStart(2, '0');
-    }
+
 
     focusInput() {
         this.drillInputComponent?.focusInput();
@@ -729,28 +680,7 @@ export class DrillEngineComponent implements OnInit {
     }
 
     private resetDrillStats(): void {
-        this.drillStatistic = {
-            errorRate: 0,
-            wpm: 0,
-            accuracy: 0,
-            avgWPM: 0,
-            avgAccuracy: 0,
-            maxWPM: 0,
-            maxAccuracy: 0,
-            errorMap: {
-                wordErrorMap: {},
-                charErrorMap: {},
-            },
-            totalCorrections: 0,
-            wordsCount: 0,
-            lettersCount: 0,
-            correctWords: 0,
-            correctLetters: 0,
-            incorrectWords: 0,
-            incorrectLetters: 0,
-            duration: 0,
-            realTimeData: [],
-        };
+        this.drillStatistic = this.drillStatisticsService.resetDrillStats();
 
         this.wpm = 0;
         this.accuracy = 100;
@@ -777,7 +707,7 @@ export class DrillEngineComponent implements OnInit {
             this.remainingSeconds = this.totalTimeInSeconds;
             const minutes = Math.floor(this.totalTimeInSeconds / 60);
             const seconds = this.totalTimeInSeconds % 60;
-            this.remainingTime = `${this.pad(minutes)}:${this.pad(seconds)}`;
+            this.remainingTime = `${this.drillStatisticsService.pad(minutes)}:${this.drillStatisticsService.pad(seconds)}`;
         } else {
             this.remainingTime = '01:00';
             this.totalTimeInSeconds = 10;

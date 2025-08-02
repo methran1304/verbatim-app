@@ -106,10 +106,10 @@ namespace server.Services
             return competitiveDrill?.State == DrillState.Completed;
         }
 
-        public async Task<bool> HandleMarathonCompletionAsync(string roomId, string userId, DrillResult result)
+        public async Task<bool> HandleMarathonCompletionAsync(string roomCode, string userId, DrillResult result)
         {
             // get the competitive drill for this room
-            var room = await GetRoomByIdAsync(roomId);
+            var room = await GetRoomByCodeAsync(roomCode);
             if (room?.ActiveCompetitiveDrillId == null)
                 return false;
 
@@ -155,9 +155,9 @@ namespace server.Services
             return false; // still waiting for other players
         }
 
-        public async Task<int> GetFinishedPlayerCountAsync(string roomId)
+        public async Task<int> GetFinishedPlayerCountAsync(string roomCode)
         {
-            var room = await GetRoomByIdAsync(roomId);
+            var room = await GetRoomByCodeAsync(roomCode);
             if (room?.ActiveCompetitiveDrillId == null)
                 return 0;
 
@@ -170,9 +170,9 @@ namespace server.Services
                 .Count();
         }
 
-        public async Task<int> GetActivePlayerCountAsync(string roomId)
+        public async Task<int> GetActivePlayerCountAsync(string roomCode)
         {
-            var room = await GetRoomByIdAsync(roomId);
+            var room = await GetRoomByCodeAsync(roomCode);
             if (room?.ActiveCompetitiveDrillId == null)
                 return 0;
 
@@ -185,9 +185,9 @@ namespace server.Services
                 .Count();
         }
 
-        private async Task<Room?> GetRoomByIdAsync(string roomId)
+        private async Task<Room?> GetRoomByCodeAsync(string roomCode)
         {
-            return await _roomService.GetRoomByIdAsync(roomId);
+            return await _roomService.GetRoomByCodeAsync(roomCode);
         }
 
 

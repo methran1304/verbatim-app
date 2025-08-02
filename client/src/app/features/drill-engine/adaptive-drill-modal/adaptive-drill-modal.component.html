@@ -1,0 +1,20 @@
+<nz-modal
+  [(nzVisible)]="isVisible"
+  nzTitle="Recent Misspelled"
+  (nzOnCancel)="onClose()"
+  [nzFooter]="null"
+  [nzWidth]="600">
+  <ng-container *nzModalContent>
+    <div class="error-words-content">
+      <p>Here are the words you recently misspelled that will be used used to generate the adaptive drill:</p>
+      <div class="error-words-list">
+        @for (word of errorProneWords; track word) {
+          <nz-tag class="error-word-tag">{{ word }}</nz-tag>
+        }
+      </div>
+      @if (errorProneWords.length === 0) {
+        <p class="no-error-words">No recent misspelled words found. The drill will be generated using general difficulty patterns.</p>
+      }
+    </div>
+  </ng-container>
+</nz-modal> 
