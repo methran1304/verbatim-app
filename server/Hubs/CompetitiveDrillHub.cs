@@ -207,11 +207,20 @@ namespace server.Hubs
                     return new { success = false, error = "Failed to leave room" };
                 }
 
+                // if the room is empty, delete it
+                if (_playerService.GetPlayerCount(roomCode) == 0)
+                {
+                    Console.WriteLine($"Room {roomCode} is empty, deleting room");
+                    await _roomService.DeleteRoomAsync(roomCode, userId);
+                }
+
                 // clear user session
                 await _sessionService.ClearSessionAsync(userId);
 
                 // remove connection from group
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
+
+                Console.WriteLine($"User {userId} left room {roomCode}");
 
                 // notify all clients in the room
                 await Clients.Group(roomCode).PlayerLeave(roomCode, userId);
