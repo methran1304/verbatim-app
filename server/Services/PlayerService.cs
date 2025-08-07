@@ -23,39 +23,79 @@ namespace server.Services
 
         public bool AddPlayerToRoom(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomCode);
-            
-            if (players.Any(p => p.UserId == userId))
-                return false;
-
-            var newPlayer = new CompetitiveDrillPlayer
+            try
             {
-                UserId = userId,
-                WPM = 0,
-                Accuracy = 0,
-                Position = players.Count + 1,
-                PointsChange = 0,
-                State = PlayerState.Connected
-            };
+                // check if room exists
+                var room = _roomService.GetRoomByCodeAsync(roomCode).Result;
+                if (room == null)
+                {
+                    Console.WriteLine($"Room not found: {roomCode}");
+                    return false;
+                }
 
-            players.Add(newPlayer);
-            SetPlayersInRoomCache(roomCode, players);
-            
-            return true;
+                // check if player is already in the room
+                var existingPlayers = GetPlayersInRoomFromCache(roomCode);
+                if (existingPlayers.Any(p => p.UserId == userId))
+                {
+                    Console.WriteLine($"Player {userId} is already in room {roomCode}");
+                    return false;
+                }
+
+                // check room capacity
+                if (existingPlayers.Count >= 4)
+                {
+                    Console.WriteLine($"Room {roomCode} is full (4 players)");
+                    return false;
+                }
+
+                // add player to room
+                var newPlayer = new CompetitiveDrillPlayer
+                {
+                    UserId = userId,
+                    WPM = 0,
+                    Accuracy = 0,
+                    Position = existingPlayers.Count + 1,
+                    PointsChange = 0,
+                    State = PlayerState.Connected
+                };
+
+                existingPlayers.Add(newPlayer);
+                SetPlayersInRoomCache(roomCode, existingPlayers);
+
+                Console.WriteLine($"Player {userId} added to room {roomCode}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adding player to room: {ex.Message}");
+                return false;
+            }
         }
 
         public bool RemovePlayerFromRoom(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomCode);
-            var player = players.FirstOrDefault(p => p.UserId == userId);
-            
-            if (player == null)
-                return false;
+            try
+            {
+                var players = GetPlayersInRoomFromCache(roomCode);
+                var player = players.FirstOrDefault(p => p.UserId == userId);
+                
+                if (player == null)
+                {
+                    Console.WriteLine($"Player {userId} not found in room {roomCode}");
+                    return false;
+                }
 
-            players.Remove(player);
-            SetPlayersInRoomCache(roomCode, players);
-            
-            return true;
+                players.Remove(player);
+                SetPlayersInRoomCache(roomCode, players);
+
+                Console.WriteLine($"Player {userId} removed from room {roomCode}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error removing player from room: {ex.Message}");
+                return false;
+            }
         }
 
         public List<CompetitiveDrillPlayer> GetPlayersInRoom(string roomCode)
@@ -74,7 +114,7 @@ namespace server.Services
                 player.Accuracy = stats.Accuracy;
                 SetPlayersInRoomCache(roomCode, players);
                 
-                // Record activity for AFK detection
+                // record activity for AFK detection
                 RecordActivity(roomCode, userId);
                 
                 return true;
@@ -96,16 +136,28 @@ namespace server.Services
 
         public bool SetPlayerReady(string roomCode, string userId)
         {
-            var players = GetPlayersInRoomFromCache(roomCode);
-            var player = players.FirstOrDefault(p => p.UserId == userId);
-            
-            if (player != null)
+            try
             {
+                var players = GetPlayersInRoomFromCache(roomCode);
+                var player = players.FirstOrDefault(p => p.UserId == userId);
+                
+                if (player == null)
+                {
+                    Console.WriteLine($"Player {userId} not found in room {roomCode}");
+                    return false;
+                }
+
                 player.State = PlayerState.Ready;
                 SetPlayersInRoomCache(roomCode, players);
+
+                Console.WriteLine($"Player {userId} ready status set in room {roomCode}");
                 return true;
             }
-            return false;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting player ready status: {ex.Message}");
+                return false;
+            }
         }
 
         public bool StartPlayerTyping(string roomCode, string userId)
@@ -118,7 +170,7 @@ namespace server.Services
                 player.State = PlayerState.Typing;
                 SetPlayersInRoomCache(roomCode, players);
                 
-                // Record initial activity when player starts typing
+                // record initial activity when player starts typing
                 RecordActivity(roomCode, userId);
                 
                 return true;
@@ -183,15 +235,15 @@ namespace server.Services
 		// Private cache methods
 		private List<CompetitiveDrillPlayer> GetPlayersInRoomFromCache(string roomCode)
         {
-            var cacheKey = string.Format(CachePatternConstants.RoomPlayers, roomCode);
-            _cache.TryGetValue(cacheKey, out List<CompetitiveDrillPlayer>? players);
+            var cacheKey = $"room_players_{roomCode}";
+            var players = _cache.Get<List<CompetitiveDrillPlayer>>(cacheKey);
             return players ?? new List<CompetitiveDrillPlayer>();
         }
 
         private void SetPlayersInRoomCache(string roomCode, List<CompetitiveDrillPlayer> players)
         {
-            var cacheKey = string.Format(CachePatternConstants.RoomPlayers, roomCode);
-            _cache.Set(cacheKey, players, TimeSpan.FromHours(2));
+            var cacheKey = $"room_players_{roomCode}";
+            _cache.Set(cacheKey, players, TimeSpan.FromHours(1));
         }
 
         private void RecordActivity(string roomCode, string userId)

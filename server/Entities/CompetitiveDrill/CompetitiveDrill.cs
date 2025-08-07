@@ -27,6 +27,7 @@ namespace server.Entities
 		public string CreatedBy { get; set; } = null!;
 
 		[BsonElement("state")]
+		[BsonRepresentation(BsonType.String)]
 		public DrillState State { get; set; } = DrillState.NotStarted;
 
 		[BsonElement("players")]
@@ -56,6 +57,7 @@ namespace server.Entities
 		public string DrillId { get; set; } = null!;
 
 		[BsonElement("state")]
+		[BsonRepresentation(BsonType.String)]
 		public PlayerState State { get; set; } = PlayerState.Connected;
 	}
 }

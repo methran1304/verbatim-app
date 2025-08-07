@@ -56,7 +56,7 @@
         
         <div class="room-settings">
           <div class="setting-row">
-            <nz-select [(ngModel)]="selectedType" class="setting-select" nzPlaceHolder="Type">
+            <nz-select [(ngModel)]="selectedType" (change)="onTypeChange($event)" class="setting-select" nzPlaceHolder="Type">
               @for (type of drillTypes; track type.value) {
                 <nz-option [nzValue]="type.value" [nzLabel]="type.label"></nz-option>
               }

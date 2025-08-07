@@ -27,6 +27,7 @@ import { TimerManagementService, TimerState } from '../../services/timer-managem
 import { DrillStateManagementService } from '../../services/drill-state-management.service';
 import { RealTimeDataService } from '../../services/real-time-data.service';
 import { DrillSubmissionRequest } from '../../models/interfaces/drill-submission.interface';
+import { SignalRService } from '../../services/signalr.service';
 
 @Component({
     selector: 'app-drill-engine',
@@ -98,7 +99,8 @@ export class DrillEngineComponent implements OnInit {
         private themeService: ThemeService,
         private navigationService: NavigationService,
         private route: ActivatedRoute,
-        private notificationService: ZorroNotificationServiceTsService
+        private notificationService: ZorroNotificationServiceTsService,
+        private signalRService: SignalRService
     ) {
         // get drill preference
         let storedPreference: DrillPreference = JSON.parse(localStorage.getItem('drillPreference') ?? '{}');
@@ -469,7 +471,12 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onNewCompetitiveDrill(): void {
-        this.showRoomOverlay = true;
+        this.signalRService.connect().then(() => {
+            this.showRoomOverlay = true;
+        }).catch((error: any) => {
+            console.error('Failed to connect to SignalR:', error);
+            this.showRoomOverlay = true;
+        });
     }
 
     onNewAdaptiveDrill(): void {

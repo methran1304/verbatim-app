@@ -9,6 +9,10 @@ namespace server.Hubs
 {
     public interface ICompetitiveDrillClient
     {
+        // room management
+        Task RoomCreated(string roomId, string roomCode);
+        Task RoomJoined(string roomId, string roomCode);
+        
         // player management
         Task PlayerJoin(string roomId, string userId, string username, int level);
         Task PlayerLeave(string roomId, string userId);
@@ -35,6 +39,7 @@ namespace server.Hubs
         private readonly ICompetitiveDrillService _competitiveDrillService;
         private readonly IAFKDetectionService _afkDetectionService;
         private readonly IDrillTextService _drillTextService;
+        private readonly IUserRoomSessionService _sessionService;
 
         public CompetitiveDrillHub(
             ICompetitiveDrillOrchestrator orchestrator,
@@ -42,7 +47,8 @@ namespace server.Hubs
             IPlayerService playerService,
             ICompetitiveDrillService competitiveDrillService,
             IAFKDetectionService afkDetectionService,
-            IDrillTextService drillTextService)
+            IDrillTextService drillTextService,
+            IUserRoomSessionService sessionService)
         {
             _orchestrator = orchestrator;
             _roomService = roomService;
@@ -50,12 +56,20 @@ namespace server.Hubs
             _competitiveDrillService = competitiveDrillService;
             _afkDetectionService = afkDetectionService;
             _drillTextService = drillTextService;
+            _sessionService = sessionService;
         }
 
         public override async Task OnConnectedAsync()
         {
             Console.WriteLine($"Client connected: {Context.ConnectionId}");
             await base.OnConnectedAsync();
+        }
+
+        // Test method to verify SignalR communication
+        public string TestConnection()
+        {
+            var userId = GetUserId();
+            return $"Connection test successful. User ID: {userId}";
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
@@ -74,122 +88,171 @@ namespace server.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task JoinRoom(string roomCode)
+        public async Task<object> CreateRoom(CreateRoomRequest request)
         {
             try
             {
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    throw new UnauthorizedAccessException("User not authenticated");
+                    return new { success = false, error = "User not authenticated" };
+                }
+
+                // convert request to DrillSettings
+                var settings = new DrillSettings
+                {
+                    Type = request.Type,
+                    Difficulty = request.Difficulty,
+                    Duration = request.Duration ?? 60,
+                    Length = request.Length ?? 50
+                };
+
+                // create room
+                var room = await _roomService.CreateRoomAsync(userId, settings);
+                Console.WriteLine($"Room created: {room.RoomCode} by user {userId}");
+                
+                // add creator to room
+                var success = _playerService.AddPlayerToRoom(room.RoomCode, userId);
+                if (!success)
+                {
+                    return new { success = false, error = "Failed to add player to room" };
+                }
+
+                // create session for room creator
+                await _sessionService.CreateSessionAsync(userId, room.RoomCode, UserRole.Creator);
+
+                // add connection to group
+                await Groups.AddToGroupAsync(Context.ConnectionId, room.RoomCode);
+
+                // notify all clients in the room
+                await Clients.Group(room.RoomCode).RoomCreated(room.RoomId, room.RoomCode);
+
+                return new { success = true, roomId = room.RoomId, roomCode = room.RoomCode };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating room: {ex.Message}");
+                return new { success = false, error = ex.Message };
+            }
+        }
+
+        public async Task<object> JoinRoom(string roomCode)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return new { success = false, error = "User not authenticated" };
                 }
 
                 // get room and validate
                 var room = await _roomService.GetRoomByCodeAsync(roomCode);
                 if (room == null)
                 {
-                    throw new ArgumentException("Room not found");
+                    return new { success = false, error = "Room not found" };
                 }
 
                 if (room.State != RoomState.Waiting && room.State != RoomState.Ready)
                 {
-                    throw new InvalidOperationException("Room is not accepting new players");
+                    return new { success = false, error = "Room is not accepting new players" };
                 }
 
                 // add player to room
                 var success = _playerService.AddPlayerToRoom(roomCode, userId);
                 if (!success)
                 {
-                    throw new InvalidOperationException("Failed to join room");
+                    return new { success = false, error = "Failed to join room" };
                 }
 
-                // add to signalr group
+                // create session for room member
+                await _sessionService.CreateSessionAsync(userId, roomCode, UserRole.Member);
+
+                // add connection to group
                 await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
 
-                // get user info (you'll need to implement this based on your auth system)
-                var username = GetUsername(userId);
-                var level = GetUserLevel(userId);
+                        // notify all clients in the room
+        var username = GetUsername(userId);
+        var level = GetUserLevel(userId);
+        await Clients.Group(roomCode).PlayerJoin(room.RoomId, userId, username, level);
+        
+        // notify the joining player specifically
+        await Clients.Caller.RoomJoined(room.RoomId, roomCode);
 
-                // notify all clients in the room
-                await Clients.Group(roomCode).PlayerJoin(roomCode, userId, username, level);
-
-                // update room availability if needed
-                if (_roomService.IsRoomFullAsync(roomCode).Result)
-                {
-                    await _roomService.UpdateRoomAvailabilityAsync(roomCode, RoomAvailability.Full);
-                }
-
-                Console.WriteLine($"Player {userId} joined room {roomCode}");
+                Console.WriteLine($"User {userId} joined room {roomCode}");
+                return new { success = true, roomId = room.RoomId, roomCode = room.RoomCode };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in JoinRoom: {ex.Message}");
-                throw;
+                Console.WriteLine($"Error joining room: {ex.Message}");
+                return new { success = false, error = ex.Message };
             }
         }
 
-        public async Task LeaveRoom(string roomCode)
+        public async Task<object> LeaveRoom(string roomCode)
         {
             try
             {
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    throw new UnauthorizedAccessException("User not authenticated");
+                    return new { success = false, error = "User not authenticated" };
                 }
 
                 // remove player from room
                 var success = _playerService.RemovePlayerFromRoom(roomCode, userId);
-                if (success)
+                if (!success)
                 {
-                    // remove from signalr group
-                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
-
-                    // notify all clients in the room
-                    await Clients.Group(roomCode).PlayerLeave(roomCode, userId);
-
-                    // update room availability
-                    await _roomService.UpdateRoomAvailabilityAsync(roomCode, RoomAvailability.Available);
-
-                    Console.WriteLine($"Player {userId} left room {roomCode}");
+                    return new { success = false, error = "Failed to leave room" };
                 }
+
+                // clear user session
+                await _sessionService.ClearSessionAsync(userId);
+
+                // remove connection from group
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
+
+                // notify all clients in the room
+                await Clients.Group(roomCode).PlayerLeave(roomCode, userId);
+
+                return new { success = true };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in LeaveRoom: {ex.Message}");
-                throw;
+                Console.WriteLine($"Error leaving room: {ex.Message}");
+                return new { success = false, error = ex.Message };
             }
         }
 
-        public async Task SetPlayerReady(string roomCode, bool isReady)
+        public async Task<object> SetPlayerReady(string roomCode, bool isReady)
         {
             try
             {
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
-                    throw new UnauthorizedAccessException("User not authenticated");
+                    return new { success = false, error = "User not authenticated" };
                 }
 
+                // set player ready status
                 var success = _playerService.SetPlayerReady(roomCode, userId);
-                if (success)
+                if (!success)
                 {
-                    // notify all clients in the room
-                    await Clients.Group(roomCode).PlayerReady(roomCode, userId);
-
-                    // check if all players are ready
-                    if (_playerService.AreAllPlayersReady(roomCode))
-                    {
-                        await _roomService.UpdateRoomStateAsync(roomCode, RoomState.Ready);
-                    }
-
-                    Console.WriteLine($"Player {userId} set ready state to {isReady} in room {roomCode}");
+                    return new { success = false, error = "Failed to set ready status" };
                 }
+
+                // update activity on significant events
+                await _sessionService.UpdateActivityAsync(userId);
+
+                // notify all clients in the room
+                await Clients.Group(roomCode).PlayerReady(roomCode, userId);
+
+                return new { success = true };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in SetPlayerReady: {ex.Message}");
-                throw;
+                Console.WriteLine($"Error setting player ready: {ex.Message}");
+                return new { success = false, error = ex.Message };
             }
         }
 
@@ -207,6 +270,9 @@ namespace server.Hubs
                 var success = _playerService.UpdatePlayerStatistics(roomCode, userId, statistics);
                 if (success)
                 {
+                    // Update activity only on significant events, not every keystroke
+                    await _sessionService.UpdateActivityAsync(userId);
+
                     // get all players' current statistics
                     var players = _playerService.GetPlayersInRoom(roomCode);
                     var allStatistics = players
@@ -294,6 +360,8 @@ namespace server.Hubs
                 var success = await _orchestrator.HandlePlayerCompletionAsync(roomCode, userId, result);
                 if (success)
                 {
+                    // Update activity on drill completion
+                    await _sessionService.UpdateActivityAsync(userId);
                     Console.WriteLine($"Player {userId} completed drill in room {roomCode}");
                 }
             }
@@ -358,7 +426,33 @@ namespace server.Hubs
 
         private string? GetUserId()
         {
-            return Context.User?.FindFirst("sub")?.Value;
+            // try different claim names that might contain the user ID
+            var userId = Context.User?.FindFirst("sub")?.Value;
+            if (!string.IsNullOrEmpty(userId))
+                return userId;
+                
+            userId = Context.User?.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+            if (!string.IsNullOrEmpty(userId))
+                return userId;
+                
+            userId = Context.User?.FindFirst("nameid")?.Value;
+            if (!string.IsNullOrEmpty(userId))
+                return userId;
+                
+            if (Context.User?.Claims != null)
+            {
+                Console.WriteLine("Available claims:");
+                foreach (var claim in Context.User.Claims)
+                {
+                    Console.WriteLine($"  {claim.Type}: {claim.Value}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No claims found in Context.User");
+            }
+            
+            return null;
         }
 
         private string GetUsername(string userId)

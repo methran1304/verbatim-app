@@ -19,10 +19,10 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
-import { AfkOverlayComponent } from '../afk-overlay/afk-overlay.component';
-import { PostDrillOverlayComponent } from '../post-drill-overlay/post-drill-overlay.component';
-import { AdaptiveDrillOverlayComponent } from '../adaptive-drill-overlay/adaptive-drill-overlay.component';
-import { RoomOverlayComponent } from '../room-overlay/room-overlay.component';
+import { AfkOverlayComponent } from '../overlays/afk-overlay/afk-overlay.component';
+import { PostDrillOverlayComponent } from '../overlays/post-drill-overlay/post-drill-overlay.component';
+import { AdaptiveDrillOverlayComponent } from '../overlays/adaptive-drill-overlay/adaptive-drill-overlay.component';
+import { RoomOverlayComponent } from '../overlays/room-overlay/room-overlay.component';
 import { DrillDifficulty } from '../../../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../../../models/enums/drill-length.enum';
 

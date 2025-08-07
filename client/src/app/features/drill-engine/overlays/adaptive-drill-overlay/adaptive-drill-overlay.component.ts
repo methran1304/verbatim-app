@@ -6,8 +6,8 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { FormsModule } from '@angular/forms';
-import { DrillDifficulty } from '../../../models/enums/drill-difficulty.enum';
-import { DrillLength, DrillLengthWordCount } from '../../../models/enums/drill-length.enum';
+import { DrillDifficulty } from '../../../../models/enums/drill-difficulty.enum';
+import { DrillLength, DrillLengthWordCount } from '../../../../models/enums/drill-length.enum';
 
 @Component({
     selector: 'app-adaptive-drill-overlay',

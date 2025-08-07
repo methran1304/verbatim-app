@@ -20,7 +20,7 @@ namespace server.Services
 
 		public async Task<Room> CreateRoomAsync(string userId, DrillSettings settings)
         {
-            var roomId = Guid.NewGuid().ToString();
+            var roomId = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
 
             var room = new Room
             {
@@ -32,7 +32,7 @@ namespace server.Services
                 State = RoomState.Waiting,
                 Availability = RoomAvailability.Available,
                 AssociatedCompetitiveDrillIds = new List<string>(),
-                ActiveCompetitiveDrillId = string.Empty,
+                ActiveCompetitiveDrillId = null, // Set to null for new rooms
                 DrillSettings = settings,
             };
 

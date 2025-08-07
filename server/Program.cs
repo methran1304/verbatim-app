@@ -23,7 +23,8 @@ builder.Services.AddCors(options =>
 		{
 			policy.WithOrigins("http://localhost:4200", "https://verbatim-six.vercel.app", "https://verbatim-api.up.railway.app", "https://verbatim.pro", "https://www.verbatim.pro")
 			.AllowAnyHeader()
-			.AllowAnyMethod();
+			.AllowAnyMethod()
+			.AllowCredentials();
 		}
 	);
 });
@@ -63,6 +64,7 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IAFKDetectionService, AFKDetectionService>();
 builder.Services.AddScoped<IDrillTextService, DrillTextService>();
 builder.Services.AddScoped<ICompetitiveDrillOrchestrator, CompetitiveDrillOrchestrator>();
+builder.Services.AddScoped<IUserRoomSessionService, UserRoomSessionService>();
 
 
 builder.Services.AddControllers()
@@ -90,6 +92,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 				Encoding.UTF8.GetBytes(builder.Configuration["AppSettings:Token"]!)
 			),
 			ValidateIssuerSigningKey = true
+		};
+
+		// configure SignalR to use JWT Bearer authentication
+		options.Events = new JwtBearerEvents
+		{
+			OnMessageReceived = context =>
+			{
+				var accessToken = context.Request.Query["access_token"];
+				var path = context.HttpContext.Request.Path;
+
+				Console.WriteLine($"Access Token: {accessToken}");
+				Console.WriteLine($"Path: {path}");
+				
+				if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/competitive-hub"))
+				{
+					context.Token = accessToken;
+				}
+				return Task.CompletedTask;
+			}
 		};
 	});
 

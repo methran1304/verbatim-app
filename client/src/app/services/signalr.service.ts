@@ -44,6 +44,31 @@ export interface Room {
   drillText?: string[];
 }
 
+export interface DrillSettings {
+  type: CompetitiveDrillType;
+  difficulty: DrillDifficulty;
+  duration?: number;
+  length?: number;
+}
+
+export interface CreateRoomRequest {
+  type: CompetitiveDrillType;
+  difficulty: DrillDifficulty;
+  duration?: number;
+  length?: number;
+}
+
+export enum CompetitiveDrillType {
+  Timed = 'Timed',
+  Marathon = 'Marathon'
+}
+
+export enum DrillDifficulty {
+  Beginner = 'Beginner',
+  Intermediate = 'Intermediate',
+  Advanced = 'Advanced'
+}
+
 export interface CompetitiveDrillResults {
   roomId: string;
   winnerId: string;
@@ -68,6 +93,7 @@ export class SignalRService {
   private _connectionState$ = new BehaviorSubject<ConnectionState>(ConnectionState.Disconnected);
   
   // event subjects for competitive drill events
+  private roomJoined$ = new Subject<{ roomId: string; roomCode: string }>();
   private playerJoin$ = new Subject<{ roomId: string; player: Player }>();
   private playerLeave$ = new Subject<{ roomId: string; playerId: string }>();
   private playerReady$ = new Subject<{ roomId: string; playerId: string }>();
@@ -79,6 +105,7 @@ export class SignalRService {
   private playerAFK$ = new Subject<{ roomId: string; playerId: string }>();
   private afkWarning$ = new Subject<{ roomId: string; playerId: string; timeoutSeconds: number }>();
   private countdown$ = new Subject<{ roomId: string; countdown: number }>();
+  private roomCreated$ = new Subject<{ roomId: string; roomCode: string }>();
 
   constructor() {}
 
@@ -90,8 +117,16 @@ export class SignalRService {
 
     this._connectionState$.next(ConnectionState.Connecting);
 
+    // get authentication token
+    const token = localStorage.getItem('accessToken');
+    const hubUrl = token 
+      ? `http://localhost:5079/competitive-hub?access_token=${encodeURIComponent(token)}`
+      : 'http://localhost:5079/competitive-hub';
+
     this.hubConnection = new HubConnectionBuilder()
-      .withUrl(`${environment.apiBaseUrl}/competitive-hub`)
+      .withUrl(hubUrl, { 
+        withCredentials: true
+      })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build();
@@ -102,10 +137,8 @@ export class SignalRService {
     try {
       await this.hubConnection.start();
       this._connectionState$.next(ConnectionState.Connected);
-      console.log('SignalR Connected');
     } catch (error) {
       this._connectionState$.next(ConnectionState.Disconnected);
-      console.error('SignalR Connection Error:', error);
       throw error;
     }
   }
@@ -117,56 +150,130 @@ export class SignalRService {
     }
   }
 
-  // hub method calls (client to server)
+  // room management
+  async testConnection(): Promise<string> {
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
+    return await this.hubConnection.invoke<string>('TestConnection');
+  }
+
+  async createRoom(settings: CreateRoomRequest): Promise<{ roomId: string; roomCode: string }> {
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
+    const result = await this.hubConnection.invoke<{ success: boolean; roomId?: string; roomCode?: string; error?: string }>('CreateRoom', settings);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to create room');
+    }
+    
+    return { roomId: result.roomId!, roomCode: result.roomCode! };
+  }
+
   async joinRoom(roomCode: string): Promise<void> {
-    if (!this.hubConnection) throw new Error('Not connected');
-    await this.hubConnection.invoke('JoinRoom', roomCode);
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
+    const result = await this.hubConnection.invoke<{ success: boolean; error?: string }>('JoinRoom', roomCode);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to join room');
+    }
   }
 
   async leaveRoom(roomCode: string): Promise<void> {
-    if (!this.hubConnection) throw new Error('Not connected');
-    await this.hubConnection.invoke('LeaveRoom', roomCode);
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
+    const result = await this.hubConnection.invoke<{ success: boolean; error?: string }>('LeaveRoom', roomCode);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to leave room');
+    }
   }
 
   async setPlayerReady(roomCode: string, isReady: boolean): Promise<void> {
-    if (!this.hubConnection) throw new Error('Not connected');
-    await this.hubConnection.invoke('SetPlayerReady', roomCode, isReady);
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
+    const result = await this.hubConnection.invoke<{ success: boolean; error?: string }>('SetPlayerReady', roomCode, isReady);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to set ready status');
+    }
   }
 
   async updatePlayerStatistics(roomCode: string, statistics: PlayerStatistics): Promise<void> {
-    if (!this.hubConnection) throw new Error('Not connected');
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
     await this.hubConnection.invoke('UpdatePlayerStatistics', roomCode, statistics);
   }
 
   async startDrill(roomCode: string): Promise<void> {
-    if (!this.hubConnection) throw new Error('Not connected');
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
     await this.hubConnection.invoke('StartDrill', roomCode);
   }
 
   async completeDrill(roomCode: string, result: any): Promise<void> {
-    if (!this.hubConnection) throw new Error('Not connected');
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
     await this.hubConnection.invoke('CompleteDrill', roomCode, result);
   }
 
   async kickPlayer(roomCode: string, playerId: string): Promise<void> {
-    if (!this.hubConnection) throw new Error('Not connected');
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
     await this.hubConnection.invoke('KickPlayer', roomCode, playerId);
   }
 
-  // event listeners (server to client)
   private setupEventHandlers(): void {
     if (!this.hubConnection) return;
 
-    this.hubConnection.on('PlayerJoin', (roomId: string, player: Player) => {
+    // connection state changes
+    this.hubConnection.onreconnecting(() => {
+      this._connectionState$.next(ConnectionState.Reconnecting);
+    });
+
+    this.hubConnection.onreconnected(() => {
+      this._connectionState$.next(ConnectionState.Connected);
+    });
+
+    this.hubConnection.onclose(() => {
+      this._connectionState$.next(ConnectionState.Disconnected);
+    });
+
+    // competitive drill events
+    this.hubConnection.on('PlayerJoin', (roomId: string, userId: string, username: string, level: number) => {
+      const player: Player = {
+        userId,
+        username,
+        level,
+        state: 'Connected'
+      };
       this.playerJoin$.next({ roomId, player });
     });
 
-    this.hubConnection.on('PlayerLeave', (roomId: string, playerId: string) => {
-      this.playerLeave$.next({ roomId, playerId });
+    this.hubConnection.on('PlayerLeave', (roomId: string, userId: string) => {
+      this.playerLeave$.next({ roomId, playerId: userId });
     });
 
-    this.hubConnection.on('PlayerReady', (roomId: string, playerId: string) => {
-      this.playerReady$.next({ roomId, playerId });
+    this.hubConnection.on('PlayerReady', (roomId: string, userId: string) => {
+      this.playerReady$.next({ roomId, playerId: userId });
     });
 
     this.hubConnection.on('PlayerStatisticsUpdate', (roomId: string, statistics: PlayerStatistics[]) => {
@@ -189,33 +296,28 @@ export class SignalRService {
       this.allPlayersCompleted$.next({ roomId });
     });
 
-    this.hubConnection.on('PlayerAFK', (roomId: string, playerId: string) => {
-      this.playerAFK$.next({ roomId, playerId });
+    this.hubConnection.on('PlayerAFK', (roomId: string, userId: string) => {
+      this.playerAFK$.next({ roomId, playerId: userId });
     });
 
-    this.hubConnection.on('AFKWarning', (roomId: string, playerId: string, timeoutSeconds: number) => {
-      this.afkWarning$.next({ roomId, playerId, timeoutSeconds });
+    this.hubConnection.on('AFKWarning', (roomId: string, userId: string, timeoutSeconds: number) => {
+      this.afkWarning$.next({ roomId, playerId: userId, timeoutSeconds });
     });
 
     this.hubConnection.on('Countdown', (roomId: string, countdown: number) => {
       this.countdown$.next({ roomId, countdown });
     });
 
-    // connection state changes
-    this.hubConnection.onreconnecting(() => {
-      this._connectionState$.next(ConnectionState.Reconnecting);
+    this.hubConnection.on('RoomCreated', (roomId: string, roomCode: string) => {
+      this.roomCreated$.next({ roomId, roomCode });
     });
 
-    this.hubConnection.onreconnected(() => {
-      this._connectionState$.next(ConnectionState.Connected);
-    });
-
-    this.hubConnection.onclose(() => {
-      this._connectionState$.next(ConnectionState.Disconnected);
+    this.hubConnection.on('RoomJoined', (roomId: string, roomCode: string) => {
+      this.roomJoined$.next({ roomId, roomCode });
     });
   }
 
-  // observable getters for events
+  // getters for observables
   get connectionState$(): Observable<ConnectionState> {
     return this._connectionState$.asObservable();
   }
@@ -264,7 +366,14 @@ export class SignalRService {
     return this.countdown$.asObservable();
   }
 
-  // utility methods
+  get onRoomCreated$(): Observable<{ roomId: string; roomCode: string }> {
+    return this.roomCreated$.asObservable();
+  }
+
+  get onRoomJoined$(): Observable<{ roomId: string; roomCode: string }> {
+    return this.roomJoined$.asObservable();
+  }
+
   isConnected(): boolean {
     return this.hubConnection?.state === 'Connected';
   }

@@ -25,9 +25,11 @@ namespace server.Entities
 		public string RoomCode { get; set; } = null!;
 
 		[BsonElement("state")]
+		[BsonRepresentation(BsonType.String)]
 		public RoomState State { get; set; } = RoomState.Waiting;
 
 		[BsonElement("availability")]
+		[BsonRepresentation(BsonType.String)]
 		public RoomAvailability Availability { get; set; } = RoomAvailability.Available;
 
 		[BsonElement("associated_competitive_drill_ids")]
@@ -36,7 +38,7 @@ namespace server.Entities
 
 		[BsonElement("active_competitive_drill_id")]
 		[BsonRepresentation(BsonType.ObjectId)]
-		public string ActiveCompetitiveDrillId { get; set; } = null!;
+		public string? ActiveCompetitiveDrillId { get; set; }
 
 		[BsonElement("drill_settings")]
 		public DrillSettings DrillSettings { get; set; } = null!;

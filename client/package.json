@@ -25,6 +25,7 @@
         "cdk": "^2.1020.2",
         "d3": "^7.9.0",
         "ng-zorro-antd": "^20.0.0",
+        "ngx-cookie-service": "^20.1.0",
         "rxjs": "~7.8.0",
         "scroll-into-view-if-needed": "^3.1.0",
         "simple-keyboard": "^3.8.67",

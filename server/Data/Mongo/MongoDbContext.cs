@@ -15,6 +15,8 @@ namespace server.Data.Mongo
 			_mongoDatabase = client.GetDatabase(options.Value.DatabaseName);
 		}
 
+		public IMongoDatabase Database => _mongoDatabase;
+
 		// Auth
 		public IMongoCollection<User> Users => _mongoDatabase.GetCollection<User>("users");
 
@@ -28,6 +30,7 @@ namespace server.Data.Mongo
 		// Competitive
 		public IMongoCollection<CompetitiveDrill> CompetitiveDrills => _mongoDatabase.GetCollection<CompetitiveDrill>("competitiveDrills");
 		public IMongoCollection<Room> Rooms => _mongoDatabase.GetCollection<Room>("rooms");
+		public IMongoCollection<UserRoomSession> UserRoomSessions => _mongoDatabase.GetCollection<UserRoomSession>("user_room_sessions");
 
 		// Logging
 		public IMongoCollection<ErrorLog> ErrorLog => _mongoDatabase.GetCollection<ErrorLog>("errorLog");
