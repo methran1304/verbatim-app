@@ -1,0 +1,295 @@
+#room-mode-overlay {
+  display: block;
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: auto;
+  min-width: 400px;
+  max-width: 500px;
+  z-index: 30;
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  box-shadow: var(--color-shadow);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  padding: 0.7rem;
+  text-align: center;
+}
+
+.room-mode-content {
+  h2 {
+    margin-bottom: 1rem;
+    color: var(--color-text);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  h3 {
+    margin-bottom: 1rem;
+    color: var(--color-text);
+    font-weight: 500;
+    font-size: 1rem;
+  }
+
+  .lobby-title {
+    text-align: center;
+    margin-bottom: 1rem;
+
+    h2 {
+      margin: 0;
+      color: var(--color-text);
+      font-weight: 500;
+      font-size: 1.5rem;
+    }
+  }
+
+  .lobby-description {
+    text-align: center;
+    margin-bottom: 1.5rem;
+
+    p {
+      margin: 0;
+      color: var(--color-text-secondary);
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+  }
+
+  .room-code-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+
+    .room-code-label {
+      color: var(--color-text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .room-code {
+      color: var(--color-text);
+      font-weight: 500;
+      font-size: 1rem;
+    }
+
+    .copy-button {
+      color: var(--color-primary);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 0.25rem;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: auto;
+      line-height: 1;
+
+      &:hover {
+        background: var(--color-bg-secondary);
+      }
+
+      .anticon {
+        font-size: 16px;
+        line-height: 1;
+      }
+    }
+  }
+
+
+
+
+
+
+
+  .room-actions {
+    justify-content: center;
+    width: auto;
+    display: inline-flex;
+    gap: 0.5rem;
+  }
+
+  .post-drill-btn {
+    min-width: auto;
+    max-width: none;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    padding: 0.275rem 0.55rem;
+    height: 30.8px;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    cursor: pointer;
+
+    &.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &.ready {
+      background: var(--color-success);
+      color: white;
+      border-color: var(--color-success);
+
+      &:hover {
+        background: var(--color-success-hover);
+        border-color: var(--color-success-hover);
+      }
+    }
+
+    &.danger {
+      background: var(--color-error);
+      color: white;
+      border-color: var(--color-error);
+
+      &:hover {
+        background: var(--color-error-hover);
+        border-color: var(--color-error-hover);
+      }
+    }
+
+    &:hover:not(.disabled) {
+      background: var(--color-bg-blur);
+      border-color: var(--color-primary);
+    }
+
+    // Override nz-button styles for the ready button
+    &.ant-btn {
+      background: var(--color-bg-secondary) !important;
+      border: 1px solid var(--color-border) !important;
+      color: var(--color-text) !important;
+      height: 30.8px !important;
+      padding: 0.275rem 0.55rem !important;
+      border-radius: 6px !important;
+      font-size: 0.875rem !important;
+      font-weight: 500 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.25rem !important;
+      transition: all 0.2s ease !important;
+
+      &:hover {
+        background: var(--color-bg-blur) !important;
+        border-color: var(--color-primary) !important;
+      }
+
+      &.ready {
+        background: var(--color-success) !important;
+        color: white !important;
+        border-color: var(--color-success) !important;
+
+        &:hover {
+          background: var(--color-success-hover) !important;
+          border-color: var(--color-success-hover) !important;
+        }
+      }
+
+      &.ant-btn-loading {
+        background: var(--color-bg-secondary) !important;
+        color: var(--color-text) !important;
+        border-color: var(--color-border) !important;
+      }
+    }
+  }
+}
+
+// Dark theme for popconfirm
+::ng-deep .ant-popover {
+  .ant-popover-inner {
+    background: var(--color-bg-card) !important;
+    border: 1px solid var(--color-border) !important;
+    box-shadow: var(--color-shadow) !important;
+  }
+
+  .ant-popover-title {
+    color: var(--color-text) !important;
+    border-bottom: 1px solid var(--color-border) !important;
+  }
+
+  .ant-popover-inner-content {
+    color: var(--color-text) !important;
+  }
+
+  .ant-popover-message {
+    color: var(--color-text) !important;
+
+    .ant-popover-message-title {
+      color: var(--color-text) !important;
+    }
+  }
+
+  .ant-popover-buttons {
+    .ant-btn {
+      background: var(--color-bg-secondary) !important;
+      border-color: var(--color-border) !important;
+      color: var(--color-text) !important;
+
+      &:hover {
+        background: var(--color-bg-blur) !important;
+        border-color: var(--color-primary) !important;
+      }
+
+      &.ant-btn-primary {
+        background: var(--color-primary) !important;
+        border-color: var(--color-primary) !important;
+        color: white !important;
+
+        &:hover {
+          background: var(--color-primary-hover) !important;
+          border-color: var(--color-primary-hover) !important;
+        }
+      }
+    }
+  }
+}
+
+// Dark theme for notifications
+::ng-deep .ant-notification {
+  .ant-notification-notice {
+    background: var(--color-bg-card) !important;
+    border: 1px solid var(--color-border) !important;
+    box-shadow: var(--color-shadow) !important;
+  }
+
+  .ant-notification-notice-message {
+    color: var(--color-text) !important;
+  }
+
+  .ant-notification-notice-description {
+    color: var(--color-text-secondary) !important;
+  }
+
+  .ant-notification-notice-icon {
+    &.ant-notification-notice-icon-success {
+      color: var(--color-success) !important;
+    }
+
+    &.ant-notification-notice-icon-error {
+      color: var(--color-error) !important;
+    }
+
+    &.ant-notification-notice-icon-warning {
+      color: var(--color-warning) !important;
+    }
+
+    &.ant-notification-notice-icon-info {
+      color: var(--color-info) !important;
+    }
+  }
+
+  .ant-notification-notice-close {
+    color: var(--color-text-secondary) !important;
+
+    &:hover {
+      color: var(--color-text) !important;
+    }
+  }
+}

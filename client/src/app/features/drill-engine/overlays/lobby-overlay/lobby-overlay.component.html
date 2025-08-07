@@ -1,0 +1,70 @@
+@if (show) {
+  <nz-card id="room-mode-overlay" #roommodeoverlay>
+    <div class="room-mode-content">
+      <!-- Title -->
+      <div class="lobby-title">
+        <h2>Lobby</h2>
+      </div>
+
+      <!-- Description -->
+      <div class="lobby-description">
+        <p>Waiting room for competitive drill. Share the room code with friends to start competing together.</p>
+      </div>
+
+      <!-- Room Code -->
+      <div class="room-code-section">
+        <span class="room-code-label">Room Code:</span>
+        <span class="room-code">#{{ roomCode }}</span>
+        <button class="copy-button" (click)="onCopyRoomCode()" nz-button nzType="text" nzSize="small">
+          <span nz-icon nzType="copy" nzTheme="outline"></span>
+        </button>
+      </div>
+
+
+
+
+
+      <!-- Room Actions -->
+      <div class="room-actions">
+        @if (userRole === 'Creator') {
+          <button 
+            nz-button 
+            nzType="primary" 
+            [nzLoading]="isWaitingForOthers"
+            (click)="onSetReady()" 
+            [class.ready]="isReady"
+            class="post-drill-btn">
+            <span nz-icon [nzType]="isReady ? 'check-circle' : 'clock-circle'" nzTheme="outline"></span>
+            <span class="button-text">{{ isWaitingForOthers ? 'Waiting for others' : 'Ready' }}</span>
+          </button>
+          <span class="post-drill-btn" (click)="onStartDrill()">
+            <span nz-icon nzType="play-circle" nzTheme="outline" style="font-size: 16px;"></span>
+            <span class="button-text">Start Drill</span>
+          </span>
+        } @else {
+          <button 
+            nz-button 
+            nzType="primary" 
+            [nzLoading]="isWaitingForOthers"
+            (click)="onSetReady()" 
+            [class.ready]="isReady"
+            class="post-drill-btn">
+            <span nz-icon [nzType]="isReady ? 'check-circle' : 'clock-circle'" nzTheme="outline"></span>
+            <span class="button-text">{{ isWaitingForOthers ? 'Waiting for others' : 'Ready' }}</span>
+          </button>
+        }
+        
+        <span 
+          class="post-drill-btn"
+          nz-popconfirm
+          [nzPopconfirmTitle]="userRole === 'Creator' ? 'Room will be disbanded if you leave. Are you sure you want to leave this room?' : 'Are you sure you want to leave this room?'"
+          nzOkText="Yes"
+          nzCancelText="No"
+          (nzOnConfirm)="onLeaveRoom()">
+          <span nz-icon nzType="logout" nzTheme="outline" style="font-size: 16px;"></span>
+          <span class="button-text">Leave Room</span>
+        </span>
+      </div>
+    </div>
+  </nz-card>
+}

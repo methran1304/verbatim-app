@@ -84,18 +84,24 @@ export class RoomSessionService {
     }
 
     // validate with server
-    return this.http.get<ActiveRoomResponse>(`${environment.apiBaseUrl}/api/competitive-drill/active-room`)
+    return this.http.get<ActiveRoomResponse>(`${environment.apiBaseUrl}/competitive/active-room`)
       .pipe(
         map(response => {
           if (!response.hasActiveRoom) {
-            // Server says no active room, clear cookie
+            // server says no active room, clear cookie
             this.clearRoomSession();
           }
           return response;
         }),
         catchError(error => {
           console.error('Error checking active room:', error);
-          // On error, clear cookie and return no active room
+          console.error('Full error details:', {
+            status: error.status,
+            statusText: error.statusText,
+            url: error.url,
+            message: error.message
+          });
+          // on error, clear cookie and return no active room
           this.clearRoomSession();
           return of({ hasActiveRoom: false });
         })

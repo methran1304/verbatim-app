@@ -3,18 +3,18 @@ using Microsoft.AspNetCore.Mvc;
 using server.Entities;
 using server.Entities.Enums;
 using server.Services.Interfaces;
+using System.Security.Claims;
 
 namespace server.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
     [Authorize]
-    public class CompetitiveDrillController : ControllerBase
+    [Route("api/[controller]")]
+    public class CompetitiveController : BaseController
     {
         private readonly IUserRoomSessionService _sessionService;
         private readonly IRoomService _roomService;
 
-        public CompetitiveDrillController(
+        public CompetitiveController(
             IUserRoomSessionService sessionService,
             IRoomService roomService)
         {
@@ -27,7 +27,7 @@ namespace server.Controllers
         {
             try
             {
-                var userId = User.FindFirst("sub")?.Value;
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
                     return Unauthorized("User not authenticated");
@@ -71,7 +71,7 @@ namespace server.Controllers
         {
             try
             {
-                var userId = User.FindFirst("sub")?.Value;
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
                     return Unauthorized("User not authenticated");

@@ -5,8 +5,6 @@ import { RegisterComponent } from './features/auth/register/register.component';
 import { DrillEngineComponent } from './features/drill-engine/drill-engine.component';
 import { DrillStatsComponent } from './features/drill-stats/drill-stats.component';
 import { ProfileComponent } from './features/profile/profile.component';
-import { SignalRTestComponent } from './features/competitive-drill/signalr-test.component';
-import { CompetitiveDrillComponent } from './features/competitive-drill/competitive-drill.component';
 import { authGuard } from './auth.guard';
 import { redirectIfAuthenticatedGuard } from './auth-redirect.guard';
 
@@ -42,14 +40,10 @@ export const routes: Routes = [
         canActivate: [authGuard],
     },
     {
-        path: 'signalr-test',
-        component: SignalRTestComponent,
-        canActivate: [authGuard],
-    },
-    {
         path: 'competitive-drill',
-        component: CompetitiveDrillComponent,
+        component: DrillEngineComponent,
         canActivate: [authGuard],
+        data: { isCompetitive: true }
     },
     { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
     { path: '**', redirectTo: 'auth/login' },

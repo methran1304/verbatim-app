@@ -1,0 +1,16 @@
+<div class="room-settings-toolbar">
+  <div class="drill-settings-toolbar">
+    <div class="stat-item">
+      <span class="stat-label">Type</span>
+      <span class="stat-value" [style.color]="'var(--color-primary)'">{{ drillType }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Difficulty</span>
+      <span class="stat-value" [style.color]="'var(--color-success)'">{{ difficulty }}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">{{ drillType === 'Marathon' ? 'Length' : 'Duration' }}</span>
+      <span class="stat-value" [style.color]="'var(--color-warning)'">{{ duration }}</span>
+    </div>
+  </div>
+</div>

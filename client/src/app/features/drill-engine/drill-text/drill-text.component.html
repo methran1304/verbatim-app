@@ -20,6 +20,19 @@
   (goBack)="goBack.emit()">
 </app-room-overlay>
 
+    <app-lobby-overlay
+      [show]="showLobbyOverlay"
+      [roomCode]="roomCode"
+      [userRole]="userRole"
+      [roomState]="roomState"
+      [drillType]="drillType"
+      [difficulty]="difficulty"
+      [duration]="duration"
+      (leaveRoom)="leaveRoom.emit()"
+      (startDrill)="startDrill.emit()"
+      (setReady)="setReady.emit()">
+    </app-lobby-overlay>
+
 <app-post-drill-overlay 
   [show]="showPostDrillOverlay"
   [isSubmitting]="isSubmitting"
@@ -31,7 +44,7 @@
 </app-post-drill-overlay>
 
 <div class="drill-text-wrapper"
-     [ngClass]="{'blur-background' : !isFocused || showPostDrillOverlay || showAdaptiveDrillOverlay || showRoomOverlay, 'afk-cursor': delayedAfkOverlay && !showPostDrillOverlay}">
+     [ngClass]="{'blur-background' : !isFocused || showPostDrillOverlay || showAdaptiveDrillOverlay || showRoomOverlay || showLobbyOverlay, 'afk-cursor': delayedAfkOverlay && !showPostDrillOverlay}">
   <nz-card class="drill-text" #drillText>
     <div class="drill-text-inner">
       @for (word of sourceText; track wi; let wi = $index) {

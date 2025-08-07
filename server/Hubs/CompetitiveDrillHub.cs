@@ -4,6 +4,7 @@ using server.Entities.Enums;
 using server.Entities.Models;
 using server.Services;
 using server.Services.Interfaces;
+using System.Security.Claims;
 
 namespace server.Hubs
 {
@@ -77,7 +78,7 @@ namespace server.Hubs
             Console.WriteLine($"Client disconnected: {Context.ConnectionId}");
             
             // handle player disconnect
-            var userId = Context.User?.FindFirst("sub")?.Value;
+            var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
                 // find which room the player was in and remove them
@@ -427,11 +428,11 @@ namespace server.Hubs
         private string? GetUserId()
         {
             // try different claim names that might contain the user ID
-            var userId = Context.User?.FindFirst("sub")?.Value;
+            var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userId))
                 return userId;
                 
-            userId = Context.User?.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+            userId = Context.User?.FindFirst("sub")?.Value;
             if (!string.IsNullOrEmpty(userId))
                 return userId;
                 

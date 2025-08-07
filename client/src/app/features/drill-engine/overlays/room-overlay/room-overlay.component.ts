@@ -4,7 +4,8 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { DrillType } from '../../../../models/enums/drill-type.enum';
@@ -12,11 +13,12 @@ import { DrillDifficulty as LocalDrillDifficulty } from '../../../../models/enum
 import { DrillLength, DrillLengthWordCount } from '../../../../models/enums/drill-length.enum';
 import { SignalRService, CompetitiveDrillType, DrillDifficulty } from '../../../../services/signalr.service';
 import { RoomSessionService } from '../../../../services/room-session.service';
+import { CompetitiveDrillService } from '../../../../services/competitive-drill.service';
 
 @Component({
     selector: 'app-room-overlay',
     standalone: true,
-    imports: [CommonModule, NzCardModule, NzButtonModule, NzInputModule, NzSelectModule, FormsModule],
+    imports: [CommonModule, NzCardModule, NzButtonModule, NzInputModule, NzSelectModule, NzIconModule, FormsModule],
     templateUrl: './room-overlay.component.html',
     styleUrl: './room-overlay.component.scss',
 })
@@ -70,52 +72,41 @@ export class RoomOverlayComponent implements OnInit, OnDestroy {
 
     constructor(
         private signalRService: SignalRService,
-        private message: NzMessageService,
-        private roomSessionService: RoomSessionService
+        private notification: NzNotificationService,
+        private roomSessionService: RoomSessionService,
+        private competitiveDrillService: CompetitiveDrillService
     ) {}
 
     ngOnInit(): void {
-        // Subscribe to room creation events
+        // subscribe to room creation events
         this.subscriptions.push(
             this.signalRService.onRoomCreated$.subscribe(({ roomId, roomCode }) => {
-                this.message.success(`Room created successfully! Room code: ${roomCode}`);
-                // Set room session for creator
-                this.roomSessionService.setRoomSession(roomCode, 'Creator');
-                this.createRoom.emit();
+                this.notification.success('Success', `Room created successfully! Room code: ${roomCode}`);
             })
         );
 
-        // Subscribe to room join events (for the joining player)
+        // subscribe to room join events (for the joining player)
         this.subscriptions.push(
             this.signalRService.onRoomJoined$.subscribe(({ roomId, roomCode }) => {
-                this.message.success(`Successfully joined room: ${roomCode}`);
-                // Set room session for member
-                this.roomSessionService.setRoomSession(roomCode, 'Member');
-                this.joinRoomWithCode.emit(roomCode);
+                this.notification.success('Success', `Successfully joined room: ${roomCode}`);
             })
         );
 
         this.subscriptions.push(
             this.signalRService.onPlayerJoin$.subscribe(({ roomId, player }) => {
-                this.message.info(`${player.username} joined the room`);
-                // Update activity for existing players
-                this.roomSessionService.updateActivity();
+                this.notification.info('Player Joined', `${player.username} joined the room`);
             })
         );
 
         this.subscriptions.push(
             this.signalRService.onPlayerLeave$.subscribe(({ roomId, playerId }) => {
-                this.message.warning(`A player left the room`);
-                // Update activity for remaining players
-                this.roomSessionService.updateActivity();
+                this.notification.warning('Player Left', `A player left the room`);
             })
         );
-
-        // Remove the duplicate subscription
     }
 
     ngOnChanges(changes: SimpleChanges): void {
-        // Only connect to SignalR when the overlay is shown
+        // only connect to SignalR when the overlay is shown
         if (changes['show'] && changes['show'].currentValue === true) {
             this.connectToSignalR();
         }
@@ -127,7 +118,7 @@ export class RoomOverlayComponent implements OnInit, OnDestroy {
                 await this.signalRService.connect();
             }
         } catch (error) {
-            this.message.error(`Failed to connect to SignalR: ${error}`);
+            this.notification.error('Connection Error', `Failed to connect to SignalR: ${error}`);
         }
     }
 
@@ -152,52 +143,39 @@ export class RoomOverlayComponent implements OnInit, OnDestroy {
     async onJoinWithCode(): Promise<void> {
         if (this.roomCode.trim().length === 6) {
             try {
-                this.isJoiningRoom = true;
-                await this.signalRService.joinRoom(this.roomCode.trim());
-                // Session will be set in the onRoomJoined$ event
-            } catch (error) {
-                this.message.error(`Failed to join room: ${error}`);
-            } finally {
-                this.isJoiningRoom = false;
-            }
+                await this.competitiveDrillService.joinRoom(this.roomCode.trim());
+                    } catch (error) {
+            this.notification.error('Join Error', `Failed to join room: ${error}`);
+        }
         }
     }
 
     async onCreateRoom(): Promise<void> {
         try {
-            this.isCreatingRoom = true;
-            const settings = {
-                type: this.selectedType === DrillType.Timed ? CompetitiveDrillType.Timed : CompetitiveDrillType.Marathon,
-                difficulty: this.selectedDifficulty,
-                duration: this.selectedType === DrillType.Timed ? this.selectedDuration : undefined,
-                length: this.selectedType === DrillType.Marathon ? DrillLengthWordCount[this.selectedLength] : undefined
-            };
-
-            await this.signalRService.createRoom(settings);
-            // Session will be set in the onRoomCreated$ event
+            const type = this.selectedType === DrillType.Timed ? 'Timed' : 'Marathon';
+            await this.competitiveDrillService.createRoom(
+                type,
+                this.selectedDifficulty,
+                this.selectedType === DrillType.Timed ? this.selectedDuration : undefined,
+                this.selectedType === DrillType.Marathon ? this.selectedLength : undefined
+            );
         } catch (error) {
             console.error('Room creation error:', error);
-            this.message.error(`Failed to create room: ${error}`);
-        } finally {
-            this.isCreatingRoom = false;
+            this.notification.error('Creation Error', `Failed to create room: ${error}`);
         }
     }
 
     async onJoinRoom(): Promise<void> {
         if (!this.roomCode || this.roomCode.length !== 6) {
-            this.message.error('Please enter a valid 6-character room code');
+            this.notification.error('Invalid Code', 'Please enter a valid 6-character room code');
             return;
         }
 
         try {
-            this.isJoiningRoom = true;
-            await this.signalRService.joinRoom(this.roomCode);
-            // Session will be set in the onRoomJoined$ event
+            await this.competitiveDrillService.joinRoom(this.roomCode);
         } catch (error) {
             console.error('Room join error:', error);
-            this.message.error(`Failed to join room: ${error}`);
-        } finally {
-            this.isJoiningRoom = false;
+            this.notification.error('Join Error', `Failed to join room: ${error}`);
         }
     }
 

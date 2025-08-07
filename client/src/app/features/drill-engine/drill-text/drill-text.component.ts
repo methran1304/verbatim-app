@@ -23,13 +23,14 @@ import { AfkOverlayComponent } from '../overlays/afk-overlay/afk-overlay.compone
 import { PostDrillOverlayComponent } from '../overlays/post-drill-overlay/post-drill-overlay.component';
 import { AdaptiveDrillOverlayComponent } from '../overlays/adaptive-drill-overlay/adaptive-drill-overlay.component';
 import { RoomOverlayComponent } from '../overlays/room-overlay/room-overlay.component';
+import { LobbyOverlayComponent } from '../overlays/lobby-overlay/lobby-overlay.component';
 import { DrillDifficulty } from '../../../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../../../models/enums/drill-length.enum';
 
 @Component({
     selector: 'app-drill-text',
     standalone: true,
-    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule, NzToolTipModule, AfkOverlayComponent, PostDrillOverlayComponent, AdaptiveDrillOverlayComponent, RoomOverlayComponent],
+    imports: [CommonModule, NzCardModule, NzTagModule, NzButtonModule, NzDividerModule, NzIconModule, NzToolTipModule, AfkOverlayComponent, PostDrillOverlayComponent, AdaptiveDrillOverlayComponent, RoomOverlayComponent, LobbyOverlayComponent],
     templateUrl: './drill-text.component.html',
     styleUrl: './drill-text.component.scss',
 })
@@ -49,6 +50,13 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
     @Input() isGeneratingAdaptive: boolean = false;
     @Input() isLoadingErrorWords: boolean = false;
     @Input() showRoomOverlay: boolean = false;
+    @Input() showLobbyOverlay: boolean = false;
+    @Input() roomCode: string = '';
+    @Input() userRole: 'Creator' | 'Member' = 'Member';
+    @Input() roomState: 'Waiting' | 'Ready' | 'InProgress' | 'Finished' = 'Waiting';
+    @Input() drillType: string = 'Timed';
+    @Input() difficulty: string = 'Intermediate';
+    @Input() duration: string = '60s';
     @Input() isCreatingRoom: boolean = false;
     @Input() isJoiningRoom: boolean = false;
     @Input() currentDifficulty: DrillDifficulty = DrillDifficulty.Intermediate;
@@ -62,6 +70,9 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
     @Output() joinRoom = new EventEmitter<void>();
     @Output() joinRoomWithCode = new EventEmitter<string>();
     @Output() goBack = new EventEmitter<void>();
+    @Output() leaveRoom = new EventEmitter<void>();
+    @Output() startDrill = new EventEmitter<void>();
+    @Output() setReady = new EventEmitter<void>();
 
     @ViewChildren('wordEl', { read: ElementRef }) wordElements!: QueryList<ElementRef<HTMLElement>>;
     @ViewChild('drillText', { read: ElementRef }) drillTextEl!: ElementRef<HTMLElement>;

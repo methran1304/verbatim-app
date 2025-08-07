@@ -1,6 +1,6 @@
 // === drill-engine.component.ts ===
 import { Component, NgZone, OnInit, ViewChild, HostListener, Input } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DrillTextComponent } from './drill-text/drill-text.component';
 import { DrillInputComponent } from './drill-input/drill-input.component';
 import { SpecialKeys } from '../../core/constants/keys.constant';
@@ -10,7 +10,9 @@ import { DrillStatistic } from '../../models/interfaces/drill-stats.interface';
 import { CommonModule } from '@angular/common';
 import { VirtualKeyboardComponent } from './virtual-keyboard/virtual-keyboard.component';
 import { DrillToolbarComponent } from './drill-toolbar/drill-toolbar.component';
+import { RoomSettingsToolbarComponent } from './room-settings-toolbar/room-settings-toolbar.component';
 import { AdaptiveDrillModalComponent } from './adaptive-drill-modal/adaptive-drill-modal.component';
+
 import { ThemeService } from '../../services/theme.service';
 import { NavigationService } from '../navigation/navigation.service';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -28,6 +30,8 @@ import { DrillStateManagementService } from '../../services/drill-state-manageme
 import { RealTimeDataService } from '../../services/real-time-data.service';
 import { DrillSubmissionRequest } from '../../models/interfaces/drill-submission.interface';
 import { SignalRService } from '../../services/signalr.service';
+import { RoomSessionService } from '../../services/room-session.service';
+import { CompetitiveDrillService, RoomState } from '../../services/competitive-drill.service';
 
 @Component({
     selector: 'app-drill-engine',
@@ -38,6 +42,7 @@ import { SignalRService } from '../../services/signalr.service';
         DrillInputComponent,
         VirtualKeyboardComponent,
         DrillToolbarComponent,
+        RoomSettingsToolbarComponent,
         AdaptiveDrillModalComponent,
         NzCardModule,
         NzButtonModule,
@@ -85,7 +90,15 @@ export class DrillEngineComponent implements OnInit {
     public afkReason: string = '';
 
     // competitive
-    public showRoomOverlay: boolean = false;
+    public roomState: RoomState = {
+        showRoomOverlay: false,
+        showRoomModeOverlay: false,
+        roomCode: '',
+        userRole: 'Member',
+        roomState: 'Waiting',
+        isCreatingRoom: false,
+        isJoiningRoom: false
+    };
 
 
     constructor(
@@ -99,8 +112,11 @@ export class DrillEngineComponent implements OnInit {
         private themeService: ThemeService,
         private navigationService: NavigationService,
         private route: ActivatedRoute,
+        private router: Router,
         private notificationService: ZorroNotificationServiceTsService,
-        private signalRService: SignalRService
+        private signalRService: SignalRService,
+        private roomSessionService: RoomSessionService,
+        private competitiveDrillService: CompetitiveDrillService
     ) {
         // get drill preference
         let storedPreference: DrillPreference = JSON.parse(localStorage.getItem('drillPreference') ?? '{}');
@@ -126,6 +142,13 @@ export class DrillEngineComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        // check if this is competitive mode from route data
+        this.route.data.subscribe(data => {
+            if (data['isCompetitive']) {
+                this.isCompetitive = true;
+            }
+        });
+
         // set initial drill type from preferences
         this.navigationService.setCurrentDrillType(this.currentDrillType);
 
@@ -161,6 +184,16 @@ export class DrillEngineComponent implements OnInit {
         this.themeService.getDarkMode().subscribe(isDark => {
             this.isDarkMode = isDark;
         });
+
+        // Check for active room session if in competitive mode
+        if (this.isCompetitive) {
+            this.competitiveDrillService.initializeCompetitiveMode();
+            
+            // Subscribe to room state changes
+            this.competitiveDrillService.roomState$.subscribe(roomState => {
+                this.roomState = roomState;
+            });
+        }
     }
 
     startDrill(adaptiveWords: string[] = []): void {
@@ -472,10 +505,10 @@ export class DrillEngineComponent implements OnInit {
 
     onNewCompetitiveDrill(): void {
         this.signalRService.connect().then(() => {
-            this.showRoomOverlay = true;
+            this.competitiveDrillService.initializeCompetitiveMode();
         }).catch((error: any) => {
             console.error('Failed to connect to SignalR:', error);
-            this.showRoomOverlay = true;
+            this.competitiveDrillService.initializeCompetitiveMode();
         });
     }
 
@@ -509,6 +542,18 @@ export class DrillEngineComponent implements OnInit {
         this.resetDrillStats();
         
         this.adaptiveService.showAdaptiveDrillOverlay();
+    }
+
+    onLeaveRoom(): void {
+        this.competitiveDrillService.leaveRoom();
+    }
+
+    onStartCompetitiveDrill(): void {
+        this.competitiveDrillService.startDrill();
+    }
+
+    onSetReady(): void {
+        this.competitiveDrillService.setReady();
     }
 
     onCloseErrorWordsModal(): void {
