@@ -1,16 +1,20 @@
 import { Component, AfterViewInit, ViewChild, ElementRef, Input, ViewEncapsulation, SimpleChanges, OnChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import Keyboard from 'simple-keyboard';
 
 @Component({
   selector: 'app-virtual-keyboard',
   templateUrl: './virtual-keyboard.component.html',
   styleUrls: ['./virtual-keyboard.component.scss'],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  standalone: true,
+  imports: [CommonModule]
 })
 export class VirtualKeyboardComponent implements AfterViewInit, OnChanges {
   @ViewChild('keyboardContainer', { static: true }) keyboardContainer!: ElementRef;
   @Input() inputValue: string = '';
   @Input() isDarkTheme: boolean = false;
+  @Input() shouldBlur: boolean = false;
   keyboard!: Keyboard;
   isShiftPressed: boolean = false;
 
@@ -38,6 +42,7 @@ export class VirtualKeyboardComponent implements AfterViewInit, OnChanges {
   };
 
   ngOnChanges(changes: SimpleChanges): void {
+    console.log('kb: ', changes);
     if (changes['isDarkTheme'] && this.keyboard) {
       this.updateKeyboardTheme();
     }
@@ -93,6 +98,12 @@ export class VirtualKeyboardComponent implements AfterViewInit, OnChanges {
       });
       container.classList.add('light');
       container.classList.remove('dark');
+    }
+
+    if (this.shouldBlur) {
+      container.classList.add('blur-background');
+    } else {
+      container.classList.remove('blur-background');
     }
   }
 

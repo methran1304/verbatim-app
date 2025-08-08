@@ -8,6 +8,14 @@
   --color-key-blue-dark: #b3e5fc; 
 }
 
+.simple-keyboard-container {
+  transition: filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.simple-keyboard-container.blur-background {
+  filter: blur(0.125rem);
+}
+
 // light theme colors
 $green-lg: #8EC07C;
 $dark-green-lg: #B8BB25;

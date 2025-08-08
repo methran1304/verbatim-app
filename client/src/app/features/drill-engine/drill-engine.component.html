@@ -78,7 +78,10 @@
       (kickPlayer)="onKickPlayer($event)">
     </app-player-panel>
   } @else {
-    <app-virtual-keyboard [inputValue]="currentInput" [isDarkTheme]="isDarkMode">
+    <app-virtual-keyboard 
+      [inputValue]="currentInput" 
+      [isDarkTheme]="isDarkMode"
+      [shouldBlur]="showPostDrillOverlay || showAdaptiveDrillOverlay || roomState.showRoomOverlay">
     </app-virtual-keyboard>
   }
   
