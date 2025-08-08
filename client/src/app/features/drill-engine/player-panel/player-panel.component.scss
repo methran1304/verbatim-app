@@ -1,0 +1,310 @@
+.player-panel {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
+  z-index: 20;
+  padding: 0 20px;
+}
+
+.player-panel-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: var(--color-shadow);
+  overflow: hidden;
+
+  ::ng-deep .ant-card-body {
+    padding: 1rem;
+  }
+}
+
+.player-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+
+  .panel-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    span[nz-icon] {
+      font-size: 1.1rem;
+      color: var(--color-primary);
+    }
+  }
+
+  .player-count {
+    font-size: 0.875rem;
+    color: var(--color-text);
+    font-weight: 500;
+    background: var(--color-bg-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+  }
+}
+
+.player-list {
+  min-height: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+
+    span[nz-icon] {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      opacity: 0.6;
+    }
+
+    p {
+      margin: 0.5rem 0;
+      font-weight: 500;
+      color: var(--color-text);
+    }
+
+    .empty-hint {
+      font-size: 0.875rem;
+      opacity: 0.7;
+    }
+  }
+}
+
+.player-list-container {
+  .player-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.player-item {
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+  }
+
+  .player-avatar-section {
+    position: relative;
+    flex-shrink: 0;
+
+    .player-avatar {
+      background: var(--color-primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .creator-badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      font-size: 0.75rem;
+      color: #faad14;
+      background: var(--color-bg-card);
+      border-radius: 50%;
+      padding: 1px;
+    }
+  }
+
+  .player-details {
+    flex: 1;
+    min-width: 0;
+
+    .player-name-section {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+
+      .player-name {
+        font-weight: 500;
+        color: var(--color-text);
+        font-size: 0.9rem;
+        cursor: help;
+      }
+
+      .current-user-badge {
+        font-size: 0.7rem;
+        background: var(--color-primary);
+        color: white;
+        padding: 0.1rem 0.4rem;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+    }
+
+    .player-stats {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+
+      .player-level {
+        font-size: 0.8rem;
+        color: var(--color-text);
+        font-weight: 500;
+      }
+
+      .progress-section {
+        flex: 1;
+        max-width: 120px;
+
+        ::ng-deep .ant-progress {
+          margin: 0;
+
+          .ant-progress-bg {
+            border-radius: 4px;
+          }
+        }
+      }
+    }
+  }
+
+  .player-status-section {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+
+    .status-badge {
+      ::ng-deep .ant-badge-status-text {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--color-text) !important;
+      }
+    }
+
+    .kick-button {
+      padding: 0.25rem;
+      height: auto;
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary);
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: #ff4d4f;
+        background: rgba(255, 77, 79, 0.1);
+      }
+
+      span[nz-icon] {
+        font-size: 0.875rem;
+      }
+    }
+  }
+}
+
+// Theme overrides for ng-zorro components
+::ng-deep .ant-popconfirm {
+  .ant-popconfirm-inner {
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+  }
+
+  .ant-popconfirm-title {
+    color: var(--color-text);
+  }
+
+  .ant-popconfirm-message {
+    color: var(--color-text-secondary);
+  }
+}
+
+// ensure all text within the player panel is theme-reactive
+.player-panel {
+  color: var(--color-text);
+
+  // override any ng-zorro text colors
+  ::ng-deep .ant-badge {
+    color: var(--color-text);
+    
+    .ant-badge-status-text {
+      color: var(--color-text) !important;
+    }
+  }
+
+  ::ng-deep .ant-progress-text {
+    color: var(--color-text) !important;
+  }
+
+  ::ng-deep .ant-avatar {
+    color: white; // keep avatar text white for contrast
+  }
+
+  // ensure tooltips are themed
+  ::ng-deep .ant-tooltip {
+    .ant-tooltip-inner {
+      background: var(--color-bg-card);
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+    
+    .ant-tooltip-arrow::before {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+    }
+  }
+}
+
+// responsive design
+@media (max-width: 768px) {
+  .player-panel {
+    padding: 0 10px;
+    bottom: 10px;
+  }
+
+  .player-panel-card {
+    ::ng-deep .ant-card-body {
+      padding: 0.75rem;
+    }
+  }
+
+  .player-item {
+    .player-info {
+      gap: 0.5rem;
+    }
+
+    .player-avatar-section {
+      .player-avatar {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 0.875rem;
+      }
+    }
+
+    .player-details {
+      .player-name-section {
+        .player-name {
+          font-size: 0.85rem;
+        }
+      }
+
+      .player-stats {
+        .progress-section {
+          max-width: 80px;
+        }
+      }
+    }
+  }
+}

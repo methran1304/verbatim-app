@@ -12,6 +12,7 @@ import { VirtualKeyboardComponent } from './virtual-keyboard/virtual-keyboard.co
 import { DrillToolbarComponent } from './drill-toolbar/drill-toolbar.component';
 import { RoomSettingsToolbarComponent } from './room-settings-toolbar/room-settings-toolbar.component';
 import { AdaptiveDrillModalComponent } from './adaptive-drill-modal/adaptive-drill-modal.component';
+import { PlayerPanelComponent, Player } from './player-panel/player-panel.component';
 
 import { ThemeService } from '../../services/theme.service';
 import { NavigationService } from '../navigation/navigation.service';
@@ -32,6 +33,7 @@ import { DrillSubmissionRequest } from '../../models/interfaces/drill-submission
 import { SignalRService } from '../../services/signalr.service';
 import { RoomSessionService } from '../../services/room-session.service';
 import { CompetitiveDrillService, RoomState } from '../../services/competitive-drill.service';
+import { JwtDecoderUtil } from '../../core/utils/jwt-decoder.util';
 
 @Component({
     selector: 'app-drill-engine',
@@ -44,6 +46,7 @@ import { CompetitiveDrillService, RoomState } from '../../services/competitive-d
         DrillToolbarComponent,
         RoomSettingsToolbarComponent,
         AdaptiveDrillModalComponent,
+        PlayerPanelComponent,
         NzCardModule,
         NzButtonModule,
         NzModalModule,
@@ -60,12 +63,11 @@ export class DrillEngineComponent implements OnInit {
 
     // timer state will be managed by TimerManagementService
     timerState: TimerState | null = null;
+    // real-time data collection is now managed by RealTimeDataService
 
+    // wpm and accuracy
     wpm: number = 0;
     accuracy: number = 100;
-
-    // Time series data collection
-    // real-time data collection is now managed by RealTimeDataService
 
     isDarkMode: boolean = false;
 
@@ -99,6 +101,11 @@ export class DrillEngineComponent implements OnInit {
         isCreatingRoom: false,
         isJoiningRoom: false
     };
+
+    // player panel data
+    public players: Player[] = [];
+    public currentUserId: string = '';
+    public isCurrentUserReady: boolean = false;
 
 
     constructor(
@@ -185,14 +192,37 @@ export class DrillEngineComponent implements OnInit {
             this.isDarkMode = isDark;
         });
 
-        // Check for active room session if in competitive mode
+        // check for active room session if in competitive mode
         if (this.isCompetitive) {
             this.competitiveDrillService.initializeCompetitiveMode();
             
-            // Subscribe to room state changes
+            // subscribe to room state changes
             this.competitiveDrillService.roomState$.subscribe(roomState => {
                 this.roomState = roomState;
             });
+
+            // subscribe to players data
+            this.competitiveDrillService.players$.subscribe(signalRPlayers => {
+                const currentRoomState = this.competitiveDrillService.getCurrentRoomState();
+                this.players = signalRPlayers.map(player => ({
+                    userId: player.userId,
+                    username: player.username,
+                    level: player.level,
+                    isReady: player.state === 'Ready',
+                    isCreator: player.userId === this.currentUserId && currentRoomState.userRole === 'Creator',
+                    progress: player.statistics?.completionPercentage,
+                    wpm: player.statistics?.wpm,
+                    accuracy: player.statistics?.accuracy
+                }));
+                
+                // update current user ready state
+                const currentPlayer = signalRPlayers.find(p => p.userId === this.currentUserId);
+                this.isCurrentUserReady = currentPlayer?.state === 'Ready';
+            });
+
+            // get current user ID from JWT token
+            const token = localStorage.getItem('accessToken') || '';
+            this.currentUserId = JwtDecoderUtil.getUserId(token) || '';
         }
     }
 
@@ -411,13 +441,13 @@ export class DrillEngineComponent implements OnInit {
             onTick: (timerState: TimerState) => {
                 this.timerState = timerState;
                 this.updateWPMAndAccuracy();
-                
+
                 // add time series data point
                 if (this.drillPreferences.drillType === DrillType.Timed) {
                     const currentTimePoint = timerState.totalTimeInSeconds - timerState.remainingSeconds;
                     this.realTimeDataService.addTimeSeriesDataPoint(currentTimePoint, this.wpm, this.accuracy);
-                } else {
-                    // only add data points if user is active or within reasonable inactivity period
+            } else {
+                // only add data points if user is active or within reasonable inactivity period
                     if (!this.isUserInactive || timerState.elapsedSeconds <= this.MAX_INACTIVITY_SECONDS) {
                         this.realTimeDataService.addTimeSeriesDataPoint(timerState.elapsedSeconds, this.wpm, this.accuracy);
                     }
@@ -427,8 +457,8 @@ export class DrillEngineComponent implements OnInit {
                 this.stopDrill();
             },
             onMaxDurationReached: () => {
-                this.stopDrill();
-            }
+                    this.stopDrill();
+                }
         });
     }
 
@@ -553,7 +583,12 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onSetReady(): void {
-        this.competitiveDrillService.setReady();
+        this.competitiveDrillService.toggleReady();
+    }
+
+    onKickPlayer(userId: string): void {
+        // TODO: Implement kick player functionality
+        console.log('Kick player:', userId);
     }
 
     onCloseErrorWordsModal(): void {
@@ -818,5 +853,9 @@ export class DrillEngineComponent implements OnInit {
 
     get submitError(): string {
         return this.drillStateManagementService.getCurrentDrillState().submitError;
+    }
+
+    get showPlayerPanel(): boolean {
+        return this.isCompetitive && this.roomState.showRoomModeOverlay;
     }
 }

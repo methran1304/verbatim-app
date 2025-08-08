@@ -55,6 +55,8 @@
     [duration]="roomState.duration || '60s'"
     [currentDifficulty]="drillPreferences.drillDifficulty"
     [currentLength]="drillPreferences.drillLength"
+    [isCurrentUserReady]="isCurrentUserReady"
+    [players]="players"
     (postDrillRestart)="onRestart()"
     (postDrillSubmit)="onPostDrillSubmit()"
     (generateAdaptiveDrill)="onGenerateAdaptiveDrill($event)"
@@ -65,8 +67,20 @@
   ></app-drill-text>
 
   
-  <app-virtual-keyboard [inputValue]="currentInput" [isDarkTheme]="isDarkMode">
-  </app-virtual-keyboard>
+  <!-- Show player panel in competitive mode when in lobby, otherwise show virtual keyboard -->
+  @if (showPlayerPanel) {
+    <app-player-panel
+      [players]="players"
+      [currentUserId]="currentUserId"
+      [isCreator]="roomState.userRole === 'Creator'"
+      [isActiveDrill]="false"
+      [show]="showPlayerPanel"
+      (kickPlayer)="onKickPlayer($event)">
+    </app-player-panel>
+  } @else {
+    <app-virtual-keyboard [inputValue]="currentInput" [isDarkTheme]="isDarkMode">
+    </app-virtual-keyboard>
+  }
   
 
   @if (isDrillActive) {

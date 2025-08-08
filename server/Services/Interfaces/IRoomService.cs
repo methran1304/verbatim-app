@@ -15,5 +15,6 @@ namespace server.Services.Interfaces
         Task<List<Room>> GetAllRoomsAsync();
         Task<bool> IsRoomActiveAsync(string roomCode);
         Task<bool> IsRoomFullAsync(string roomCode);
+        Task<bool> DeactivateRoomAsync(string roomCode);
     }
 }

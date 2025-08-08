@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { SignalRService } from './signalr.service';
-import { RoomSessionService } from './room-session.service';
+import { SignalRService, Player } from './signalr.service';
 import { DrillDifficulty } from '../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../models/enums/drill-length.enum';
+import { JwtDecoderUtil } from '../core/utils/jwt-decoder.util';
 
 export interface RoomState {
     showRoomOverlay: boolean;
@@ -37,9 +37,12 @@ export class CompetitiveDrillService {
 
     public roomState$ = this.roomStateSubject.asObservable();
 
+    // Player management
+    private playersSubject = new BehaviorSubject<Player[]>([]);
+    public players$ = this.playersSubject.asObservable();
+
     constructor(
-        private signalRService: SignalRService,
-        private roomSessionService: RoomSessionService
+        private signalRService: SignalRService
     ) {
         this.initializeSignalRSubscriptions();
     }
@@ -48,7 +51,6 @@ export class CompetitiveDrillService {
         // subscribe to room creation events
         this.signalRService.onRoomCreated$.subscribe(({ roomId, roomCode }) => {
             const currentState = this.roomStateSubject.value;
-            this.roomSessionService.setRoomSession(roomCode, 'Creator');
             this.updateRoomState({
                 showRoomOverlay: false,
                 showRoomModeOverlay: true,
@@ -61,12 +63,25 @@ export class CompetitiveDrillService {
                 difficulty: currentState.difficulty,
                 duration: currentState.duration
             });
+
+            // add the room creator as the first player
+            const token = localStorage.getItem('accessToken') || '';
+            const currentUserId = JwtDecoderUtil.getUserId(token) || '';
+            if (currentUserId) {
+                const creatorPlayer: Player = {
+                    userId: currentUserId,
+                    username: `User${currentUserId.substring(0, 4)}`, // match server logic
+                    level: 1, // match server logic
+                    state: 'Connected',
+                    statistics: undefined
+                };
+                this.addPlayer(creatorPlayer);
+            }
         });
 
         // Subscribe to room join events
         this.signalRService.onRoomJoined$.subscribe(({ roomId, roomCode }) => {
             const currentState = this.roomStateSubject.value;
-            this.roomSessionService.setRoomSession(roomCode, 'Member');
             this.updateRoomState({
                 showRoomOverlay: false,
                 showRoomModeOverlay: true,
@@ -82,21 +97,22 @@ export class CompetitiveDrillService {
         });
 
         // subscribe to player join events
-        this.signalRService.onPlayerJoin$.subscribe((player) => {
-            // update room state if needed
-            console.log('Player joined:', player);
+        this.signalRService.onPlayerJoin$.subscribe(({ roomId, player }) => {
+            this.addPlayer(player);
         });
 
         // subscribe to player leave events
-        this.signalRService.onPlayerLeave$.subscribe((player) => {
-            // update room state if needed
-            console.log('Player left:', player);
+        this.signalRService.onPlayerLeave$.subscribe(({ roomId, playerId }) => {
+            this.removePlayer(playerId);
         });
 
         // subscribe to player ready events
-        this.signalRService.onPlayerReady$.subscribe((player) => {
-            // update room state if needed
-            console.log('Player ready:', player);
+        this.signalRService.onPlayerReady$.subscribe(({ roomId, playerId }) => {
+            // Toggle the ready state for the player
+            const currentPlayers = this.playersSubject.value;
+            const currentPlayer = currentPlayers.find(p => p.userId === playerId);
+            const isCurrentlyReady = currentPlayer?.state === 'Ready';
+            this.updatePlayerReady(playerId, !isCurrentlyReady);
         });
 
         // subscribe to start drill events
@@ -107,47 +123,28 @@ export class CompetitiveDrillService {
                 showRoomModeOverlay: false
             });
         });
+
+        // subscribe to room disbanded events
+        this.signalRService.onRoomDisbanded$.subscribe(({ roomId, reason }) => {
+            this.resetState();
+            // You could show a notification here about why the room was disbanded
+        });
     }
 
     public async initializeCompetitiveMode(): Promise<void> {
-        try {
-            const activeRoom = await this.roomSessionService.checkActiveRoom().toPromise();
-            if (activeRoom && activeRoom.hasActiveRoom) {
-                // user has an active room session, show room mode overlay
-                this.updateRoomState({
-                    showRoomOverlay: false,
-                    showRoomModeOverlay: true,
-                    roomCode: activeRoom.roomCode || '',
-                    userRole: (activeRoom.role as 'Creator' | 'Member') || 'Member',
-                    roomState: (activeRoom.roomState as 'Waiting' | 'Ready' | 'InProgress' | 'Finished') || 'Waiting',
-                    isCreatingRoom: false,
-                    isJoiningRoom: false
-                });
-            } else {
-                // no active room session, show room overlay
-                this.updateRoomState({
-                    showRoomOverlay: true,
-                    showRoomModeOverlay: false,
-                    roomCode: '',
-                    userRole: 'Member',
-                    roomState: 'Waiting',
-                    isCreatingRoom: false,
-                    isJoiningRoom: false
-                });
-            }
-        } catch (error) {
-            console.error('Error checking active room session:', error);
-            // on error, show room overlay
-            this.updateRoomState({
-                showRoomOverlay: true,
-                showRoomModeOverlay: false,
-                roomCode: '',
-                userRole: 'Member',
-                roomState: 'Waiting',
-                isCreatingRoom: false,
-                isJoiningRoom: false
-            });
-        }
+        // always start fresh - show room overlay
+        this.updateRoomState({
+            showRoomOverlay: true,
+            showRoomModeOverlay: false,
+            roomCode: '',
+            userRole: 'Member',
+            roomState: 'Waiting',
+            isCreatingRoom: false,
+            isJoiningRoom: false
+        });
+        
+        // Clear any existing player data
+        this.playersSubject.next([]);
     }
 
     public async createRoom(type: string, difficulty: DrillDifficulty, duration?: number, length?: DrillLength): Promise<void> {
@@ -208,26 +205,31 @@ export class CompetitiveDrillService {
         } catch (error) {
             console.error('Error leaving room:', error);
         } finally {
-            this.roomSessionService.clearRoomSession();
-            this.updateRoomState({
-                showRoomOverlay: true,
-                showRoomModeOverlay: false,
-                roomCode: '',
-                userRole: 'Member',
-                roomState: 'Waiting',
-                isCreatingRoom: false,
-                isJoiningRoom: false
-            });
+            this.resetState();
         }
     }
 
-    public async setReady(): Promise<void> {
+    public async toggleReady(): Promise<void> {
         try {
-            await this.signalRService.setPlayerReady(this.roomStateSubject.value.roomCode, true);
+            const roomCode = this.roomStateSubject.value.roomCode;
+            const currentUserId = this.getCurrentUserId();
+            
+            // find current player's ready state
+            const currentPlayers = this.playersSubject.value;
+            const currentPlayer = currentPlayers.find(p => p.userId === currentUserId);
+            const isCurrentlyReady = currentPlayer?.state === 'Ready';
+            
+            // toggle the ready state
+            await this.signalRService.setPlayerReady(roomCode, !isCurrentlyReady);
         } catch (error) {
-            console.error('Error setting ready status:', error);
+            console.error('Error toggling ready status:', error);
             throw error;
         }
+    }
+
+    private getCurrentUserId(): string {
+        const token = localStorage.getItem('accessToken') || '';
+        return JwtDecoderUtil.getUserId(token) || '';
     }
 
     public async startDrill(): Promise<void> {
@@ -261,9 +263,8 @@ export class CompetitiveDrillService {
     }
 
     public resetState(): void {
-        this.roomSessionService.clearRoomSession();
         this.updateRoomState({
-            showRoomOverlay: false,
+            showRoomOverlay: true,
             showRoomModeOverlay: false,
             roomCode: '',
             userRole: 'Member',
@@ -271,5 +272,49 @@ export class CompetitiveDrillService {
             isCreatingRoom: false,
             isJoiningRoom: false
         });
+        this.playersSubject.next([]);
+    }
+
+    // Player management methods
+    private addPlayer(player: Player): void {
+        const currentPlayers = this.playersSubject.value;
+        const existingPlayerIndex = currentPlayers.findIndex(p => p.userId === player.userId);
+        
+        if (existingPlayerIndex >= 0) {
+            // update existing player
+            const updatedPlayers = [...currentPlayers];
+            updatedPlayers[existingPlayerIndex] = player;
+            this.playersSubject.next(updatedPlayers);
+        } else {
+            // add new player
+            this.playersSubject.next([...currentPlayers, player]);
+        }
+    }
+
+    private removePlayer(playerId: string): void {
+        const currentPlayers = this.playersSubject.value;
+        const updatedPlayers = currentPlayers.filter(p => p.userId !== playerId);
+        this.playersSubject.next(updatedPlayers);
+    }
+
+    private updatePlayerReady(playerId: string, isReady: boolean): void {
+        const currentPlayers = this.playersSubject.value;
+        const updatedPlayers = currentPlayers.map(player => 
+            player.userId === playerId 
+                ? { ...player, state: isReady ? 'Ready' as const : 'Connected' as const }
+                : player
+        );
+        this.playersSubject.next(updatedPlayers);
+    }
+
+    public getCurrentPlayers(): Player[] {
+        return this.playersSubject.value;
+    }
+
+    public isCurrentUserReady(): boolean {
+        const currentUserId = this.getCurrentUserId();
+        const currentPlayers = this.playersSubject.value;
+        const currentPlayer = currentPlayers.find(p => p.userId === currentUserId);
+        return currentPlayer?.state === 'Ready';
     }
 }

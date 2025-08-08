@@ -13,13 +13,19 @@ namespace server.Controllers
     {
         private readonly IUserRoomSessionService _sessionService;
         private readonly IRoomService _roomService;
+        private readonly IPlayerService _playerService;
+        private readonly IUserService _userService;
 
         public CompetitiveController(
             IUserRoomSessionService sessionService,
-            IRoomService roomService)
+            IRoomService roomService,
+            IPlayerService playerService,
+            IUserService userService)
         {
             _sessionService = sessionService;
             _roomService = roomService;
+            _playerService = playerService;
+            _userService = userService;
         }
 
         [HttpGet("active-room")]
@@ -83,6 +89,58 @@ namespace server.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error clearing session: {ex.Message}");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpGet("room/{roomCode}/players")]
+        public async Task<IActionResult> GetRoomPlayers(string roomCode)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized("User not authenticated");
+                }
+
+                // verify that the user is actually in this room
+                var session = await _sessionService.GetActiveSessionAsync(userId);
+                if (session == null || session.RoomCode != roomCode)
+                {
+                    return Forbid("User not in this room");
+                }
+
+                // get players from the room
+                var players = _playerService.GetPlayersInRoom(roomCode);
+                
+                // convert to API response format
+                var playersResponse = new List<object>();
+                foreach (var player in players)
+                {
+                    // get user details
+                    var user = await _userService.GetByUserId(player.UserId);
+                    
+                    playersResponse.Add(new
+                    {
+                        userId = player.UserId,
+                        username = user?.Username ?? $"User{player.UserId.Substring(0, 4)}",
+                        level = 1, // Default level for now, can be calculated from profile stats later
+                        state = player.State.ToString(),
+                        statistics = player.State == PlayerState.Typing ? new
+                        {
+                            wpm = player.WPM,
+                            accuracy = player.Accuracy,
+                            completionPercentage = (int)((player.Position / (double)players.Count) * 100)
+                        } : null
+                    });
+                }
+
+                return Ok(new { players = playersResponse });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting room players: {ex.Message}");
                 return StatusCode(500, "Internal server error");
             }
         }

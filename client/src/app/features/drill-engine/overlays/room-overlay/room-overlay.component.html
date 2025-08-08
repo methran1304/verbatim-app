@@ -27,8 +27,7 @@
         <div class="room-input-row">
           <input 
             type="text" 
-            [value]="roomCode"
-            (input)="onRoomCodeInput($event)"
+            [(ngModel)]="roomCode"
             placeholder="Room Code"
             maxlength="6"
             class="room-code-field"

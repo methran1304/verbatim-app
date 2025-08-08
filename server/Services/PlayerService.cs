@@ -134,7 +134,7 @@ namespace server.Services
             return players.FirstOrDefault(p => p.UserId == userId);
         }
 
-        public bool SetPlayerReady(string roomCode, string userId)
+        public bool SetPlayerReady(string roomCode, string userId, bool isReady = true)
         {
             try
             {
@@ -147,10 +147,10 @@ namespace server.Services
                     return false;
                 }
 
-                player.State = PlayerState.Ready;
+                player.State = isReady ? PlayerState.Ready : PlayerState.Connected;
                 SetPlayersInRoomCache(roomCode, players);
 
-                Console.WriteLine($"Player {userId} ready status set in room {roomCode}");
+                Console.WriteLine($"Player {userId} {(isReady ? "ready" : "unready")} status set in room {roomCode}");
                 return true;
             }
             catch (Exception ex)

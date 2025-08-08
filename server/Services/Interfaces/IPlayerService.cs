@@ -10,7 +10,7 @@ namespace server.Services.Interfaces
         bool KickPlayerFromLobby(string roomCode, string userId, string kickedByUserId);
         List<CompetitiveDrillPlayer> GetPlayersInRoom(string roomCode);
         bool UpdatePlayerStatistics(string roomCode, string userId, PlayerStatistics stats);
-        bool SetPlayerReady(string roomCode, string userId);
+        bool SetPlayerReady(string roomCode, string userId, bool isReady = true);
         bool StartPlayerTyping(string roomCode, string userId);
         bool SetPlayerFinished(string roomCode, string userId, DrillResult result);
         bool IsPlayerInRoom(string roomCode, string userId);

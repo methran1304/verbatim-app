@@ -109,7 +109,7 @@ export class RoomSessionService {
   }
 
   clearServerSession(): Observable<boolean> {
-    return this.http.post<{ success: boolean }>(`${environment.apiBaseUrl}/api/competitive-drill/clear-session`, {})
+    return this.http.post<{ success: boolean }>(`${environment.apiBaseUrl}/competitive-drill/clear-session`, {})
       .pipe(
         map(response => response.success),
         catchError(error => {
@@ -134,5 +134,15 @@ export class RoomSessionService {
 
   hasRoomSession(): boolean {
     return this.getRoomSession() !== null;
+  }
+
+  getRoomPlayers(roomCode: string): Observable<any> {
+    return this.http.get<any>(`${environment.apiBaseUrl}/competitive/room/${roomCode}/players`)
+      .pipe(
+        catchError(error => {
+          console.error('Error getting room players:', error);
+          return of({ players: [] });
+        })
+      );
   }
 }

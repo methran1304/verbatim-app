@@ -61,6 +61,8 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
     @Input() isJoiningRoom: boolean = false;
     @Input() currentDifficulty: DrillDifficulty = DrillDifficulty.Intermediate;
     @Input() currentLength: DrillLength = DrillLength.Medium;
+    @Input() isCurrentUserReady: boolean = false;
+    @Input() players: any[] = [];
 
     @Output() postDrillRestart = new EventEmitter<void>();
     @Output() postDrillSubmit = new EventEmitter<void>();

@@ -98,10 +98,19 @@ namespace server.Services
 			return result.ModifiedCount > 0;
 		}
 
-		public async Task<bool> IsRoomFullAsync(string roomCode)
+		        public async Task<bool> IsRoomFullAsync(string roomCode)
         {
             var room = await GetRoomByCodeAsync(roomCode);
             return room?.Availability == RoomAvailability.Full;
+        }
+
+        public async Task<bool> DeactivateRoomAsync(string roomCode)
+        {
+            var result = await _rooms.UpdateOneAsync(
+                r => r.RoomCode == roomCode,
+                Builders<Room>.Update.Set(r => r.IsActive, false)
+            );
+            return result.ModifiedCount > 0;
         }
 	}
 }

@@ -27,12 +27,12 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
   @Input() drillType: string = 'Timed';
   @Input() difficulty: string = 'Intermediate';
   @Input() duration: string = '60s';
+  @Input() isCurrentUserReady: boolean = false;
+  @Input() players: any[] = [];
   
   @Output() leaveRoom = new EventEmitter<void>();
   @Output() startDrill = new EventEmitter<void>();
   @Output() setReady = new EventEmitter<void>();
-
-  isReady: boolean = false;
   isWaitingForOthers: boolean = false;
 
   private subscriptions: Subscription[] = [];
@@ -65,6 +65,8 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
         this.startDrill.emit();
       })
     );
+
+
   }
 
   onCopyRoomCode(): void {
@@ -76,8 +78,6 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   onSetReady(): void {
-    this.isReady = !this.isReady;
-    this.isWaitingForOthers = this.isReady; // Show loading when ready
     this.setReady.emit();
   }
 
@@ -91,8 +91,27 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private resetState(): void {
-    this.isReady = false;
     this.isWaitingForOthers = false;
+  }
+
+  get canStartDrill(): boolean {
+    // need at least 2 players and all players must be ready
+    return this.players.length >= 2 && this.players.every(player => player.isReady);
+  }
+
+  getStartDrillButtonText(): string {
+    if (this.players.length < 2) {
+      return `Waiting...`;
+    }
+    
+    const readyCount = this.players.filter(player => player.isReady).length;
+    const totalCount = this.players.length;
+    
+    if (readyCount === totalCount) {
+      return 'Start Drill';
+    } else {
+      return `${readyCount}/${totalCount} ready`;
+    }
   }
 
 
