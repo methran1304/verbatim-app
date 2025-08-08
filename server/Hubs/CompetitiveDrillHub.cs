@@ -191,7 +191,18 @@ namespace server.Hubs
                 await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
                 Console.WriteLine($"Successfully added connection to group");
 
-                // notify all clients in the room
+                // send current player list to the joining player
+                var currentPlayers = _playerService.GetPlayersInRoom(roomCode);
+                Console.WriteLine($"Current players in room {roomCode}: {currentPlayers.Count}");
+                foreach (var player in currentPlayers)
+                {
+                    var playerUsername = GetUsername(player.UserId);
+                    var playerLevel = GetUserLevel(player.UserId);
+                    Console.WriteLine($"Sending existing player to joining user: userId={player.UserId}, username={playerUsername}, level={playerLevel}, state={player.State}");
+                    await Clients.Caller.PlayerJoin(room.RoomId, player.UserId, playerUsername, playerLevel);
+                }
+
+                // notify all clients in the room about the new player
                 var username = GetUsername(userId);
                 var level = GetUserLevel(userId);
                 Console.WriteLine($"Notifying group {roomCode} of player join: userId={userId}, username={username}, level={level}");

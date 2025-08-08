@@ -112,17 +112,28 @@ export class SignalRService {
 
   // connection management
   async connect(): Promise<void> {
+    console.log('=== CLIENT CONNECT DEBUG START ===');
+    console.log(`Current hub connection state: ${this.hubConnection?.state}`);
+    
     if (this.hubConnection?.state === 'Connected') {
+      console.log('Already connected, returning early');
       return;
     }
 
     this._connectionState$.next(ConnectionState.Connecting);
+    console.log('Connection state set to Connecting');
 
     // get authentication token
     const token = localStorage.getItem('accessToken');
+    console.log(`Token found: ${token ? 'Yes' : 'No'}`);
+    console.log(`Token value: ${token ? token.substring(0, 20) + '...' : 'None'}`);
+    
     const hubUrl = token 
       ? `${environment.hubUrl}?access_token=${encodeURIComponent(token)}`
       : environment.hubUrl;
+    
+    console.log(`Hub URL: ${hubUrl}`);
+    console.log(`Environment hub URL: ${environment.hubUrl}`);
 
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(hubUrl, { 
@@ -131,15 +142,25 @@ export class SignalRService {
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Information)
       .build();
+    
+    console.log('Hub connection built successfully');
 
     // set up event handlers
     this.setupEventHandlers();
+    console.log('Event handlers set up');
 
     try {
+      console.log('Attempting to start hub connection...');
       await this.hubConnection.start();
+      console.log('Hub connection started successfully');
+      console.log(`Connection ID: ${this.hubConnection.connectionId}`);
       this._connectionState$.next(ConnectionState.Connected);
+      console.log('Connection state set to Connected');
+      console.log('=== CLIENT CONNECT DEBUG END ===');
     } catch (error) {
+      console.error('ERROR starting hub connection:', error);
       this._connectionState$.next(ConnectionState.Disconnected);
+      console.log('=== CLIENT CONNECT DEBUG END (ERROR) ===');
       throw error;
     }
   }
@@ -266,19 +287,23 @@ export class SignalRService {
 
     // connection state changes
     this.hubConnection.onreconnecting(() => {
+      console.log('CLIENT: SignalR connection reconnecting...');
       this._connectionState$.next(ConnectionState.Reconnecting);
     });
 
     this.hubConnection.onreconnected(() => {
+      console.log('CLIENT: SignalR connection reconnected');
       this._connectionState$.next(ConnectionState.Connected);
     });
 
     this.hubConnection.onclose(() => {
+      console.log('CLIENT: SignalR connection closed');
       this._connectionState$.next(ConnectionState.Disconnected);
     });
 
     // competitive drill events
     this.hubConnection.on('PlayerJoin', (roomId: string, userId: string, username: string, level: number) => {
+      console.log(`CLIENT: PlayerJoin event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, level: ${level}`);
       const player: Player = {
         userId,
         username,
@@ -289,54 +314,67 @@ export class SignalRService {
     });
 
     this.hubConnection.on('PlayerLeave', (roomId: string, userId: string) => {
+      console.log(`CLIENT: PlayerLeave event received - roomId: ${roomId}, userId: ${userId}`);
       this.playerLeave$.next({ roomId, playerId: userId });
     });
 
     this.hubConnection.on('PlayerReady', (roomId: string, userId: string) => {
+      console.log(`CLIENT: PlayerReady event received - roomId: ${roomId}, userId: ${userId}`);
       this.playerReady$.next({ roomId, playerId: userId });
     });
 
     this.hubConnection.on('PlayerStatisticsUpdate', (roomId: string, statistics: PlayerStatistics[]) => {
+      console.log(`CLIENT: PlayerStatisticsUpdate event received - roomId: ${roomId}, statistics count: ${statistics.length}`);
       this.playerStatisticsUpdate$.next({ roomId, statistics });
     });
 
     this.hubConnection.on('StartDrill', (roomId: string, drillText: string[]) => {
+      console.log(`CLIENT: StartDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
       this.startDrill$.next({ roomId, drillText });
     });
 
     this.hubConnection.on('RoomDisbanded', (roomId: string, reason: string) => {
+      console.log(`CLIENT: RoomDisbanded event received - roomId: ${roomId}, reason: ${reason}`);
       this.roomDisbanded$.next({ roomId, reason });
     });
 
     this.hubConnection.on('EndDrill', (roomId: string, results: CompetitiveDrillResults) => {
+      console.log(`CLIENT: EndDrill event received - roomId: ${roomId}`);
       this.endDrill$.next({ roomId, results });
     });
 
     this.hubConnection.on('WaitingForOtherPlayers', (finishedCount: number, totalCount: number) => {
+      console.log(`CLIENT: WaitingForOtherPlayers event received - finished: ${finishedCount}, total: ${totalCount}`);
       this.waitingForOtherPlayers$.next({ finishedCount, totalCount });
     });
 
     this.hubConnection.on('AllPlayersCompleted', (roomId: string) => {
+      console.log(`CLIENT: AllPlayersCompleted event received - roomId: ${roomId}`);
       this.allPlayersCompleted$.next({ roomId });
     });
 
     this.hubConnection.on('PlayerAFK', (roomId: string, userId: string) => {
+      console.log(`CLIENT: PlayerAFK event received - roomId: ${roomId}, userId: ${userId}`);
       this.playerAFK$.next({ roomId, playerId: userId });
     });
 
     this.hubConnection.on('AFKWarning', (roomId: string, userId: string, timeoutSeconds: number) => {
+      console.log(`CLIENT: AFKWarning event received - roomId: ${roomId}, userId: ${userId}, timeout: ${timeoutSeconds}`);
       this.afkWarning$.next({ roomId, playerId: userId, timeoutSeconds });
     });
 
     this.hubConnection.on('Countdown', (roomId: string, countdown: number) => {
+      console.log(`CLIENT: Countdown event received - roomId: ${roomId}, countdown: ${countdown}`);
       this.countdown$.next({ roomId, countdown });
     });
 
     this.hubConnection.on('RoomCreated', (roomId: string, roomCode: string) => {
+      console.log(`CLIENT: RoomCreated event received - roomId: ${roomId}, roomCode: ${roomCode}`);
       this.roomCreated$.next({ roomId, roomCode });
     });
 
     this.hubConnection.on('RoomJoined', (roomId: string, roomCode: string) => {
+      console.log(`CLIENT: RoomJoined event received - roomId: ${roomId}, roomCode: ${roomCode}`);
       this.roomJoined$.next({ roomId, roomCode });
     });
   }

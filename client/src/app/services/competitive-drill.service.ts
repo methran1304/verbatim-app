@@ -98,6 +98,7 @@ export class CompetitiveDrillService {
 
         // subscribe to player join events
         this.signalRService.onPlayerJoin$.subscribe(({ roomId, player }) => {
+            console.log(`COMPETITIVE SERVICE: PlayerJoin event received - roomId: ${roomId}, player:`, player);
             this.addPlayer(player);
         });
 
@@ -277,18 +278,23 @@ export class CompetitiveDrillService {
 
     // Player management methods
     private addPlayer(player: Player): void {
+        console.log(`COMPETITIVE SERVICE: Adding player:`, player);
         const currentPlayers = this.playersSubject.value;
+        console.log(`COMPETITIVE SERVICE: Current players before adding:`, currentPlayers);
         const existingPlayerIndex = currentPlayers.findIndex(p => p.userId === player.userId);
         
         if (existingPlayerIndex >= 0) {
             // update existing player
+            console.log(`COMPETITIVE SERVICE: Updating existing player at index ${existingPlayerIndex}`);
             const updatedPlayers = [...currentPlayers];
             updatedPlayers[existingPlayerIndex] = player;
             this.playersSubject.next(updatedPlayers);
         } else {
             // add new player
+            console.log(`COMPETITIVE SERVICE: Adding new player`);
             this.playersSubject.next([...currentPlayers, player]);
         }
+        console.log(`COMPETITIVE SERVICE: Players after update:`, this.playersSubject.value);
     }
 
     private removePlayer(playerId: string): void {
