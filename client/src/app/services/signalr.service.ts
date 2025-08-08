@@ -260,12 +260,13 @@ export class SignalRService {
     await this.hubConnection.invoke('UpdatePlayerStatistics', roomCode, statistics);
   }
 
-  async startDrill(roomCode: string): Promise<void> {
+  async startDrill(roomCode: string): Promise<{ success: boolean; error?: string }> {
     if (!this.hubConnection) {
       throw new Error('Not connected to SignalR hub');
     }
     
-    await this.hubConnection.invoke('StartDrill', roomCode);
+    const result = await this.hubConnection.invoke<{ success: boolean; error?: string }>('StartDrill', roomCode);
+    return result;
   }
 
   async completeDrill(roomCode: string, result: any): Promise<void> {

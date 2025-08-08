@@ -643,7 +643,10 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onStartCompetitiveDrill(): void {
-        this.competitiveDrillService.startDrill();
+        this.competitiveDrillService.startDrill().catch((err: any) => {
+            const message = (err && err.message) ? err.message : 'Failed to start drill';
+            this.notificationService.createNotification('error', 'Cannot start drill', message);
+        });
     }
 
     startCompetitiveDrill(drillText: string[]): void {

@@ -398,18 +398,18 @@ namespace server.Hubs
                 }
                 Console.WriteLine($"Using drill text with {drillText.Count} words");
 
+                // ensure all players are ready BEFORE switching to typing
+                if (!_playerService.AreAllPlayersReady(roomCode))
+                {
+                    Console.WriteLine($"ERROR: Not all players are ready in room {roomCode}");
+                    return new { success = false, error = "All players must be ready" };
+                }
+
                 // update all players to typing state
                 var players = _playerService.GetPlayersInRoom(roomCode);
                 foreach (var player in players)
                 {
                     _playerService.StartPlayerTyping(roomCode, player.UserId);
-                }
-
-                // ensure all players are ready
-                if (!_playerService.AreAllPlayersReady(roomCode))
-                {
-                    Console.WriteLine($"ERROR: Not all players are ready in room {roomCode}");
-                    return new { success = false, error = "All players must be ready" };
                 }
 
                 // set countdown in progress flag

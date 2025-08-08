@@ -259,7 +259,11 @@ export class CompetitiveDrillService {
 
     public async startDrill(): Promise<void> {
         try {
-            await this.signalRService.startDrill(this.roomStateSubject.value.roomCode);
+            const result = await this.signalRService.startDrill(this.roomStateSubject.value.roomCode);
+            if (!result.success) {
+                // surface server error to the UI via state and let component show a toaster
+                throw new Error(result.error || 'Failed to start drill');
+            }
         } catch (error) {
             console.error('Error starting drill:', error);
             throw error;
