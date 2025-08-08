@@ -113,6 +113,7 @@ export class DrillEngineComponent implements OnInit {
     public showCountdown: boolean = false;
     public countdownValue: number = 0;
     public isCountdownBegin: boolean = false;
+    private countdownInProgress: boolean = false;
 
 
     constructor(
@@ -229,13 +230,27 @@ export class DrillEngineComponent implements OnInit {
             // subscribe to countdown events
             this.signalRService.onCountdown$.subscribe(({ roomId, countdown }) => {
                 console.log(`DRILL ENGINE: Countdown event received - roomId: ${roomId}, countdown: ${countdown}`);
+                
+                // prevent multiple countdown displays
+                if (this.countdownInProgress && countdown !== 0) {
+                    console.log(`DRILL ENGINE: Countdown already in progress, skipping ${countdown}`);
+                    return;
+                }
+                
                 this.showCountdown = true;
                 this.countdownValue = countdown;
                 this.isCountdownBegin = countdown === 0;
                 
+                if (countdown === 3) {
+                    this.countdownInProgress = true;
+                }
+                
                 // hide countdown after a delay
                 setTimeout(() => {
                     this.showCountdown = false;
+                    if (countdown === 0) {
+                        this.countdownInProgress = false;
+                    }
                 }, 1000);
             });
 

@@ -25,7 +25,6 @@ namespace server.Hubs
 
         // drill lifecycle
         Task StartDrill(string roomId, List<string> drillText);
-        Task BeginDrill(string roomId, List<string> drillText);
         Task EndDrill(string roomId, DrillSummary results);
         Task WaitingForOtherPlayers(int finishedCount, int totalCount);
         
@@ -44,6 +43,9 @@ namespace server.Hubs
         private readonly IAFKDetectionService _afkDetectionService;
         private readonly IDrillTextService _drillTextService;
         private readonly IUserService _userService;
+        
+        // Track countdown state to prevent multiple countdowns
+        private static readonly Dictionary<string, bool> _countdownInProgress = new();
         public CompetitiveDrillHub(
             ICompetitiveDrillOrchestrator orchestrator,
             IRoomService roomService,
@@ -349,7 +351,7 @@ namespace server.Hubs
             }
         }
 
-        public async Task StartDrill(string roomCode)
+        public async Task<object> StartDrill(string roomCode)
         {
             try
             {
@@ -375,6 +377,13 @@ namespace server.Hubs
 
                 Console.WriteLine($"Room found: {room.RoomCode}, Settings: {room.DrillSettings.Type}, {room.DrillSettings.Difficulty}, {room.DrillSettings.Duration}s");
 
+                // check if countdown is already in progress
+                if (_countdownInProgress.ContainsKey(roomCode) && _countdownInProgress[roomCode])
+                {
+                    Console.WriteLine($"Countdown already in progress for room {roomCode}");
+                    return new { success = false, error = "Drill already starting" };
+                }
+
                 // get drill text for the room based on settings
                 var drillText = _drillTextService.GenerateDrillText(room.DrillSettings);
                 Console.WriteLine($"Generated drill text with {drillText.Count} words");
@@ -386,25 +395,28 @@ namespace server.Hubs
                     _playerService.StartPlayerTyping(roomCode, player.UserId);
                 }
 
-                // notify all clients in the room about drill start
-                await Clients.Group(roomCode).StartDrill(roomCode, drillText);
-                Console.WriteLine($"Notified all clients about drill start");
+                // set countdown in progress flag
+                _countdownInProgress[roomCode] = true;
 
-                // start countdown
+                // start countdown and then begin drill
                 await StartCountdown(roomCode);
+                
+                // after countdown, start the actual drill
+                await Clients.Group(roomCode).StartDrill(roomCode, drillText);
+                Console.WriteLine($"Notified all clients to start drill");
 
-                // after countdown, begin the actual drill
-                await Clients.Group(roomCode).BeginDrill(roomCode, drillText);
-                Console.WriteLine($"Notified all clients to begin drill");
+                // clear countdown flag
+                _countdownInProgress[roomCode] = false;
 
                 Console.WriteLine($"=== START DRILL DEBUG END ===");
+                return new { success = true };
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"ERROR in StartDrill: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 Console.WriteLine($"=== START DRILL DEBUG END (ERROR) ===");
-                throw;
+                return new { success = false, error = ex.Message };
             }
         }
 

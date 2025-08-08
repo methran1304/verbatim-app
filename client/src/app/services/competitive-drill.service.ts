@@ -128,17 +128,6 @@ export class CompetitiveDrillService {
                 roomState: 'InProgress',
                 showRoomModeOverlay: false
             });
-        });
-
-        // subscribe to begin drill events
-        this.signalRService.onBeginDrill$.subscribe(({ roomId, drillText }) => {
-            console.log(`COMPETITIVE SERVICE: BeginDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
-            // this is when the actual drill starts after countdown
-            this.updateRoomState({
-                ...this.roomStateSubject.value,
-                roomState: 'InProgress',
-                showRoomModeOverlay: false
-            });
             
             // start the drill with the provided text
             this.startCompetitiveDrill(drillText);

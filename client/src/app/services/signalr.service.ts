@@ -101,7 +101,6 @@ export class SignalRService {
   private playerStatisticsUpdate$ = new Subject<{ roomId: string; statistics: PlayerStatistics[] }>();
   private roomDisbanded$ = new Subject<{ roomId: string; reason: string }>();
   private startDrill$ = new Subject<{ roomId: string; drillText: string[] }>();
-  private beginDrill$ = new Subject<{ roomId: string; drillText: string[] }>();
   private endDrill$ = new Subject<{ roomId: string; results: CompetitiveDrillResults }>();
   private waitingForOtherPlayers$ = new Subject<{ finishedCount: number; totalCount: number }>();
   private allPlayersCompleted$ = new Subject<{ roomId: string }>();
@@ -336,11 +335,6 @@ export class SignalRService {
       this.startDrill$.next({ roomId, drillText });
     });
 
-    this.hubConnection.on('BeginDrill', (roomId: string, drillText: string[]) => {
-      console.log(`CLIENT: BeginDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
-      this.beginDrill$.next({ roomId, drillText });
-    });
-
     this.hubConnection.on('RoomDisbanded', (roomId: string, reason: string) => {
       console.log(`CLIENT: RoomDisbanded event received - roomId: ${roomId}, reason: ${reason}`);
       this.roomDisbanded$.next({ roomId, reason });
@@ -410,10 +404,6 @@ export class SignalRService {
 
   get onStartDrill$(): Observable<{ roomId: string; drillText: string[] }> {
     return this.startDrill$.asObservable();
-  }
-
-  get onBeginDrill$(): Observable<{ roomId: string; drillText: string[] }> {
-    return this.beginDrill$.asObservable();
   }
 
   get onRoomDisbanded$(): Observable<{ roomId: string; reason: string }> {
