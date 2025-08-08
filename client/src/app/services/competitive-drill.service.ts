@@ -41,6 +41,10 @@ export class CompetitiveDrillService {
     private playersSubject = new BehaviorSubject<Player[]>([]);
     public players$ = this.playersSubject.asObservable();
 
+    // Drill text management
+    private drillTextSubject = new BehaviorSubject<string[]>([]);
+    public drillText$ = this.drillTextSubject.asObservable();
+
     constructor(
         private signalRService: SignalRService
     ) {
@@ -117,12 +121,27 @@ export class CompetitiveDrillService {
         });
 
         // subscribe to start drill events
-        this.signalRService.onStartDrill$.subscribe(() => {
+        this.signalRService.onStartDrill$.subscribe(({ roomId, drillText }) => {
+            console.log(`COMPETITIVE SERVICE: StartDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
             this.updateRoomState({
                 ...this.roomStateSubject.value,
                 roomState: 'InProgress',
                 showRoomModeOverlay: false
             });
+        });
+
+        // subscribe to begin drill events
+        this.signalRService.onBeginDrill$.subscribe(({ roomId, drillText }) => {
+            console.log(`COMPETITIVE SERVICE: BeginDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
+            // this is when the actual drill starts after countdown
+            this.updateRoomState({
+                ...this.roomStateSubject.value,
+                roomState: 'InProgress',
+                showRoomModeOverlay: false
+            });
+            
+            // start the drill with the provided text
+            this.startCompetitiveDrill(drillText);
         });
 
         // subscribe to room disbanded events
@@ -240,6 +259,22 @@ export class CompetitiveDrillService {
             console.error('Error starting drill:', error);
             throw error;
         }
+    }
+
+    private startCompetitiveDrill(drillText: string[]): void {
+        console.log(`COMPETITIVE SERVICE: Starting competitive drill with ${drillText.length} words`);
+        // convert drill text to the format expected by drill engine
+        const sourceText = drillText.map((word, i) => {
+            const chars = word.split('');
+            return i < drillText.length - 1 ? [...chars, ' '] : chars;
+        });
+        
+        // emit an event that the drill engine can listen to
+        // this will be handled by the drill engine component
+        console.log(`COMPETITIVE SERVICE: Drill text prepared:`, sourceText);
+        
+        // emit the drill text to the drill engine
+        this.drillTextSubject.next(drillText);
     }
 
     public goBackToRoomOverlay(): void {

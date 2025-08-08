@@ -13,6 +13,7 @@ import { DrillToolbarComponent } from './drill-toolbar/drill-toolbar.component';
 import { RoomSettingsToolbarComponent } from './room-settings-toolbar/room-settings-toolbar.component';
 import { AdaptiveDrillModalComponent } from './adaptive-drill-modal/adaptive-drill-modal.component';
 import { PlayerPanelComponent, Player } from './player-panel/player-panel.component';
+import { CountdownOverlayComponent } from './overlays/countdown-overlay/countdown-overlay.component';
 
 import { ThemeService } from '../../services/theme.service';
 import { NavigationService } from '../navigation/navigation.service';
@@ -47,6 +48,7 @@ import { JwtDecoderUtil } from '../../core/utils/jwt-decoder.util';
         RoomSettingsToolbarComponent,
         AdaptiveDrillModalComponent,
         PlayerPanelComponent,
+        CountdownOverlayComponent,
         NzCardModule,
         NzButtonModule,
         NzModalModule,
@@ -106,6 +108,11 @@ export class DrillEngineComponent implements OnInit {
     public players: Player[] = [];
     public currentUserId: string = '';
     public isCurrentUserReady: boolean = false;
+
+    // countdown state
+    public showCountdown: boolean = false;
+    public countdownValue: number = 0;
+    public isCountdownBegin: boolean = false;
 
 
     constructor(
@@ -217,6 +224,27 @@ export class DrillEngineComponent implements OnInit {
                 // update current user ready state
                 const currentPlayer = signalRPlayers.find(p => p.userId === this.currentUserId);
                 this.isCurrentUserReady = currentPlayer?.state === 'Ready';
+            });
+
+            // subscribe to countdown events
+            this.signalRService.onCountdown$.subscribe(({ roomId, countdown }) => {
+                console.log(`DRILL ENGINE: Countdown event received - roomId: ${roomId}, countdown: ${countdown}`);
+                this.showCountdown = true;
+                this.countdownValue = countdown;
+                this.isCountdownBegin = countdown === 0;
+                
+                // hide countdown after a delay
+                setTimeout(() => {
+                    this.showCountdown = false;
+                }, 1000);
+            });
+
+            // subscribe to competitive drill text
+            this.competitiveDrillService.drillText$.subscribe(drillText => {
+                if (drillText.length > 0) {
+                    console.log(`DRILL ENGINE: Received drill text from competitive service`);
+                    this.startCompetitiveDrill(drillText);
+                }
             });
 
             // get current user ID from JWT token
@@ -579,6 +607,27 @@ export class DrillEngineComponent implements OnInit {
 
     onStartCompetitiveDrill(): void {
         this.competitiveDrillService.startDrill();
+    }
+
+    startCompetitiveDrill(drillText: string[]): void {
+        console.log(`DRILL ENGINE: Starting competitive drill with ${drillText.length} words`);
+        
+        const sourceText = drillText.map((word, i) => {
+            const chars = word.split('');
+            return i < drillText.length - 1 ? [...chars, ' '] : chars;
+        });
+        
+        const typedText = sourceText.map((word) =>
+            new Array(word.length).fill(undefined)
+        );
+        
+        const wordLocked = sourceText.map(() => false);
+        
+        this.drillStateManagementService.startDrill(drillText, this.drillPreferences);
+        
+        this.startTimer();
+        
+        console.log(`DRILL ENGINE: Competitive drill started successfully`);
     }
 
     onSetReady(): void {

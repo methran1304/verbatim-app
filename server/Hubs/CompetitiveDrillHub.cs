@@ -25,6 +25,7 @@ namespace server.Hubs
 
         // drill lifecycle
         Task StartDrill(string roomId, List<string> drillText);
+        Task BeginDrill(string roomId, List<string> drillText);
         Task EndDrill(string roomId, DrillSummary results);
         Task WaitingForOtherPlayers(int finishedCount, int totalCount);
         
@@ -352,44 +353,57 @@ namespace server.Hubs
         {
             try
             {
+                Console.WriteLine($"=== START DRILL DEBUG START ===");
+                Console.WriteLine($"StartDrill called for room: {roomCode}");
+                
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
+                    Console.WriteLine("ERROR: User not authenticated");
                     throw new UnauthorizedAccessException("User not authenticated");
                 }
+
+                Console.WriteLine($"User {userId} attempting to start drill");
 
                 // verify user is room creator
                 var room = await _roomService.GetRoomByCodeAsync(roomCode);
                 if (room?.CreatedBy != userId)
                 {
+                    Console.WriteLine($"ERROR: User {userId} is not the creator of room {roomCode}");
                     throw new UnauthorizedAccessException("Only room creator can start drill");
                 }
 
-                // start the drill using orchestrator
-                var success = await _orchestrator.StartDrillAsync(roomCode);
-                if (success)
+                Console.WriteLine($"Room found: {room.RoomCode}, Settings: {room.DrillSettings.Type}, {room.DrillSettings.Difficulty}, {room.DrillSettings.Duration}s");
+
+                // get drill text for the room based on settings
+                var drillText = _drillTextService.GenerateDrillText(room.DrillSettings);
+                Console.WriteLine($"Generated drill text with {drillText.Count} words");
+
+                // update all players to typing state
+                var players = _playerService.GetPlayersInRoom(roomCode);
+                foreach (var player in players)
                 {
-                    // get drill text for the room
-                    var drillText = _drillTextService.GenerateDrillText(room.DrillSettings);
-
-                    
-                    
-                    // notify all clients in the room
-                    await Clients.Group(roomCode).StartDrill(roomCode, drillText);
-
-                    // start countdown
-                    await StartCountdown(roomCode);
-
-                    Console.WriteLine($"Drill started in room {roomCode}");
+                    _playerService.StartPlayerTyping(roomCode, player.UserId);
                 }
-                else
-                {
-                    throw new InvalidOperationException("Failed to start drill");
-                }
+
+                // notify all clients in the room about drill start
+                await Clients.Group(roomCode).StartDrill(roomCode, drillText);
+                Console.WriteLine($"Notified all clients about drill start");
+
+                // start countdown
+                await StartCountdown(roomCode);
+
+                // after countdown, begin the actual drill
+                await Clients.Group(roomCode).BeginDrill(roomCode, drillText);
+                Console.WriteLine($"Notified all clients to begin drill");
+
+                Console.WriteLine($"=== START DRILL DEBUG END ===");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in StartDrill: {ex.Message}");
+                Console.WriteLine($"ERROR in StartDrill: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                Console.WriteLine($"=== START DRILL DEBUG END (ERROR) ===");
                 throw;
             }
         }
@@ -455,12 +469,22 @@ namespace server.Hubs
 
         private async Task StartCountdown(string roomCode)
         {
-            // start 5-second countdown
-            for (int i = 5; i > 0; i--)
+            Console.WriteLine($"Starting countdown for room {roomCode}");
+            
+            // start 3-second countdown
+            for (int i = 3; i > 0; i--)
             {
+                Console.WriteLine($"Countdown: {i}");
                 await Clients.Group(roomCode).Countdown(roomCode, i);
                 await Task.Delay(1000);
             }
+            
+            // show "BEGIN" message
+            Console.WriteLine("Countdown: BEGIN");
+            await Clients.Group(roomCode).Countdown(roomCode, 0); // 0 indicates "BEGIN"
+            await Task.Delay(1000);
+            
+            Console.WriteLine("Countdown completed");
         }
 
         private async Task HandlePlayerDisconnect(string userId)

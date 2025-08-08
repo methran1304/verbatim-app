@@ -92,6 +92,13 @@
   }
 </div>
 
+<!-- Countdown Overlay -->
+<app-countdown-overlay
+  [show]="showCountdown"
+  [countdown]="countdownValue"
+  [isBegin]="isCountdownBegin">
+</app-countdown-overlay>
+
 <!-- Adaptive Drill Modal -->
 <app-adaptive-drill-modal
   [isVisible]="showErrorWordsModal"
