@@ -121,8 +121,8 @@ export class SignalRService {
     // get authentication token
     const token = localStorage.getItem('accessToken');
     const hubUrl = token 
-      ? `http://localhost:5079/competitive-hub?access_token=${encodeURIComponent(token)}`
-      : 'http://localhost:5079/competitive-hub';
+      ? `${environment.hubUrl}?access_token=${encodeURIComponent(token)}`
+      : environment.hubUrl;
 
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(hubUrl, { 
