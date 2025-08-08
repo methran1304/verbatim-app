@@ -142,52 +142,76 @@ namespace server.Hubs
 
         public async Task<object> JoinRoom(string roomCode)
         {
+            Console.WriteLine($"=== JOIN ROOM DEBUG START ===");
+            Console.WriteLine($"JoinRoom called with roomCode: '{roomCode}'");
+            Console.WriteLine($"Connection ID: {Context.ConnectionId}");
+            Console.WriteLine($"User Claims: {string.Join(", ", Context.User?.Claims.Select(c => $"{c.Type}={c.Value}") ?? new string[0])}");
+            
             try
             {
                 var userId = GetUserId();
+                Console.WriteLine($"Extracted userId: '{userId}'");
+                
                 if (string.IsNullOrEmpty(userId))
                 {
+                    Console.WriteLine("ERROR: User not authenticated - userId is null or empty");
                     return new { success = false, error = "User not authenticated" };
                 }
 
+                Console.WriteLine($"Attempting to get room with code: '{roomCode}'");
                 // get room and validate
                 var room = await _roomService.GetRoomByCodeAsync(roomCode);
                 if (room == null)
                 {
+                    Console.WriteLine($"ERROR: Room not found for code: '{roomCode}'");
                     return new { success = false, error = "Room not found" };
                 }
 
+                Console.WriteLine($"Room found: RoomId={room.RoomId}, RoomCode={room.RoomCode}, State={room.State}, CreatedBy={room.CreatedBy}, IsActive={room.IsActive}");
+                
                 if (room.State != RoomState.Waiting && room.State != RoomState.Ready)
                 {
+                    Console.WriteLine($"ERROR: Room state '{room.State}' is not accepting new players");
                     return new { success = false, error = "Room is not accepting new players" };
                 }
 
+                Console.WriteLine($"Room state is valid. Attempting to add player {userId} to room {roomCode}");
                 // add player to room
                 var success = _playerService.AddPlayerToRoom(roomCode, userId);
+                Console.WriteLine($"AddPlayerToRoom result: {success}");
+                
                 if (!success)
                 {
+                    Console.WriteLine($"ERROR: Failed to add player {userId} to room {roomCode}");
                     return new { success = false, error = "Failed to join room" };
                 }
 
-
-
+                Console.WriteLine($"Adding connection {Context.ConnectionId} to group {roomCode}");
                 // add connection to group
                 await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
+                Console.WriteLine($"Successfully added connection to group");
 
-                        // notify all clients in the room
-        var username = GetUsername(userId);
-        var level = GetUserLevel(userId);
-        await Clients.Group(roomCode).PlayerJoin(room.RoomId, userId, username, level);
-        
-        // notify the joining player specifically
-        await Clients.Caller.RoomJoined(room.RoomId, roomCode);
+                // notify all clients in the room
+                var username = GetUsername(userId);
+                var level = GetUserLevel(userId);
+                Console.WriteLine($"Notifying group {roomCode} of player join: userId={userId}, username={username}, level={level}");
+                await Clients.Group(roomCode).PlayerJoin(room.RoomId, userId, username, level);
+                Console.WriteLine($"Successfully notified group of player join");
+                
+                // notify the joining player specifically
+                Console.WriteLine($"Notifying caller of room joined: roomId={room.RoomId}, roomCode={roomCode}");
+                await Clients.Caller.RoomJoined(room.RoomId, roomCode);
+                Console.WriteLine($"Successfully notified caller of room joined");
 
-                Console.WriteLine($"User {userId} joined room {roomCode}");
+                Console.WriteLine($"SUCCESS: User {userId} joined room {roomCode}");
+                Console.WriteLine($"=== JOIN ROOM DEBUG END ===");
                 return new { success = true, roomId = room.RoomId, roomCode = room.RoomCode };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error joining room: {ex.Message}");
+                Console.WriteLine($"ERROR in JoinRoom: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                Console.WriteLine($"=== JOIN ROOM DEBUG END (ERROR) ===");
                 return new { success = false, error = ex.Message };
             }
         }
