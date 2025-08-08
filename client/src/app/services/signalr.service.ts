@@ -175,14 +175,33 @@ export class SignalRService {
   }
 
   async joinRoom(roomCode: string): Promise<void> {
+    console.log('=== CLIENT JOIN ROOM DEBUG START ===');
+    console.log(`Attempting to join room with code: '${roomCode}'`);
+    console.log(`Hub connection state: ${this.hubConnection?.state}`);
+    console.log(`Connection ID: ${this.hubConnection?.connectionId}`);
+    
     if (!this.hubConnection) {
+      console.error('ERROR: Not connected to SignalR hub');
       throw new Error('Not connected to SignalR hub');
     }
     
-    const result = await this.hubConnection.invoke<{ success: boolean; error?: string }>('JoinRoom', roomCode);
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to join room');
+    try {
+      console.log(`Invoking JoinRoom method on server with roomCode: '${roomCode}'`);
+      const result = await this.hubConnection.invoke<{ success: boolean; error?: string; roomId?: string; roomCode?: string }>('JoinRoom', roomCode);
+      console.log(`Server response received:`, result);
+      
+      if (!result.success) {
+        console.error(`ERROR: Failed to join room. Server error: ${result.error}`);
+        throw new Error(result.error || 'Failed to join room');
+      }
+      
+      console.log(`SUCCESS: Joined room successfully. RoomId: ${result.roomId}, RoomCode: ${result.roomCode}`);
+      console.log('=== CLIENT JOIN ROOM DEBUG END ===');
+    } catch (error) {
+      console.error(`ERROR in joinRoom: ${error}`);
+      console.error(`Error details:`, error);
+      console.log('=== CLIENT JOIN ROOM DEBUG END (ERROR) ===');
+      throw error;
     }
   }
 
