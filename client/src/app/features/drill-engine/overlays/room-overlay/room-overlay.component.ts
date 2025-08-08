@@ -12,7 +12,6 @@ import { DrillType } from '../../../../models/enums/drill-type.enum';
 import { DrillDifficulty as LocalDrillDifficulty } from '../../../../models/enums/drill-difficulty.enum';
 import { DrillLength, DrillLengthWordCount } from '../../../../models/enums/drill-length.enum';
 import { SignalRService, CompetitiveDrillType, DrillDifficulty } from '../../../../services/signalr.service';
-import { RoomSessionService } from '../../../../services/room-session.service';
 import { CompetitiveDrillService } from '../../../../services/competitive-drill.service';
 
 @Component({
@@ -73,7 +72,6 @@ export class RoomOverlayComponent implements OnInit, OnDestroy {
     constructor(
         private signalRService: SignalRService,
         private notification: NzNotificationService,
-        private roomSessionService: RoomSessionService,
         private competitiveDrillService: CompetitiveDrillService
     ) {}
 

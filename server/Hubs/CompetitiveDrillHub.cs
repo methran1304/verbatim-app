@@ -42,16 +42,13 @@ namespace server.Hubs
         private readonly ICompetitiveDrillService _competitiveDrillService;
         private readonly IAFKDetectionService _afkDetectionService;
         private readonly IDrillTextService _drillTextService;
-        private readonly IUserRoomSessionService _sessionService;
-
         public CompetitiveDrillHub(
             ICompetitiveDrillOrchestrator orchestrator,
             IRoomService roomService,
             IPlayerService playerService,
             ICompetitiveDrillService competitiveDrillService,
             IAFKDetectionService afkDetectionService,
-            IDrillTextService drillTextService,
-            IUserRoomSessionService sessionService)
+            IDrillTextService drillTextService)
         {
             _orchestrator = orchestrator;
             _roomService = roomService;
@@ -59,7 +56,7 @@ namespace server.Hubs
             _competitiveDrillService = competitiveDrillService;
             _afkDetectionService = afkDetectionService;
             _drillTextService = drillTextService;
-            _sessionService = sessionService;
+
         }
 
         public override async Task OnConnectedAsync()
@@ -121,8 +118,7 @@ namespace server.Hubs
                     return new { success = false, error = "Failed to add player to room" };
                 }
 
-                // create session for room creator
-                await _sessionService.CreateSessionAsync(userId, room.RoomCode, UserRole.Creator);
+
 
                 // add connection to group
                 await Groups.AddToGroupAsync(Context.ConnectionId, room.RoomCode);
@@ -173,8 +169,7 @@ namespace server.Hubs
                     return new { success = false, error = "Failed to join room" };
                 }
 
-                // create session for room member
-                await _sessionService.CreateSessionAsync(userId, roomCode, UserRole.Member);
+
 
                 // add connection to group
                 await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
@@ -221,8 +216,7 @@ namespace server.Hubs
                     await _roomService.DeleteRoomAsync(roomCode, userId);
                 }
 
-                // clear user session
-                await _sessionService.ClearSessionAsync(userId);
+
 
                 // remove connection from group
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
@@ -258,8 +252,7 @@ namespace server.Hubs
                     return new { success = false, error = "Failed to set ready status" };
                 }
 
-                // update activity on significant events
-                await _sessionService.UpdateActivityAsync(userId);
+
 
                 // notify all clients in the room
                 await Clients.Group(roomCode).PlayerReady(roomCode, userId);
@@ -287,8 +280,7 @@ namespace server.Hubs
                 var success = _playerService.UpdatePlayerStatistics(roomCode, userId, statistics);
                 if (success)
                 {
-                    // Update activity only on significant events, not every keystroke
-                    await _sessionService.UpdateActivityAsync(userId);
+
 
                     // get all players' current statistics
                     var players = _playerService.GetPlayersInRoom(roomCode);
@@ -377,8 +369,7 @@ namespace server.Hubs
                 var success = await _orchestrator.HandlePlayerCompletionAsync(roomCode, userId, result);
                 if (success)
                 {
-                    // Update activity on drill completion
-                    await _sessionService.UpdateActivityAsync(userId);
+
                     Console.WriteLine($"Player {userId} completed drill in room {roomCode}");
                 }
             }
@@ -452,8 +443,7 @@ namespace server.Hubs
                         Console.WriteLine($"Found user {userId} in room {room.RoomCode}");
                         
                         // check if this is the room creator
-                        var session = await _sessionService.GetActiveSessionAsync(userId);
-                        if (session?.Role == UserRole.Creator)
+                        if (room.CreatedBy == userId)
                         {
                             // disband the room if creator disconnects
                             Console.WriteLine($"Room creator {userId} disconnected, disbanding room {room.RoomCode}");
@@ -464,8 +454,7 @@ namespace server.Hubs
                             // deactivate the room
                             await _roomService.DeactivateRoomAsync(room.RoomCode);
                             
-                            // clear all sessions for this room
-                            await _sessionService.ClearAllSessionsForRoomAsync(room.RoomCode);
+
                         }
                         else
                         {
@@ -473,8 +462,7 @@ namespace server.Hubs
                             _playerService.RemovePlayerFromRoom(room.RoomCode, userId);
                             await Clients.Group(room.RoomCode).PlayerLeave(room.RoomId, userId);
                             
-                            // clear their session
-                            await _sessionService.ClearSessionAsync(userId);
+
                         }
                         
                         // remove from SignalR group

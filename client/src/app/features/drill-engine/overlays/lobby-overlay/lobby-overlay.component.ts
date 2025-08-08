@@ -7,7 +7,6 @@ import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { Subscription } from 'rxjs';
 import { SignalRService, Player } from '../../../../services/signalr.service';
-import { RoomSessionService } from '../../../../services/room-session.service';
 
 
 
@@ -39,7 +38,6 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
 
   constructor(
     private signalRService: SignalRService,
-    private roomSessionService: RoomSessionService,
     private notification: NzNotificationService
   ) {}
 

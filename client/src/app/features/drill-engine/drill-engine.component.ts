@@ -31,7 +31,7 @@ import { DrillStateManagementService } from '../../services/drill-state-manageme
 import { RealTimeDataService } from '../../services/real-time-data.service';
 import { DrillSubmissionRequest } from '../../models/interfaces/drill-submission.interface';
 import { SignalRService } from '../../services/signalr.service';
-import { RoomSessionService } from '../../services/room-session.service';
+
 import { CompetitiveDrillService, RoomState } from '../../services/competitive-drill.service';
 import { JwtDecoderUtil } from '../../core/utils/jwt-decoder.util';
 
@@ -122,7 +122,6 @@ export class DrillEngineComponent implements OnInit {
         private router: Router,
         private notificationService: ZorroNotificationServiceTsService,
         private signalRService: SignalRService,
-        private roomSessionService: RoomSessionService,
         private competitiveDrillService: CompetitiveDrillService
     ) {
         // get drill preference

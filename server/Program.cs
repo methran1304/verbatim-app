@@ -64,7 +64,7 @@ builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IAFKDetectionService, AFKDetectionService>();
 builder.Services.AddScoped<IDrillTextService, DrillTextService>();
 builder.Services.AddScoped<ICompetitiveDrillOrchestrator, CompetitiveDrillOrchestrator>();
-builder.Services.AddScoped<IUserRoomSessionService, UserRoomSessionService>();
+
 
 
 builder.Services.AddControllers()
