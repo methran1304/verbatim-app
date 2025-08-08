@@ -17,7 +17,7 @@ namespace server.Hubs
         Task RoomDisbanded(string roomId, string reason);
         
         // player management
-        Task PlayerJoin(string roomId, string userId, string username, int level);
+        Task PlayerJoin(string roomId, string userId, string username, int level, bool isCreator = false);
         Task PlayerLeave(string roomId, string userId);
         Task PlayerReady(string roomId, string userId);
         Task PlayerStatisticsUpdate(string roomId, List<PlayerStatistics> statistics);
@@ -42,13 +42,15 @@ namespace server.Hubs
         private readonly ICompetitiveDrillService _competitiveDrillService;
         private readonly IAFKDetectionService _afkDetectionService;
         private readonly IDrillTextService _drillTextService;
+        private readonly IUserService _userService;
         public CompetitiveDrillHub(
             ICompetitiveDrillOrchestrator orchestrator,
             IRoomService roomService,
             IPlayerService playerService,
             ICompetitiveDrillService competitiveDrillService,
             IAFKDetectionService afkDetectionService,
-            IDrillTextService drillTextService)
+            IDrillTextService drillTextService,
+            IUserService userService)
         {
             _orchestrator = orchestrator;
             _roomService = roomService;
@@ -56,7 +58,7 @@ namespace server.Hubs
             _competitiveDrillService = competitiveDrillService;
             _afkDetectionService = afkDetectionService;
             _drillTextService = drillTextService;
-
+            _userService = userService;
         }
 
         public override async Task OnConnectedAsync()
@@ -127,9 +129,9 @@ namespace server.Hubs
                 await Clients.Group(room.RoomCode).RoomCreated(room.RoomId, room.RoomCode);
 
                 // notify about the room creator joining
-                var username = GetUsername(userId);
+                var username = await GetUsernameAsync(userId);
                 var level = GetUserLevel(userId);
-                await Clients.Group(room.RoomCode).PlayerJoin(room.RoomId, userId, username, level);
+                await Clients.Group(room.RoomCode).PlayerJoin(room.RoomId, userId, username, level, true); // true = isCreator
 
                 return new { success = true, roomId = room.RoomId, roomCode = room.RoomCode };
             }
@@ -196,17 +198,19 @@ namespace server.Hubs
                 Console.WriteLine($"Current players in room {roomCode}: {currentPlayers.Count}");
                 foreach (var player in currentPlayers)
                 {
-                    var playerUsername = GetUsername(player.UserId);
+                    var playerUsername = await GetUsernameAsync(player.UserId);
                     var playerLevel = GetUserLevel(player.UserId);
-                    Console.WriteLine($"Sending existing player to joining user: userId={player.UserId}, username={playerUsername}, level={playerLevel}, state={player.State}");
-                    await Clients.Caller.PlayerJoin(room.RoomId, player.UserId, playerUsername, playerLevel);
+                    var isPlayerCreator = room.CreatedBy == player.UserId;
+                    Console.WriteLine($"Sending existing player to joining user: userId={player.UserId}, username={playerUsername}, level={playerLevel}, state={player.State}, isCreator={isPlayerCreator}");
+                    await Clients.Caller.PlayerJoin(room.RoomId, player.UserId, playerUsername, playerLevel, isPlayerCreator);
                 }
 
                 // notify all clients in the room about the new player
-                var username = GetUsername(userId);
+                var username = await GetUsernameAsync(userId);
                 var level = GetUserLevel(userId);
-                Console.WriteLine($"Notifying group {roomCode} of player join: userId={userId}, username={username}, level={level}");
-                await Clients.Group(roomCode).PlayerJoin(room.RoomId, userId, username, level);
+                var isNewPlayerCreator = room.CreatedBy == userId;
+                Console.WriteLine($"Notifying group {roomCode} of player join: userId={userId}, username={username}, level={level}, isCreator={isNewPlayerCreator}");
+                await Clients.Group(roomCode).PlayerJoin(room.RoomId, userId, username, level, isNewPlayerCreator);
                 Console.WriteLine($"Successfully notified group of player join");
                 
                 // notify the joining player specifically
@@ -542,9 +546,23 @@ namespace server.Hubs
             return null;
         }
 
+        private async Task<string> GetUsernameAsync(string userId)
+        {
+            try
+            {
+                var user = await _userService.GetByUserId(userId);
+                return user?.Username ?? $"User{userId.Substring(0, 4)}";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting username for user {userId}: {ex.Message}");
+                return $"User{userId.Substring(0, 4)}";
+            }
+        }
+
         private string GetUsername(string userId)
         {
-            // TODO
+            // Synchronous fallback - use the async version in async methods
             return $"User{userId.Substring(0, 4)}";
         }
 

@@ -208,7 +208,7 @@ export class DrillEngineComponent implements OnInit {
                     username: player.username,
                     level: player.level,
                     isReady: player.state === 'Ready',
-                    isCreator: player.userId === this.currentUserId && currentRoomState.userRole === 'Creator',
+                    isCreator: player.isCreator || false,
                     progress: player.statistics?.completionPercentage,
                     wpm: player.statistics?.wpm,
                     accuracy: player.statistics?.accuracy

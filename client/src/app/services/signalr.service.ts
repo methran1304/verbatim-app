@@ -26,6 +26,7 @@ export interface Player {
   level: number;
   state: 'Connected' | 'Ready' | 'Typing' | 'Finished' | 'Disconnected';
   statistics?: PlayerStatistics;
+  isCreator?: boolean;
 }
 
 export interface Room {
@@ -302,13 +303,14 @@ export class SignalRService {
     });
 
     // competitive drill events
-    this.hubConnection.on('PlayerJoin', (roomId: string, userId: string, username: string, level: number) => {
-      console.log(`CLIENT: PlayerJoin event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, level: ${level}`);
+    this.hubConnection.on('PlayerJoin', (roomId: string, userId: string, username: string, level: number, isCreator: boolean = false) => {
+      console.log(`CLIENT: PlayerJoin event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, level: ${level}, isCreator: ${isCreator}`);
       const player: Player = {
         userId,
         username,
         level,
-        state: 'Connected'
+        state: 'Connected',
+        isCreator: isCreator
       };
       this.playerJoin$.next({ roomId, player });
     });
