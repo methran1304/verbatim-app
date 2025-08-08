@@ -640,7 +640,13 @@ export class DrillEngineComponent implements OnInit {
         
         this.drillStateManagementService.startDrill(drillText, this.drillPreferences);
         
+        // Start timer for competitive drill
         this.startTimer();
+        
+        // Focus the input for immediate typing
+        setTimeout(() => {
+            this.focusInput();
+        }, 100);
         
         console.log(`DRILL ENGINE: Competitive drill started successfully`);
     }

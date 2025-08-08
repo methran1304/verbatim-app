@@ -25,6 +25,7 @@ namespace server.Hubs
 
         // drill lifecycle
         Task StartDrill(string roomId, List<string> drillText);
+        Task BeginDrill(string roomId, List<string> drillText);
         Task EndDrill(string roomId, DrillSummary results);
         Task WaitingForOtherPlayers(int finishedCount, int totalCount);
         
@@ -398,12 +399,16 @@ namespace server.Hubs
                 // set countdown in progress flag
                 _countdownInProgress[roomCode] = true;
 
-                // start countdown and then begin drill
+                // notify all clients about drill start (this shows the drill text)
+                await Clients.Group(roomCode).StartDrill(roomCode, drillText);
+                Console.WriteLine($"Notified all clients about drill start");
+                
+                // start countdown
                 await StartCountdown(roomCode);
                 
-                // after countdown, start the actual drill
-                await Clients.Group(roomCode).StartDrill(roomCode, drillText);
-                Console.WriteLine($"Notified all clients to start drill");
+                // after countdown, begin the actual drill
+                await Clients.Group(roomCode).BeginDrill(roomCode, drillText);
+                Console.WriteLine($"Notified all clients to begin drill");
 
                 // clear countdown flag
                 _countdownInProgress[roomCode] = false;

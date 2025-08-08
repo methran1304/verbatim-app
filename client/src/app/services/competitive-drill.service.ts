@@ -120,16 +120,31 @@ export class CompetitiveDrillService {
             this.updatePlayerReady(playerId, !isCurrentlyReady);
         });
 
-        // subscribe to start drill events
+        // subscribe to start drill events (shows drill text and countdown)
         this.signalRService.onStartDrill$.subscribe(({ roomId, drillText }) => {
             console.log(`COMPETITIVE SERVICE: StartDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
+            // Store the drill text for when the countdown completes
+            this.drillTextSubject.next(drillText);
+            
+            // Update room state to show drill text
+            this.updateRoomState({
+                ...this.roomStateSubject.value,
+                roomState: 'InProgress',
+                showRoomModeOverlay: false
+            });
+        });
+
+        // subscribe to begin drill events (actual drill start after countdown)
+        this.signalRService.onBeginDrill$.subscribe(({ roomId, drillText }) => {
+            console.log(`COMPETITIVE SERVICE: BeginDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
+            // This is when the actual drill starts after countdown
             this.updateRoomState({
                 ...this.roomStateSubject.value,
                 roomState: 'InProgress',
                 showRoomModeOverlay: false
             });
             
-            // start the drill with the provided text
+            // Start the drill with the provided text
             this.startCompetitiveDrill(drillText);
         });
 
