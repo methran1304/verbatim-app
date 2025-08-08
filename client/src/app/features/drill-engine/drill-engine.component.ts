@@ -115,6 +115,12 @@ export class DrillEngineComponent implements OnInit {
     public isCountdownBegin: boolean = false;
     private countdownInProgress: boolean = false;
 
+    // competitive stats push interval
+    private statsInterval: any;
+
+    // winner message displayed
+    public winnerMessage: string = '';
+
 
     constructor(
         public adaptiveService: AdaptiveService,
@@ -262,6 +268,17 @@ export class DrillEngineComponent implements OnInit {
                 }
             });
 
+            // subscribe to server EndDrill event to finalize UI
+            this.signalRService.onEndDrill$.subscribe(({ roomId, results }) => {
+                this.stopDrill();
+                if (this.statsInterval) {
+                    clearInterval(this.statsInterval);
+                    this.statsInterval = null;
+                }
+                const winner = results?.playerResults?.find((p: any) => p.isWinner);
+                this.winnerMessage = winner ? `${winner.username} wins!` : '';
+            });
+
             // get current user ID from JWT token
             const token = localStorage.getItem('accessToken') || '';
             this.currentUserId = JwtDecoderUtil.getUserId(token) || '';
@@ -276,6 +293,11 @@ export class DrillEngineComponent implements OnInit {
         this.stopTimer();
 
         this.stopInactivityMonitoring();
+
+        if (this.statsInterval) {
+            clearInterval(this.statsInterval);
+            this.statsInterval = null;
+        }
 
         const currentTimerState = this.timerManagementService.getCurrentTimerState();
         if (currentTimerState.startTime > 0) {
@@ -642,6 +664,26 @@ export class DrillEngineComponent implements OnInit {
         
         // Start timer for competitive drill
         this.startTimer();
+        // push stats to server every 500ms
+        if (this.statsInterval) {
+            clearInterval(this.statsInterval);
+        }
+        this.statsInterval = setInterval(() => {
+            try {
+                const totalWords = this.sourceText.length;
+                const wordsCompleted = Math.min(this.currentWordIndex, totalWords);
+                const completion = totalWords > 0 ? Math.floor((wordsCompleted / totalWords) * 100) : 0;
+                this.signalRService.updatePlayerStatistics(this.roomState.roomCode, {
+                    userId: this.currentUserId,
+                    wpm: this.wpm,
+                    accuracy: this.accuracy,
+                    wordsCompleted: wordsCompleted,
+                    totalWords: totalWords,
+                    completionPercentage: completion,
+                    timestamp: new Date()
+                } as any).catch(() => {});
+            } catch {}
+        }, 500);
         
         // Focus the input for immediate typing
         setTimeout(() => {

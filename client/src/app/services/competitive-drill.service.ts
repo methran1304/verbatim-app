@@ -45,6 +45,9 @@ export class CompetitiveDrillService {
     private drillTextSubject = new BehaviorSubject<string[]>([]);
     public drillText$ = this.drillTextSubject.asObservable();
 
+    // pending text received at StartDrill; used to start on BeginDrill
+    private pendingDrillText: string[] = [];
+
     constructor(
         private signalRService: SignalRService
     ) {
@@ -120,16 +123,13 @@ export class CompetitiveDrillService {
             this.updatePlayerReady(playerId, !isCurrentlyReady);
         });
 
-        // subscribe to start drill events (shows drill text and countdown)
+        // subscribe to start drill events (preload drill text; countdown will follow)
         this.signalRService.onStartDrill$.subscribe(({ roomId, drillText }) => {
             console.log(`COMPETITIVE SERVICE: StartDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
-            // Store the drill text for when the countdown completes
-            this.drillTextSubject.next(drillText);
-            
-            // Update room state to show drill text
+            this.pendingDrillText = drillText;
+            // keep lobby hidden now to prepare UI; actual start happens on BeginDrill
             this.updateRoomState({
                 ...this.roomStateSubject.value,
-                roomState: 'InProgress',
                 showRoomModeOverlay: false
             });
         });
@@ -137,21 +137,22 @@ export class CompetitiveDrillService {
         // subscribe to begin drill events (actual drill start after countdown)
         this.signalRService.onBeginDrill$.subscribe(({ roomId, drillText }) => {
             console.log(`COMPETITIVE SERVICE: BeginDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
-            // This is when the actual drill starts after countdown
+            // this is when the actual drill starts after countdown
             this.updateRoomState({
                 ...this.roomStateSubject.value,
                 roomState: 'InProgress',
                 showRoomModeOverlay: false
             });
             
-            // Start the drill with the provided text
-            this.startCompetitiveDrill(drillText);
+            // start the drill with the provided text
+            const textToUse = (drillText && drillText.length > 0) ? drillText : this.pendingDrillText;
+            this.startCompetitiveDrill(textToUse);
         });
 
         // subscribe to room disbanded events
         this.signalRService.onRoomDisbanded$.subscribe(({ roomId, reason }) => {
             this.resetState();
-            // You could show a notification here about why the room was disbanded
+            // you could show a notification here about why the room was disbanded
         });
     }
 
@@ -315,7 +316,7 @@ export class CompetitiveDrillService {
         this.playersSubject.next([]);
     }
 
-    // Player management methods
+    // player management methods
     private addPlayer(player: Player): void {
         console.log(`COMPETITIVE SERVICE: Adding player:`, player);
         const currentPlayers = this.playersSubject.value;

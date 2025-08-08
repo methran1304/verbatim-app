@@ -48,6 +48,9 @@
 <div class="drill-text-wrapper"
      [ngClass]="{'blur-background' : !isFocused || showPostDrillOverlay || showAdaptiveDrillOverlay || showRoomOverlay || showLobbyOverlay, 'afk-cursor': delayedAfkOverlay && !showPostDrillOverlay}">
   <nz-card class="drill-text" #drillText>
+    @if (winnerMessage) {
+      <div class="winner-banner">{{ winnerMessage }}</div>
+    }
     <div class="drill-text-inner">
       @for (word of sourceText; track wi; let wi = $index) {
         <nz-tag class="word" [ngClass]="getWordClass(wi)" #wordEl>

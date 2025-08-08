@@ -47,6 +47,10 @@ namespace server.Hubs
         
         // Track countdown state to prevent multiple countdowns
         private static readonly Dictionary<string, bool> _countdownInProgress = new();
+        // Track per-room progress broadcast timers (500ms) and end-of-drill timers
+        private static readonly Dictionary<string, System.Threading.Timer> _progressTimers = new();
+        private static readonly Dictionary<string, System.Threading.Timer> _drillEndTimers = new();
+        private static readonly object _timerLock = new();
         public CompetitiveDrillHub(
             ICompetitiveDrillOrchestrator orchestrator,
             IRoomService roomService,
@@ -385,15 +389,27 @@ namespace server.Hubs
                     return new { success = false, error = "Drill already starting" };
                 }
 
-                // get drill text for the room based on settings
-                var drillText = _drillTextService.GenerateDrillText(room.DrillSettings);
-                Console.WriteLine($"Generated drill text with {drillText.Count} words");
+                // get consistent drill text for the room based on settings (ensure same for all)
+                var drillText = _drillTextService.GetDrillTextForRoom(roomCode);
+                if (drillText == null || drillText.Count == 0)
+                {
+                    drillText = _drillTextService.GenerateDrillText(room.DrillSettings);
+                    _drillTextService.SetDrillTextForRoom(roomCode, drillText);
+                }
+                Console.WriteLine($"Using drill text with {drillText.Count} words");
 
                 // update all players to typing state
                 var players = _playerService.GetPlayersInRoom(roomCode);
                 foreach (var player in players)
                 {
                     _playerService.StartPlayerTyping(roomCode, player.UserId);
+                }
+
+                // ensure all players are ready
+                if (!_playerService.AreAllPlayersReady(roomCode))
+                {
+                    Console.WriteLine($"ERROR: Not all players are ready in room {roomCode}");
+                    return new { success = false, error = "All players must be ready" };
                 }
 
                 // set countdown in progress flag
@@ -412,6 +428,9 @@ namespace server.Hubs
 
                 // clear countdown flag
                 _countdownInProgress[roomCode] = false;
+
+                // start server-side timers
+                await StartServerManagedDrillAsync(roomCode, room);
 
                 Console.WriteLine($"=== START DRILL DEBUG END ===");
                 return new { success = true };
@@ -439,8 +458,9 @@ namespace server.Hubs
                 var success = await _orchestrator.HandlePlayerCompletionAsync(roomCode, userId, result);
                 if (success)
                 {
-
-                    Console.WriteLine($"Player {userId} completed drill in room {roomCode}");
+                    Console.WriteLine($"Drill completion condition met for room {roomCode}. Sending summary and stopping timers.");
+                    StopRoomTimers(roomCode);
+                    await SendEndSummaryAsync(roomCode);
                 }
             }
             catch (Exception ex)
@@ -502,6 +522,140 @@ namespace server.Hubs
             await Task.Delay(1000);
             
             Console.WriteLine("Countdown completed");
+        }
+
+        private Task StartServerManagedDrillAsync(string roomCode, Room room)
+        {
+            // start 500ms progress broadcast timer
+            lock (_timerLock)
+            {
+                if (_progressTimers.ContainsKey(roomCode))
+                {
+                    _progressTimers[roomCode]?.Dispose();
+                    _progressTimers.Remove(roomCode);
+                }
+
+                _progressTimers[roomCode] = new System.Threading.Timer(async _ =>
+                {
+                    try
+                    {
+                        var players = _playerService.GetPlayersInRoom(roomCode);
+                        var allStatistics = players
+                            .Where(p => p.State == PlayerState.Typing || p.State == PlayerState.Finished)
+                            .Select(p => new PlayerStatistics
+                            {
+                                UserId = p.UserId,
+                                WPM = p.WPM,
+                                Accuracy = p.Accuracy,
+                                // client should send these precisely; here we just forward placeholders
+                                WordsCompleted = 0,
+                                TotalWords = 0,
+                                CompletionPercentage = 0,
+                                Timestamp = DateTime.UtcNow
+                            })
+                            .ToList();
+
+                        await Clients.Group(roomCode).PlayerStatisticsUpdate(roomCode, allStatistics);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error broadcasting progress: {ex.Message}");
+                    }
+                }, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
+
+                // for timed drills, schedule centralized end
+                if (room.DrillSettings.Type == CompetitiveDrillType.Timed)
+                {
+                    if (_drillEndTimers.ContainsKey(roomCode))
+                    {
+                        _drillEndTimers[roomCode]?.Dispose();
+                        _drillEndTimers.Remove(roomCode);
+                    }
+
+                    var duration = Math.Max(1, room.DrillSettings.Duration);
+                    _drillEndTimers[roomCode] = new System.Threading.Timer(async _ =>
+                    {
+                        try
+                        {
+                            await EndTimedDrillAsync(roomCode);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error ending timed drill: {ex.Message}");
+                        }
+                    }, null, TimeSpan.FromSeconds(duration), Timeout.InfiniteTimeSpan);
+                }
+            }
+            return Task.CompletedTask;
+        }
+
+        private async Task EndTimedDrillAsync(string roomCode)
+        {
+            // stop timers
+            StopRoomTimers(roomCode);
+            await SendEndSummaryAsync(roomCode);
+        }
+
+        private void StopRoomTimers(string roomCode)
+        {
+            lock (_timerLock)
+            {
+                if (_progressTimers.TryGetValue(roomCode, out var progressTimer))
+                {
+                    progressTimer.Dispose();
+                    _progressTimers.Remove(roomCode);
+                }
+                if (_drillEndTimers.TryGetValue(roomCode, out var endTimer))
+                {
+                    endTimer.Dispose();
+                    _drillEndTimers.Remove(roomCode);
+                }
+            }
+        }
+
+        private async Task SendEndSummaryAsync(string roomCode)
+        {
+            var room = await _roomService.GetRoomByCodeAsync(roomCode);
+            if (room == null) return;
+
+            var players = _playerService.GetPlayersInRoom(roomCode);
+            var activePlayers = players.Where(p => p.State != PlayerState.Disconnected).ToList();
+            var winner = activePlayers
+                .OrderByDescending(p => p.WPM)
+                .ThenByDescending(p => p.Accuracy)
+                .FirstOrDefault();
+
+            var winnerId = winner?.UserId ?? string.Empty;
+
+            var summary = new DrillSummary
+            {
+                CompetitiveDrillId = room.ActiveCompetitiveDrillId ?? string.Empty,
+                RoomId = room.RoomId,
+                WinnerId = winnerId,
+                StartedAt = DateTime.UtcNow,
+                EndedAt = DateTime.UtcNow,
+                TotalPlayers = activePlayers.Count,
+                DrillSettings = room.DrillSettings,
+                PlayerResults = new List<PlayerResult>()
+            };
+
+            foreach (var p in activePlayers)
+            {
+                var username = await GetUsernameAsync(p.UserId);
+                summary.PlayerResults.Add(new PlayerResult
+                {
+                    UserId = p.UserId,
+                    Username = username,
+                    WPM = p.WPM,
+                    Accuracy = p.Accuracy,
+                    Position = 0,
+                    PointsChange = 0,
+                    FinishedAt = DateTime.UtcNow,
+                    IsWinner = p.UserId == winnerId
+                });
+            }
+
+            await Clients.Group(roomCode).EndDrill(room.RoomId, summary);
         }
 
         private async Task HandlePlayerDisconnect(string userId)

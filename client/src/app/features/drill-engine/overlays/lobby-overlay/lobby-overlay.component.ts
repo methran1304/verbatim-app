@@ -57,14 +57,8 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private setupSignalRSubscriptions(): void {
-    // subscribe to drill start events
-    this.subscriptions.push(
-      this.signalRService.onStartDrill$.subscribe(({ roomId, drillText }) => {
-        this.startDrill.emit();
-      })
-    );
-
-
+    // do not echo StartDrill events back to the server to avoid loops.
+    // the competitive flow is handled by CompetitiveDrillService and DrillEngineComponent.
   }
 
   onCopyRoomCode(): void {

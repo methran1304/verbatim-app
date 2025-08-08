@@ -52,6 +52,15 @@ namespace server.Entities
 		[BsonElement("points_change")]
 		public int PointsChange { get; set; }
 
+		[BsonElement("words_completed")]
+		public int WordsCompleted { get; set; }
+
+		[BsonElement("total_words")]
+		public int TotalWords { get; set; }
+
+		[BsonElement("completion_percentage")]
+		public int CompletionPercentage { get; set; }
+
 		[BsonElement("drill_id")]
 		[BsonRepresentation(BsonType.ObjectId)]
 		public string DrillId { get; set; } = null!;
