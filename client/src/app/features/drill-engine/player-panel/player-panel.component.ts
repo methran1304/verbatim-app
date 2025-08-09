@@ -10,6 +10,7 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { environment } from '../../../../environments/environment';
 export interface CompetitiveStatistics {
   totalDrills: number;
@@ -45,7 +46,8 @@ export interface Player {
     NzPopconfirmModule,
     NzBadgeModule,
     NzProgressModule,
-    NzToolTipModule
+    NzToolTipModule,
+    NzStatisticModule
   ],
   templateUrl: './player-panel.component.html',
   styleUrls: ['./player-panel.component.scss']
@@ -152,17 +154,148 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
     return tooltip;
   }
 
+  getPlayerPosition(player: Player): string {
+    if (!this.isActiveDrill) {
+      return '';
+    }
+
+    // get all players with their progress/wpm for ranking
+    const playersWithStats = this.players
+      .filter(p => p.progress !== undefined)
+      .map(p => ({
+        userId: p.userId,
+        progress: p.progress || 0,
+        wpm: p.wpm || 0,
+        accuracy: p.accuracy || 0
+      }))
+      .sort((a, b) => {
+        // sort by progress first, then by WPM, then by accuracy
+        if (b.progress !== a.progress) {
+          return b.progress - a.progress;
+        }
+        if (b.wpm !== a.wpm) {
+          return b.wpm - a.wpm;
+        }
+        return b.accuracy - a.accuracy;
+      });
+
+    // find the player's position
+    const position = playersWithStats.findIndex(p => p.userId === player.userId) + 1;
+    
+    // convert to ordinal (1st, 2nd, 3rd, 4th)
+    const suffixes = ['th', 'st', 'nd', 'rd'];
+    const v = position % 100;
+    const suffix = suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0];
+    
+    // return position with suffix for styling
+    return position + suffix;
+  }
+
+  getPlayerPositionNumber(player: Player): string {
+    if (!this.isActiveDrill) {
+      return '';
+    }
+
+    // get all players with their progress/wpm for ranking
+    const playersWithStats = this.players
+      .filter(p => p.progress !== undefined)
+      .map(p => ({
+        userId: p.userId,
+        progress: p.progress || 0,
+        wpm: p.wpm || 0,
+        accuracy: p.accuracy || 0
+      }))
+      .sort((a, b) => {
+        // sort by progress first, then by WPM, then by accuracy
+        if (b.progress !== a.progress) {
+          return b.progress - a.progress;
+        }
+        if (b.wpm !== a.wpm) {
+          return b.wpm - a.wpm;
+        }
+        return b.accuracy - a.accuracy;
+      });
+
+    // find the player's position
+    const position = playersWithStats.findIndex(p => p.userId === player.userId) + 1;
+    return position.toString();
+  }
+
+  getPlayerPositionSuffix(player: Player): string {
+    if (!this.isActiveDrill) {
+      return '';
+    }
+
+    // get all players with their progress/wpm for ranking
+    const playersWithStats = this.players
+      .filter(p => p.progress !== undefined)
+      .map(p => ({
+        userId: p.userId,
+        progress: p.progress || 0,
+        wpm: p.wpm || 0,
+        accuracy: p.accuracy || 0
+      }))
+      .sort((a, b) => {
+        // sort by progress first, then by WPM, then by accuracy
+        if (b.progress !== a.progress) {
+          return b.progress - a.progress;
+        }
+        if (b.wpm !== a.wpm) {
+          return b.wpm - a.wpm;
+        }
+        return b.accuracy - a.accuracy;
+      });
+
+    // find the player's position
+    const position = playersWithStats.findIndex(p => p.userId === player.userId) + 1;
+    
+    // convert to ordinal suffix
+    const suffixes = ['th', 'st', 'nd', 'rd'];
+    const v = position % 100;
+    return suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0];
+  }
+
+  isPlayerFirst(player: Player): boolean {
+    if (!this.isActiveDrill) {
+      return false;
+    }
+
+    // get all players with their progress/wpm for ranking
+    const playersWithStats = this.players
+      .filter(p => p.progress !== undefined)
+      .map(p => ({
+        userId: p.userId,
+        progress: p.progress || 0,
+        wpm: p.wpm || 0,
+        accuracy: p.accuracy || 0
+      }))
+      .sort((a, b) => {
+        // sort by progress first, then by WPM, then by accuracy
+        if (b.progress !== a.progress) {
+          return b.progress - a.progress;
+        }
+        if (b.wpm !== a.wpm) {
+          return b.wpm - a.wpm;
+        }
+        return b.accuracy - a.accuracy;
+      });
+
+    // check if player is first
+    return playersWithStats.findIndex(p => p.userId === player.userId) === 0;
+  }
+
   getPlayerProgress(player: Player): number {
     if (!this.isActiveDrill || player.progress === undefined) {
       return 0;
     }
 
-    // for marathon drills, use absolute progress (0-100%)
+    // for marathon drills, use absolute progress
     if (this.drillType.toLowerCase() === 'marathon') {
-      return player.progress;
+      // ensure progress doesn't exceed 100% to prevent overflow
+      return Math.min(player.progress, 100);
     }
 
-    // for timed drills, calculate relative progress based on highest word count
+    // for timed drills, calculate relative progress based on highest word count to prevent overflow
     const allWordsCompleted = Object.values(this.wordsCompleted);
     const maxWords = Math.max(...allWordsCompleted, 1); // avoid division by zero
     const playerWords = this.wordsCompleted[player.userId] || 0;
@@ -189,12 +322,12 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
     const gridSize = 4; // always 2x2 grid
     const result: (Player | null)[] = [];
     
-    // Add actual players
+    // add actual players
     for (let i = 0; i < this.players.length && i < gridSize; i++) {
       result.push(this.players[i]);
     }
     
-    // Fill remaining slots with null (for placeholders)
+    // fill remaining slots with null (for placeholders)
     while (result.length < gridSize) {
       result.push(null);
     }
@@ -216,19 +349,19 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
     
     if (newPlayers.length === 0) return;
 
-    // Get already used colors
+    // get already used colors
     const usedColors = Object.values(this.playerColorMap);
     
-    // Get available colors (shuffle to randomize)
+    // get available colors (shuffle to randomize)
     const availableColors = this.avatarColors.filter(color => !usedColors.includes(color));
     this.shuffleArray(availableColors);
 
-    // Assign colors to new players
+    // assign colors to new players
     newPlayers.forEach((player, index) => {
       if (index < availableColors.length) {
         this.playerColorMap[player.userId] = availableColors[index];
       } else {
-        // If we run out of unique colors, cycle through them
+        // if we run out of unique colors, cycle through them
         this.playerColorMap[player.userId] = this.avatarColors[index % this.avatarColors.length];
       }
     });

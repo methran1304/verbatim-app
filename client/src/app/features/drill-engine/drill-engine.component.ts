@@ -329,7 +329,7 @@ export class DrillEngineComponent implements OnInit {
                         try {
                             const totalWords = this.sourceText.length;
                             const wordsCompleted = Math.min(this.currentWordIndex, totalWords);
-                            const completion = totalWords > 0 ? Math.floor((wordsCompleted / totalWords) * 100) : 0;
+                            const completion = totalWords > 0 ? Math.round((wordsCompleted / totalWords) * 100) : 0;
                             this.signalRService.updatePlayerStatistics(this.roomState.roomCode, {
                                 userId: this.currentUserId,
                                 wpm: this.wpm,

@@ -24,36 +24,47 @@
             @for (player of getGridPlayers(); track player?.userId || $index) {
               <div class="player-grid-item" [class.placeholder]="!player">
                 @if (player) {
-                  <!-- Grid Position Number -->
+                  <!-- grid Position Number -->
                   <div class="grid-position">{{ $index + 1 }}</div>
                   
-                  <!-- Crown/YOU Badge at top -->
+                  <!-- YOU Badge at top -->
                   <div class="top-badges">
-                    @if (player.isCreator) {
-                      <span nz-icon nzType="crown" nzTheme="fill" class="creator-badge"></span>
-                    }
                     @if (player.userId === currentUserId) {
                       <span class="current-user-badge">YOU</span>
                     }
-                    <!-- Ready Status Badge -->
-                    <span class="ready-status-badge" [class.ready]="isPlayerReady(player)" [class.not-ready]="!isPlayerReady(player)">
-                      {{ isPlayerReady(player) ? 'READY' : 'NOT READY' }}
-                    </span>
+                    <!-- ready status badge (hidden in active drill) -->
+                    @if (!isActiveDrill) {
+                      <span class="ready-status-badge" [class.ready]="isPlayerReady(player)" [class.not-ready]="!isPlayerReady(player)">
+                        {{ isPlayerReady(player) ? 'READY' : 'NOT READY' }}
+                      </span>
+                    }
+                    <!-- afk badge (shown in active drill) -->
+                    @if (isActiveDrill && player.isAFK) {
+                      <span class="afk-badge">AFK</span>
+                    }
                   </div>
 
-                  <!-- Left side: Avatar, Username, Level (vertically aligned) -->
+                  <!-- left side: avatar, username, level (vertically aligned) -->
                   <div class="left-section">
-                    <nz-avatar 
-                      [nzText]="getPlayerAvatarText(player)"
-                      [nzSize]="36"
-                      class="player-avatar"
-                      [attr.data-color]="getPlayerAvatarColor(player)">
-                    </nz-avatar>
+                    <div class="avatar-container">
+                      <nz-avatar 
+                        [nzText]="getPlayerAvatarText(player)"
+                        [nzSize]="36"
+                        class="player-avatar"
+                        [attr.data-color]="getPlayerAvatarColor(player)">
+                      </nz-avatar>
+                      @if (isActiveDrill && isPlayerFirst(player)) {
+                        <span nz-icon nzType="crown" nzTheme="fill" class="winner-crown"></span>
+                      }
+                      @if (player.isCreator) {
+                        <span nz-icon nzType="setting" nzTheme="outline" class="creator-badge"></span>
+                      }
+                    </div>
                     <div class="username">{{ player.username }}</div>
                     <div class="level">Lvl. {{ player.level }}</div>
                   </div>
 
-                  <!-- Statistics Section -->
+                  <!-- statistics section -->
                   @if (!isActiveDrill) {
                     <div class="competitive-stats">
                       <div class="stats-row">
@@ -66,9 +77,38 @@
                       </div>
                     </div>
                   } @else {
-                    <!-- Active Drill Progress -->
+                    <!-- active drill progress -->
                     <div class="active-drill-stats">
                       @if (player.progress !== undefined) {
+                        <!-- performance metrics -->
+                        <div class="performance-metrics">
+                          <div class="metric-row stats-row">
+                            <nz-statistic 
+                              nzTitle="Position" 
+                              [nzValue]="getPlayerPosition(player)" 
+                              [nzValueStyle]="{ color: 'var(--color-text)' }"
+                              class="player-statistic">
+                            </nz-statistic>
+                            <nz-statistic 
+                              nzTitle="WPM" 
+                              [nzValue]="player.wpm || 0" 
+                              [nzValueStyle]="{ color: 'var(--color-primary)' }"
+                              class="player-statistic">
+                            </nz-statistic>
+                            <nz-statistic 
+                              nzTitle="Accuracy" 
+                              [nzValue]="player.accuracy || 0" 
+                              nzSuffix="%" 
+                              [nzValueStyle]="{ color: 'var(--color-success)' }"
+                              class="player-statistic">
+                            </nz-statistic>
+                          </div>
+                          <div class="metric-row empty-row">
+                            <!-- empty space for progress bar -->
+                          </div>
+                        </div>
+                        
+                        <!-- progress bar -->
                         <div class="progress-section">
                           <nz-progress 
                             [nzPercent]="getPlayerProgress(player)" 
@@ -80,13 +120,10 @@
                           <span class="progress-label">{{ getProgressLabel(player) }}</span>
                         </div>
                       }
-                      @if (player.isAFK) {
-                        <span class="afk-badge">AFK</span>
-                      }
                     </div>
                   }
 
-                  <!-- Kick Badge (bottom right) -->
+                  <!-- kick badge (bottom right) -->
                   @if (isCreator && player.userId !== currentUserId) {
                     <div class="kick-badge-container">
                       <span 
@@ -104,7 +141,13 @@
                 } @else {
                   <div class="placeholder-content">
                     <span nz-icon nzType="user-add" nzTheme="outline" class="placeholder-icon"></span>
-                    <span class="placeholder-text">Waiting for player...</span>
+                    <span class="placeholder-text">
+                      @if (!isActiveDrill) {
+                        Waiting for player...
+                      } @else {
+                        Empty slot
+                      }
+                    </span>
                   </div>
                 }
               </div>
