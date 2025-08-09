@@ -1,5 +1,6 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzListModule } from 'ng-zorro-antd/list';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
@@ -9,15 +10,26 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { environment } from '../../../../environments/environment';
+export interface CompetitiveStatistics {
+  totalDrills: number;
+  wins: number;
+  losses: number;
+  winrate: number;
+}
+
 export interface Player {
   userId: string;
   username: string;
   level: number;
+  state: 'Connected' | 'Ready' | 'Typing' | 'Finished' | 'Disconnected';
   isReady: boolean;
   isCreator: boolean;
   progress?: number; // for active drill progress
   wpm?: number; // words per minute
   accuracy?: number; // accuracy percentage
+  isAFK?: boolean; // afk status
+  competitiveStats?: CompetitiveStatistics; // competitive drill statistics
 }
 
 @Component({
@@ -38,30 +50,68 @@ export interface Player {
   templateUrl: './player-panel.component.html',
   styleUrls: ['./player-panel.component.scss']
 })
-export class PlayerPanelComponent implements OnInit, OnDestroy {
+export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
   @Input() players: Player[] = [];
   @Input() currentUserId: string = '';
   @Input() isCreator: boolean = false;
   @Input() isActiveDrill: boolean = false;
   @Input() show: boolean = false;
+  @Input() roomCode: string = '';
+  @Input() drillType: string = '';
+  @Input() difficulty: string = '';
+  @Input() durationOrLength: string = '';
+  @Input() wordsCompleted: { [userId: string]: number } = {};
 
   @Output() kickPlayer = new EventEmitter<string>();
 
-  constructor() {}
+  private readonly baseUrl = environment.apiBaseUrl;
+  private readonly avatarColors = ['primary', 'success', 'warning', 'error'];
+  private playerColorMap: { [userId: string]: string } = {};
 
-  ngOnInit(): void {}
+  constructor(private http: HttpClient) {}
+
+  ngOnInit(): void {
+    this.loadCompetitiveStatistics();
+  }
+
+  ngOnChanges(): void {
+    // reload statistics when players array changes
+    this.loadCompetitiveStatistics();
+    // assign colors when players change
+    this.assignPlayerColors();
+  }
 
   ngOnDestroy(): void {}
+
+  private async loadCompetitiveStatistics(): Promise<void> {
+    // load competitive statistics for all players
+    for (const player of this.players) {
+      try {
+        const stats = await this.http.get<CompetitiveStatistics>(
+          `${this.baseUrl}/api/competitive/statistics/${player.userId}`
+        ).toPromise();
+        
+        if (stats) {
+          player.competitiveStats = stats;
+        }
+      } catch (error) {
+        console.warn(`Failed to load competitive stats for player ${player.userId}:`, error);
+        // set default stats if loading fails
+        player.competitiveStats = {
+          totalDrills: 0,
+          wins: 0,
+          losses: 0,
+          winrate: 0
+        };
+      }
+    }
+  }
 
   onKickPlayer(userId: string): void {
     this.kickPlayer.emit(userId);
   }
 
-  canKickPlayer(player: Player): boolean {
-    return this.isCreator && 
-           player.userId !== this.currentUserId && 
-           !player.isCreator;
-  }
+
 
   getPlayerStatus(player: Player): string {
     if (this.isActiveDrill) {
@@ -87,17 +137,111 @@ export class PlayerPanelComponent implements OnInit, OnDestroy {
     }
   }
 
-  getPlayerAvatarText(player: Player): string {
-    return player.username.charAt(0).toUpperCase();
-  }
-
   getPlayerTooltip(player: Player): string {
     let tooltip = `${player.username} (Level ${player.level})`;
     
     if (this.isActiveDrill && player.wpm !== undefined && player.accuracy !== undefined) {
       tooltip += `\nWPM: ${player.wpm} | Accuracy: ${player.accuracy}%`;
+      
+      if (this.drillType.toLowerCase() === 'timed') {
+        const wordsCompleted = this.wordsCompleted[player.userId] || 0;
+        tooltip += `\nWords: ${wordsCompleted}`;
+      }
     }
     
     return tooltip;
+  }
+
+  getPlayerProgress(player: Player): number {
+    if (!this.isActiveDrill || player.progress === undefined) {
+      return 0;
+    }
+
+    // for marathon drills, use absolute progress (0-100%)
+    if (this.drillType.toLowerCase() === 'marathon') {
+      return player.progress;
+    }
+
+    // for timed drills, calculate relative progress based on highest word count
+    const allWordsCompleted = Object.values(this.wordsCompleted);
+    const maxWords = Math.max(...allWordsCompleted, 1); // avoid division by zero
+    const playerWords = this.wordsCompleted[player.userId] || 0;
+    
+    // calculate relative progress (0-100%)
+    return Math.floor((playerWords / maxWords) * 100);
+  }
+
+  getProgressLabel(player: Player): string {
+    if (!this.isActiveDrill || player.progress === undefined) {
+      return '';
+    }
+
+    if (this.drillType.toLowerCase() === 'marathon') {
+      return `${player.progress}%`;
+    }
+
+    // for timed drills, show words completed
+    const wordsCompleted = this.wordsCompleted[player.userId] || 0;
+    return `${wordsCompleted} words`;
+  }
+
+  getGridPlayers(): (Player | null)[] {
+    const gridSize = 4; // always 2x2 grid
+    const result: (Player | null)[] = [];
+    
+    // Add actual players
+    for (let i = 0; i < this.players.length && i < gridSize; i++) {
+      result.push(this.players[i]);
+    }
+    
+    // Fill remaining slots with null (for placeholders)
+    while (result.length < gridSize) {
+      result.push(null);
+    }
+    
+    return result;
+  }
+
+  isPlayerReady(player: Player): boolean {
+    return player.state === 'Ready';
+  }
+
+  getPlayerAvatarText(player: Player): string {
+    return player.username.charAt(0).toUpperCase();
+  }
+
+  private assignPlayerColors(): void {
+    // Get current players who don't have colors assigned
+    const newPlayers = this.players.filter(player => !this.playerColorMap[player.userId]);
+    
+    if (newPlayers.length === 0) return;
+
+    // Get already used colors
+    const usedColors = Object.values(this.playerColorMap);
+    
+    // Get available colors (shuffle to randomize)
+    const availableColors = this.avatarColors.filter(color => !usedColors.includes(color));
+    this.shuffleArray(availableColors);
+
+    // Assign colors to new players
+    newPlayers.forEach((player, index) => {
+      if (index < availableColors.length) {
+        this.playerColorMap[player.userId] = availableColors[index];
+      } else {
+        // If we run out of unique colors, cycle through them
+        this.playerColorMap[player.userId] = this.avatarColors[index % this.avatarColors.length];
+      }
+    });
+  }
+
+  private shuffleArray(array: string[]): void {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
+  getPlayerAvatarColor(player: Player): string {
+    return this.playerColorMap[player.userId] || 'primary';
   }
 }

@@ -13,6 +13,7 @@ import { DrillDifficulty as LocalDrillDifficulty } from '../../../../models/enum
 import { DrillLength, DrillLengthWordCount } from '../../../../models/enums/drill-length.enum';
 import { SignalRService, CompetitiveDrillType, DrillDifficulty } from '../../../../services/signalr.service';
 import { CompetitiveDrillService } from '../../../../services/competitive-drill.service';
+import { JwtDecoderUtil } from '../../../../core/utils/jwt-decoder.util';
 
 @Component({
     selector: 'app-room-overlay',
@@ -90,17 +91,8 @@ export class RoomOverlayComponent implements OnInit, OnDestroy {
             })
         );
 
-        this.subscriptions.push(
-            this.signalRService.onPlayerJoin$.subscribe(({ roomId, player }) => {
-                this.notification.info('Player Joined', `${player.username} joined the room`);
-            })
-        );
-
-        this.subscriptions.push(
-            this.signalRService.onPlayerLeave$.subscribe(({ roomId, playerId }) => {
-                this.notification.warning('Player Left', `A player left the room`);
-            })
-        );
+        // Note: Player join/leave notifications are not needed in room overlay
+        // These events should be handled in the lobby overlay where players can see each other
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -188,5 +180,10 @@ export class RoomOverlayComponent implements OnInit, OnDestroy {
         if (this.selectedType === DrillType.Marathon) {
             this.selectedDuration = 0;
         }
+    }
+
+    private getCurrentUserId(): string {
+        const token = localStorage.getItem('accessToken') || '';
+        return JwtDecoderUtil.getUserId(token) || '';
     }
 } 

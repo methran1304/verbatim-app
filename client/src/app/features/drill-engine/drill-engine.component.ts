@@ -108,18 +108,21 @@ export class DrillEngineComponent implements OnInit {
     public players: Player[] = [];
     public currentUserId: string = '';
     public isCurrentUserReady: boolean = false;
+    public playerWordsCompleted: { [userId: string]: number } = {};
 
     // countdown state
     public showCountdown: boolean = false;
     public countdownValue: number = 0;
     public isCountdownBegin: boolean = false;
     private countdownInProgress: boolean = false;
+    private countdownHideTimeout: any = null;
 
     // competitive stats push interval
     private statsInterval: any;
 
     // winner message displayed
     public winnerMessage: string = '';
+    private afkPlayers: Set<string> = new Set<string>();
 
 
     constructor(
@@ -169,6 +172,8 @@ export class DrillEngineComponent implements OnInit {
             }
         });
 
+
+
         // set initial drill type from preferences
         this.navigationService.setCurrentDrillType(this.currentDrillType);
 
@@ -212,6 +217,14 @@ export class DrillEngineComponent implements OnInit {
             // subscribe to room state changes
             this.competitiveDrillService.roomState$.subscribe(roomState => {
                 this.roomState = roomState;
+                
+                // override local preferences with room settings in competitive mode
+                const competitivePreferences = this.competitiveDrillService.getCompetitiveDrillPreferences();
+                if (competitivePreferences) {
+                    this.drillPreferences = competitivePreferences;
+                    this.currentDrillType = competitivePreferences.drillType;
+                    console.log('Using competitive drill preferences:', competitivePreferences);
+                }
             });
 
             // subscribe to players data
@@ -221,11 +234,13 @@ export class DrillEngineComponent implements OnInit {
                     userId: player.userId,
                     username: player.username,
                     level: player.level,
+                    state: player.state,
                     isReady: player.state === 'Ready',
                     isCreator: player.isCreator || false,
                     progress: player.statistics?.completionPercentage,
                     wpm: player.statistics?.wpm,
-                    accuracy: player.statistics?.accuracy
+                    accuracy: player.statistics?.accuracy,
+                    isAFK: this.afkPlayers.has(player.userId)
                 }));
                 
                 // update current user ready state
@@ -233,38 +248,101 @@ export class DrillEngineComponent implements OnInit {
                 this.isCurrentUserReady = currentPlayer?.state === 'Ready';
             });
 
+            // subscribe to real-time player statistics updates (progress for marathon)
+            this.signalRService.onPlayerStatisticsUpdate$.subscribe(({ roomId, statistics }) => {
+                if (!statistics || statistics.length === 0) return;
+                const statsByUser = new Map<string, any>();
+                statistics.forEach(s => statsByUser.set(s.userId, s));
+                
+                // update words completed tracking for timed drill relative progress
+                statistics.forEach(stat => {
+                    const wordsCompleted = stat.wordsCompleted as number | undefined;
+                    if (wordsCompleted !== undefined) {
+                        this.playerWordsCompleted[stat.userId] = wordsCompleted;
+                    }
+                });
+                
+                this.players = this.players.map(p => {
+                    const stat = statsByUser.get(p.userId);
+                    if (!stat) return p;
+                    const completion = (stat.completionPercentage ?? stat.CompletionPercentage ?? stat.completionpercentage) as number | undefined;
+                    const wpm = (stat.wpm ?? stat.WPM) as number | undefined;
+                    const accuracy = (stat.accuracy ?? stat.Accuracy) as number | undefined;
+                    return {
+                        ...p,
+                        progress: completion,
+                        wpm: wpm,
+                        accuracy: accuracy
+                    };
+                });
+            });
+
+            // subscribe to AFK events
+            this.signalRService.onPlayerAFK$.subscribe(({ roomId, playerId }) => {
+                this.afkPlayers.add(playerId);
+                this.players = this.players.map(p => p.userId === playerId ? { ...p, isAFK: true } : p);
+            });
+
             // subscribe to countdown events
             this.signalRService.onCountdown$.subscribe(({ roomId, countdown }) => {
                 console.log(`DRILL ENGINE: Countdown event received - roomId: ${roomId}, countdown: ${countdown}`);
-                
-                // prevent multiple countdown displays
-                if (this.countdownInProgress && countdown !== 0) {
-                    console.log(`DRILL ENGINE: Countdown already in progress, skipping ${countdown}`);
-                    return;
-                }
-                
+
+                // show/update countdown every tick
                 this.showCountdown = true;
                 this.countdownValue = countdown;
                 this.isCountdownBegin = countdown === 0;
-                
+
+                // mark countdown sequence start
                 if (countdown === 3) {
                     this.countdownInProgress = true;
                 }
-                
-                // hide countdown after a delay
-                setTimeout(() => {
-                    this.showCountdown = false;
-                    if (countdown === 0) {
+
+                // clear any pending hide to avoid flicker across ticks
+                if (this.countdownHideTimeout) {
+                    clearTimeout(this.countdownHideTimeout);
+                    this.countdownHideTimeout = null;
+                }
+
+                // only hide after showing BEGIN for 1s
+                if (countdown === 0) {
+                    this.countdownHideTimeout = setTimeout(() => {
+                        this.showCountdown = false;
                         this.countdownInProgress = false;
-                    }
-                }, 1000);
+                        this.countdownHideTimeout = null;
+                    }, 1000);
+                }
             });
 
-            // subscribe to competitive drill text
+            // subscribe to competitive drill text (authoritative list of words from server)
             this.competitiveDrillService.drillText$.subscribe(drillText => {
                 if (drillText.length > 0) {
                     console.log(`DRILL ENGINE: Received drill text from competitive service`);
-                    this.startCompetitiveDrill(drillText);
+                    // start using provided words to ensure all clients have identical text
+                    this.drillStateManagementService.startDrillWithProvidedWords(drillText);
+                    // start timer for competitive drill
+                    this.startTimer();
+                    // begin pushing stats
+                    if (this.statsInterval) {
+                        clearInterval(this.statsInterval);
+                    }
+                    this.statsInterval = setInterval(() => {
+                        try {
+                            const totalWords = this.sourceText.length;
+                            const wordsCompleted = Math.min(this.currentWordIndex, totalWords);
+                            const completion = totalWords > 0 ? Math.floor((wordsCompleted / totalWords) * 100) : 0;
+                            this.signalRService.updatePlayerStatistics(this.roomState.roomCode, {
+                                userId: this.currentUserId,
+                                wpm: this.wpm,
+                                accuracy: this.accuracy,
+                                wordsCompleted: wordsCompleted,
+                                totalWords: totalWords,
+                                completionPercentage: completion,
+                                timestamp: new Date()
+                            } as any).catch(() => {});
+                        } catch {}
+                    }, 500);
+                    // focus input shortly after
+                    setTimeout(() => this.focusInput(), 100);
                 }
             });
 
@@ -618,7 +696,7 @@ export class DrillEngineComponent implements OnInit {
     }
 
     onViewErrorProneWords(settings?: {difficulty: DrillDifficulty, length: DrillLength}): void {
-        // Create a temporary drill preferences object with the selected settings
+        // create a temporary drill preferences object with the selected settings
         const tempPreferences = { ...this.drillPreferences };
         if (settings) {
             tempPreferences.drillDifficulty = settings.difficulty;
@@ -649,60 +727,15 @@ export class DrillEngineComponent implements OnInit {
         });
     }
 
-    startCompetitiveDrill(drillText: string[]): void {
-        console.log(`DRILL ENGINE: Starting competitive drill with ${drillText.length} words`);
-        
-        const sourceText = drillText.map((word, i) => {
-            const chars = word.split('');
-            return i < drillText.length - 1 ? [...chars, ' '] : chars;
-        });
-        
-        const typedText = sourceText.map((word) =>
-            new Array(word.length).fill(undefined)
-        );
-        
-        const wordLocked = sourceText.map(() => false);
-        
-        this.drillStateManagementService.startDrill(drillText, this.drillPreferences);
-        
-        // Start timer for competitive drill
-        this.startTimer();
-        // push stats to server every 500ms
-        if (this.statsInterval) {
-            clearInterval(this.statsInterval);
-        }
-        this.statsInterval = setInterval(() => {
-            try {
-                const totalWords = this.sourceText.length;
-                const wordsCompleted = Math.min(this.currentWordIndex, totalWords);
-                const completion = totalWords > 0 ? Math.floor((wordsCompleted / totalWords) * 100) : 0;
-                this.signalRService.updatePlayerStatistics(this.roomState.roomCode, {
-                    userId: this.currentUserId,
-                    wpm: this.wpm,
-                    accuracy: this.accuracy,
-                    wordsCompleted: wordsCompleted,
-                    totalWords: totalWords,
-                    completionPercentage: completion,
-                    timestamp: new Date()
-                } as any).catch(() => {});
-            } catch {}
-        }, 500);
-        
-        // Focus the input for immediate typing
-        setTimeout(() => {
-            this.focusInput();
-        }, 100);
-        
-        console.log(`DRILL ENGINE: Competitive drill started successfully`);
-    }
+    // startCompetitiveDrill removed; use startDrillWithProvidedWords via subscription above
 
     onSetReady(): void {
         this.competitiveDrillService.toggleReady();
     }
 
     onKickPlayer(userId: string): void {
-        // TODO: Implement kick player functionality
-        console.log('Kick player:', userId);
+        if (!this.isCompetitive || this.roomState.userRole !== 'Creator') return;
+        this.signalRService.kickPlayer(this.roomState.roomCode, userId).catch(() => {});
     }
 
     onCloseErrorWordsModal(): void {
@@ -828,10 +861,18 @@ export class DrillEngineComponent implements OnInit {
         const timerState = this.timerManagementService.getCurrentTimerState();
         if (this.isUserInactive && this.isDrillActive && timerState.startTime > 0) {
             this.isUserInactive = false;
+            // report resumption to server in competitive mode
+            if (this.isCompetitive && this.roomState.roomCode) {
+                this.signalRService.reportPlayerAFK(this.roomState.roomCode, false).catch(console.error);
+            }
             this.notificationService.createNotification('info', 'Activity Resumed', 'You can continue typing, but this drill cannot be submitted due to previous inactivity.');
         } else if (this.isUserInactive) {
             // just clear the inactive state without notification if drill hasn't started
             this.isUserInactive = false;
+            // report resumption to server in competitive mode if in a room
+            if (this.isCompetitive && this.roomState.roomCode) {
+                this.signalRService.reportPlayerAFK(this.roomState.roomCode, false).catch(console.error);
+            }
         }
 
         if (this.inactivityTimeout) {
@@ -845,6 +886,12 @@ export class DrillEngineComponent implements OnInit {
                 this.isUserInactive = true;
                 this.hasBeenInactive = true;
                 this.afkReason = 'Inactivity detected, so drill cannot be submitted.';
+                
+                // report AFK status to server in competitive mode
+                if (this.isCompetitive && this.roomState.roomCode) {
+                    this.signalRService.reportPlayerAFK(this.roomState.roomCode, true).catch(console.error);
+                }
+                
                 this.notificationService.createNotification('error', 'AFK Detected', this.afkReason);
             }, this.MAX_INACTIVITY_SECONDS * 1000);
         }
@@ -895,7 +942,7 @@ export class DrillEngineComponent implements OnInit {
         }
     }
 
-    // Adaptive drill state getters for template
+    // adaptive drill state getters for template
     get showAdaptiveDrillOverlay(): boolean {
         return this.adaptiveService.getCurrentAdaptiveState().showAdaptiveDrillOverlay;
     }
@@ -916,7 +963,7 @@ export class DrillEngineComponent implements OnInit {
         return this.adaptiveService.getCurrentAdaptiveState().isGeneratingAdaptive;
     }
 
-    // Drill state getters for template
+    // drill state getters for template
     get isDrillActive(): boolean {
         return this.drillStateManagementService.getCurrentDrillState().isDrillActive;
     }
@@ -970,6 +1017,6 @@ export class DrillEngineComponent implements OnInit {
     }
 
     get showPlayerPanel(): boolean {
-        return this.isCompetitive && this.roomState.showRoomModeOverlay;
+        return this.isCompetitive && !!this.roomState.roomCode;
     }
 }

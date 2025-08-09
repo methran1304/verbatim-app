@@ -1,9 +1,20 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Router } from '@angular/router';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { SignalRService, Player } from './signalr.service';
 import { DrillDifficulty } from '../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../models/enums/drill-length.enum';
+import { DrillType } from '../models/enums/drill-type.enum';
+import { DrillPreference } from '../models/interfaces/drill-preference.interface';
 import { JwtDecoderUtil } from '../core/utils/jwt-decoder.util';
+import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service.ts.service';
+
+export interface DrillSettings {
+    type: DrillType;
+    difficulty: DrillDifficulty;
+    duration: number;
+    length: number;
+}
 
 export interface RoomState {
     showRoomOverlay: boolean;
@@ -16,6 +27,7 @@ export interface RoomState {
     drillType?: string;
     difficulty?: string;
     duration?: string;
+    drillSettings?: DrillSettings;
 }
 
 @Injectable({
@@ -37,20 +49,27 @@ export class CompetitiveDrillService {
 
     public roomState$ = this.roomStateSubject.asObservable();
 
-    // Player management
+    // player management
     private playersSubject = new BehaviorSubject<Player[]>([]);
     public players$ = this.playersSubject.asObservable();
 
-    // Drill text management
+    // drill text management
     private drillTextSubject = new BehaviorSubject<string[]>([]);
     public drillText$ = this.drillTextSubject.asObservable();
 
     // pending text received at StartDrill; used to start on BeginDrill
     private pendingDrillText: string[] = [];
+    
+    // subscription management
+    private subscriptions: Subscription[] = [];
+    private kickHandled = false;
 
     constructor(
-        private signalRService: SignalRService
+        private signalRService: SignalRService,
+        private router: Router,
+        private notificationService: ZorroNotificationServiceTsService
     ) {
+        console.log('COMPETITIVE SERVICE: Constructor called - new instance created');
         this.initializeSignalRSubscriptions();
     }
 
@@ -86,7 +105,7 @@ export class CompetitiveDrillService {
             }
         });
 
-        // Subscribe to room join events
+        // subscribe to room join events
         this.signalRService.onRoomJoined$.subscribe(({ roomId, roomCode }) => {
             const currentState = this.roomStateSubject.value;
             this.updateRoomState({
@@ -116,7 +135,7 @@ export class CompetitiveDrillService {
 
         // subscribe to player ready events
         this.signalRService.onPlayerReady$.subscribe(({ roomId, playerId }) => {
-            // Toggle the ready state for the player
+            // toggle the ready state for the player
             const currentPlayers = this.playersSubject.value;
             const currentPlayer = currentPlayers.find(p => p.userId === playerId);
             const isCurrentlyReady = currentPlayer?.state === 'Ready';
@@ -154,6 +173,32 @@ export class CompetitiveDrillService {
             this.resetState();
             // you could show a notification here about why the room was disbanded
         });
+
+        // subscribe to player kicked events
+        const kickSub = this.signalRService.onPlayerKicked$.subscribe(({ roomCode, reason }) => {
+            console.log(`COMPETITIVE SERVICE: Player kicked - roomCode: ${roomCode}, reason: ${reason}`);
+            
+            // Prevent handling the same kick event multiple times
+            if (this.kickHandled) {
+                console.log('Kick already handled, ignoring duplicate event');
+                return;
+            }
+            this.kickHandled = true;
+            
+            // Reset state and redirect to main page
+            this.resetState();
+            // Show notification
+            this.notificationService.createNotification('error', 'Kicked from Room', reason);
+            // Navigate to main page
+            this.router.navigate(['/']);
+            
+            // Reset the flag after a short delay to allow for future kicks
+            setTimeout(() => {
+                this.kickHandled = false;
+            }, 2000);
+            
+        });
+        this.subscriptions.push(kickSub);
     }
 
     public async initializeCompetitiveMode(): Promise<void> {
@@ -190,12 +235,35 @@ export class CompetitiveDrillService {
         });
 
         try {
-            const result = await this.signalRService.createRoom({
+            await this.signalRService.createRoom({
                 type: type as any,
                 difficulty: difficulty,
                 duration: duration,
                 length: length === DrillLength.Short ? 30 : length === DrillLength.Medium ? 50 : 100
             });
+
+            // fetch room info back from server to ensure UI reflects authoritative settings
+            const roomCode = this.roomStateSubject.value.roomCode;
+            if (roomCode) {
+                const info = await this.signalRService.getRoomInfo(roomCode);
+                if (info.success && info.settings) {
+                    const drillSettings: DrillSettings = {
+                        type: this.convertStringToType(info.settings.type),
+                        difficulty: this.convertStringToDifficulty(info.settings.difficulty),
+                        duration: info.settings.duration,
+                        length: info.settings.length
+                    };
+                    
+                    this.updateRoomState({
+                        drillType: info.settings.type,
+                        difficulty: info.settings.difficulty,
+                        duration: info.settings.type === 'Timed'
+                            ? `${info.settings.duration}s`
+                            : `${info.settings.length}`,
+                        drillSettings: drillSettings
+                    });
+                }
+            }
         } catch (error) {
             console.error('Error creating room:', error);
             this.updateRoomState({
@@ -214,6 +282,27 @@ export class CompetitiveDrillService {
 
         try {
             await this.signalRService.joinRoom(roomCode);
+
+            // after join, fetch authoritative room settings and update UI
+            const info = await this.signalRService.getRoomInfo(roomCode);
+            if (info.success && info.settings) {
+                const drillSettings: DrillSettings = {
+                    type: this.convertStringToType(info.settings.type),
+                    difficulty: this.convertStringToDifficulty(info.settings.difficulty),
+                    duration: info.settings.duration,
+                    length: info.settings.length
+                };
+                
+                this.updateRoomState({
+                    roomCode: info.roomCode || roomCode,
+                    drillType: info.settings.type,
+                    difficulty: info.settings.difficulty,
+                    duration: info.settings.type === 'Timed'
+                        ? `${info.settings.duration}s`
+                        : `${info.settings.length}`,
+                    drillSettings: drillSettings
+                });
+            }
         } catch (error) {
             console.error('Error joining room:', error);
             this.updateRoomState({
@@ -272,17 +361,7 @@ export class CompetitiveDrillService {
 
     private startCompetitiveDrill(drillText: string[]): void {
         console.log(`COMPETITIVE SERVICE: Starting competitive drill with ${drillText.length} words`);
-        // convert drill text to the format expected by drill engine
-        const sourceText = drillText.map((word, i) => {
-            const chars = word.split('');
-            return i < drillText.length - 1 ? [...chars, ' '] : chars;
-        });
-        
-        // emit an event that the drill engine can listen to
-        // this will be handled by the drill engine component
-        console.log(`COMPETITIVE SERVICE: Drill text prepared:`, sourceText);
-        
-        // emit the drill text to the drill engine
+        // emit the drill text to the drill engine exactly as provided by server
         this.drillTextSubject.next(drillText);
     }
 
@@ -298,6 +377,48 @@ export class CompetitiveDrillService {
 
     public getCurrentRoomState(): RoomState {
         return this.roomStateSubject.value;
+    }
+
+    // Get drill preferences for competitive mode (overrides local preferences)
+    public getCompetitiveDrillPreferences(): DrillPreference | null {
+        const roomState = this.roomStateSubject.value;
+        if (!roomState.drillSettings) {
+            return null;
+        }
+        
+        const settings = roomState.drillSettings;
+        return {
+            drillType: settings.type,
+            drillDifficulty: settings.difficulty,
+            drillDuration: settings.duration,
+            drillLength: this.convertIntToLength(settings.length)
+        };
+    }
+
+    private convertIntToLength(length: number): DrillLength {
+        switch (length) {
+            case 30: return DrillLength.Short;
+            case 50: return DrillLength.Medium;
+            case 100: return DrillLength.Long;
+            default: return DrillLength.Medium;
+        }
+    }
+
+    private convertStringToType(type: string): DrillType {
+        switch (type.toLowerCase()) {
+            case 'timed': return DrillType.Timed;
+            case 'marathon': return DrillType.Marathon;
+            default: return DrillType.Timed;
+        }
+    }
+
+    private convertStringToDifficulty(difficulty: string): DrillDifficulty {
+        switch (difficulty.toLowerCase()) {
+            case 'beginner': return DrillDifficulty.Beginner;
+            case 'intermediate': return DrillDifficulty.Intermediate;
+            case 'advanced': return DrillDifficulty.Advanced;
+            default: return DrillDifficulty.Intermediate;
+        }
     }
 
     private updateRoomState(newState: Partial<RoomState>): void {
@@ -318,6 +439,8 @@ export class CompetitiveDrillService {
             isJoiningRoom: false
         });
         this.playersSubject.next([]);
+        // Reset kick flag
+        this.kickHandled = false;
     }
 
     // player management methods

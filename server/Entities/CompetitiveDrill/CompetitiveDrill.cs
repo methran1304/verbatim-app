@@ -68,5 +68,8 @@ namespace server.Entities
 		[BsonElement("state")]
 		[BsonRepresentation(BsonType.String)]
 		public PlayerState State { get; set; } = PlayerState.Connected;
+
+		[BsonElement("is_afk")]
+		public bool IsAFK { get; set; } = false;
 	}
 }

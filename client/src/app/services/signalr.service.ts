@@ -107,6 +107,7 @@ export class SignalRService {
   private allPlayersCompleted$ = new Subject<{ roomId: string }>();
   private playerAFK$ = new Subject<{ roomId: string; playerId: string }>();
   private afkWarning$ = new Subject<{ roomId: string; playerId: string; timeoutSeconds: number }>();
+  private playerKicked$ = new Subject<{ roomCode: string; reason: string }>();
   private countdown$ = new Subject<{ roomId: string; countdown: number }>();
   private roomCreated$ = new Subject<{ roomId: string; roomCode: string }>();
 
@@ -197,6 +198,21 @@ export class SignalRService {
     return { roomId: result.roomId!, roomCode: result.roomCode! };
   }
 
+  async getRoomInfo(roomCode: string): Promise<{
+    success: boolean;
+    roomId?: string;
+    roomCode?: string;
+    state?: string;
+    createdBy?: string;
+    settings?: { type: string; difficulty: string; duration: number; length: number };
+    error?: string;
+  }> {
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    return await this.hubConnection.invoke('GetRoomInfo', roomCode);
+  }
+
   async joinRoom(roomCode: string): Promise<void> {
     console.log('=== CLIENT JOIN ROOM DEBUG START ===');
     console.log(`Attempting to join room with code: '${roomCode}'`);
@@ -260,6 +276,14 @@ export class SignalRService {
     await this.hubConnection.invoke('UpdatePlayerStatistics', roomCode, statistics);
   }
 
+  async reportPlayerAFK(roomCode: string, isAFK: boolean): Promise<void> {
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
+    await this.hubConnection.invoke('ReportPlayerAFK', roomCode, isAFK);
+  }
+
   async startDrill(roomCode: string): Promise<{ success: boolean; error?: string }> {
     if (!this.hubConnection) {
       throw new Error('Not connected to SignalR hub');
@@ -312,6 +336,18 @@ export class SignalRService {
         username,
         level,
         state: 'Connected',
+        isCreator: isCreator
+      };
+      this.playerJoin$.next({ roomId, player });
+    });
+
+    this.hubConnection.on('PlayerJoinWithState', (roomId: string, userId: string, username: string, level: number, isCreator: boolean, state: string) => {
+      console.log(`CLIENT: PlayerJoinWithState event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, level: ${level}, isCreator: ${isCreator}, state: ${state}`);
+      const player: Player = {
+        userId,
+        username,
+        level,
+        state: state as 'Connected' | 'Ready' | 'Typing' | 'Finished' | 'Disconnected',
         isCreator: isCreator
       };
       this.playerJoin$.next({ roomId, player });
@@ -370,6 +406,11 @@ export class SignalRService {
     this.hubConnection.on('AFKWarning', (roomId: string, userId: string, timeoutSeconds: number) => {
       console.log(`CLIENT: AFKWarning event received - roomId: ${roomId}, userId: ${userId}, timeout: ${timeoutSeconds}`);
       this.afkWarning$.next({ roomId, playerId: userId, timeoutSeconds });
+    });
+
+    this.hubConnection.on('PlayerKicked', (roomCode: string, reason: string) => {
+      console.log(`CLIENT: PlayerKicked event received - roomCode: ${roomCode}, reason: ${reason}`);
+      this.playerKicked$.next({ roomCode, reason });
     });
 
     this.hubConnection.on('Countdown', (roomId: string, countdown: number) => {
@@ -439,6 +480,10 @@ export class SignalRService {
 
   get onAFKWarning$(): Observable<{ roomId: string; playerId: string; timeoutSeconds: number }> {
     return this.afkWarning$.asObservable();
+  }
+
+  get onPlayerKicked$(): Observable<{ roomCode: string; reason: string }> {
+    return this.playerKicked$.asObservable();
   }
 
   get onCountdown$(): Observable<{ roomId: string; countdown: number }> {

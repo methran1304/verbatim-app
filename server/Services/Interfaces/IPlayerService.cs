@@ -18,5 +18,6 @@ namespace server.Services.Interfaces
         List<CompetitiveDrillPlayer> GetReadyPlayers(string roomCode);
         bool AreAllPlayersReady(string roomCode);
         int GetPlayerCount(string roomCode);
+        bool SetPlayerAFK(string roomCode, string userId, bool isAFK);
     }
 } 

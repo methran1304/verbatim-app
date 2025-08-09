@@ -9,10 +9,11 @@
       [totalWords]="sourceText.length"
       [drillPreference]="drillPreferences"
       [isTyping]="isTyping"
-      [disabled]="showPostDrillOverlay"
-      [forceCollapsed]="showPostDrillOverlay || roomState.showRoomOverlay || showAdaptiveDrillOverlay"
+      [disabled]="showPostDrillOverlay || isCompetitive"
+      [forceCollapsed]="showPostDrillOverlay || roomState.showRoomOverlay || showAdaptiveDrillOverlay || isCompetitive"
       [showAdaptiveDrillOverlay]="showAdaptiveDrillOverlay"
       [currentDrillType]="drillPreferences.drillType"
+      [isCompetitive]="isCompetitive"
       (restart)="onRestart()"
       (newDrill)="onNewDrill()"
       (viewErrorWords)="onViewErrorWords()"
@@ -68,14 +69,19 @@
   ></app-drill-text>
 
   
-  <!-- Show player panel in competitive mode when in lobby, otherwise show virtual keyboard -->
+  <!-- show player panel only when user is in a room (any room state) -->
   @if (showPlayerPanel) {
     <app-player-panel
       [players]="players"
       [currentUserId]="currentUserId"
       [isCreator]="roomState.userRole === 'Creator'"
-      [isActiveDrill]="false"
-      [show]="showPlayerPanel"
+      [isActiveDrill]="roomState.roomState === 'InProgress'"
+      [show]="true"
+      [roomCode]="roomState.roomCode"
+      [drillType]="roomState.drillType || 'Timed'"
+      [difficulty]="roomState.difficulty || 'Intermediate'"
+      [durationOrLength]="roomState.duration || ''"
+      [wordsCompleted]="playerWordsCompleted"
       (kickPlayer)="onKickPlayer($event)">
     </app-player-panel>
   } @else {
@@ -93,14 +99,14 @@
   }
 </div>
 
-<!-- Countdown Overlay -->
+<!-- countdown overlay -->
 <app-countdown-overlay
   [show]="showCountdown"
   [countdown]="countdownValue"
   [isBegin]="isCountdownBegin">
 </app-countdown-overlay>
 
-<!-- Adaptive Drill Modal -->
+<!-- adaptive drill modal -->
 <app-adaptive-drill-modal
   [isVisible]="showErrorWordsModal"
   [errorProneWords]="errorProneWords"

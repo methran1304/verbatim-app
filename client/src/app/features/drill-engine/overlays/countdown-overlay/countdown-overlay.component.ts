@@ -1,11 +1,10 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NzCardModule } from 'ng-zorro-antd/card';
 
 @Component({
   selector: 'app-countdown-overlay',
   standalone: true,
-  imports: [CommonModule, NzCardModule],
+  imports: [CommonModule],
   templateUrl: './countdown-overlay.component.html',
   styleUrl: './countdown-overlay.component.scss'
 })
@@ -16,7 +15,7 @@ export class CountdownOverlayComponent {
 
   get countdownText(): string {
     if (this.isBegin) {
-      return 'BEGIN';
+      return 'BEGIN!';
     }
     return this.countdown.toString();
   }

@@ -39,6 +39,7 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
   @Input() forceCollapsed: boolean = false;
   @Input() showAdaptiveDrillOverlay: boolean = false;
   @Input() currentDrillType: string = '';
+  @Input() isCompetitive: boolean = false;
   @Output() restart = new EventEmitter<void>();
   @Output() newDrill = new EventEmitter<void>();
   @Output() viewErrorWords = new EventEmitter<void>();

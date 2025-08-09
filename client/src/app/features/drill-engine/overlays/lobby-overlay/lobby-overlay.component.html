@@ -1,17 +1,17 @@
 @if (show) {
   <nz-card id="room-mode-overlay" #roommodeoverlay>
     <div class="room-mode-content">
-      <!-- Title -->
+      <!-- title -->
       <div class="lobby-title">
         <h2>Lobby</h2>
       </div>
 
-      <!-- Description -->
+      <!-- description -->
       <div class="lobby-description">
         <p>Waiting room for competitive drill. Share the room code with friends to start competing together.</p>
       </div>
 
-      <!-- Room Code -->
+      <!-- room code -->
       <div class="room-code-section">
         <span class="room-code-label">Room Code:</span>
         <span class="room-code">#{{ roomCode }}</span>
@@ -20,11 +20,12 @@
         </button>
       </div>
 
-
-
-
-
-      <!-- Room Actions -->
+      @if (userRole !== 'Creator' && isCurrentUserReady && (roomState === 'Waiting' || roomState === 'Ready')) {
+        <div class="waiting-text">
+          Waiting for Creator to start{{ animatedDots }}
+        </div>
+      }
+      <!-- room actions -->
       <div class="room-actions">
         @if (userRole === 'Creator') {
           <button 

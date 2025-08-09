@@ -18,6 +18,7 @@ namespace server.Hubs
         
         // player management
         Task PlayerJoin(string roomId, string userId, string username, int level, bool isCreator = false);
+        Task PlayerJoinWithState(string roomId, string userId, string username, int level, bool isCreator, string state);
         Task PlayerLeave(string roomId, string userId);
         Task PlayerReady(string roomId, string userId);
         Task PlayerStatisticsUpdate(string roomId, List<PlayerStatistics> statistics);
@@ -32,6 +33,7 @@ namespace server.Hubs
         // misc
         Task PlayerAFK(string roomId, string userId);
         Task AFKWarning(string roomId, string userId, int timeoutSeconds);
+        Task PlayerKicked(string roomCode, string reason);
         Task Countdown(string roomId, int countdown);
     }
 
@@ -45,9 +47,9 @@ namespace server.Hubs
         private readonly IDrillTextService _drillTextService;
         private readonly IUserService _userService;
         
-        // Track countdown state to prevent multiple countdowns
+        // track countdown state to prevent multiple countdowns
         private static readonly Dictionary<string, bool> _countdownInProgress = new();
-        // Track per-room progress broadcast timers (500ms) and end-of-drill timers
+        // track per-room progress broadcast timers (500ms) and end-of-drill timers
         private static readonly Dictionary<string, System.Threading.Timer> _progressTimers = new();
         private static readonly Dictionary<string, System.Threading.Timer> _drillEndTimers = new();
         private static readonly object _timerLock = new();
@@ -75,7 +77,7 @@ namespace server.Hubs
             await base.OnConnectedAsync();
         }
 
-        // Test method to verify SignalR communication
+        // test method to verify SignalR communication
         public string TestConnection()
         {
             var userId = GetUserId();
@@ -209,8 +211,9 @@ namespace server.Hubs
                     var playerUsername = await GetUsernameAsync(player.UserId);
                     var playerLevel = GetUserLevel(player.UserId);
                     var isPlayerCreator = room.CreatedBy == player.UserId;
+                    var playerState = player.State.ToString();
                     Console.WriteLine($"Sending existing player to joining user: userId={player.UserId}, username={playerUsername}, level={playerLevel}, state={player.State}, isCreator={isPlayerCreator}");
-                    await Clients.Caller.PlayerJoin(room.RoomId, player.UserId, playerUsername, playerLevel, isPlayerCreator);
+                    await Clients.Caller.PlayerJoinWithState(room.RoomId, player.UserId, playerUsername, playerLevel, isPlayerCreator, playerState);
                 }
 
                 // notify all clients in the room about the new player
@@ -282,6 +285,39 @@ namespace server.Hubs
             }
         }
 
+        public async Task<object> GetRoomInfo(string roomCode)
+        {
+            try
+            {
+                var room = await _roomService.GetRoomByCodeAsync(roomCode);
+                if (room == null)
+                {
+                    return new { success = false, error = "Room not found" };
+                }
+
+                return new
+                {
+                    success = true,
+                    roomId = room.RoomId,
+                    roomCode = room.RoomCode,
+                    state = room.State.ToString(),
+                    createdBy = room.CreatedBy,
+                    settings = new
+                    {
+                        type = room.DrillSettings.Type.ToString(),
+                        difficulty = room.DrillSettings.Difficulty.ToString(),
+                        duration = room.DrillSettings.Duration,
+                        length = room.DrillSettings.Length
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetRoomInfo: {ex.Message}");
+                return new { success = false, error = ex.Message };
+            }
+        }
+
         public async Task<object> SetPlayerReady(string roomCode, bool isReady)
         {
             try
@@ -327,20 +363,18 @@ namespace server.Hubs
                 var success = _playerService.UpdatePlayerStatistics(roomCode, userId, statistics);
                 if (success)
                 {
-
-
                     // get all players' current statistics
                     var players = _playerService.GetPlayersInRoom(roomCode);
                     var allStatistics = players
-                        .Where(p => p.State == PlayerState.Typing)
+                        .Where(p => p.State == PlayerState.Typing || p.State == PlayerState.Finished)
                         .Select(p => new PlayerStatistics
                         {
                             UserId = p.UserId,
                             WPM = p.WPM,
                             Accuracy = p.Accuracy,
-                            WordsCompleted = statistics.WordsCompleted, // this should be calculated properly
-                            TotalWords = statistics.TotalWords,
-                            CompletionPercentage = statistics.CompletionPercentage,
+                            WordsCompleted = p.WordsCompleted,
+                            TotalWords = p.TotalWords,
+                            CompletionPercentage = p.CompletionPercentage,
                             Timestamp = DateTime.UtcNow
                         })
                         .ToList();
@@ -352,6 +386,35 @@ namespace server.Hubs
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in UpdatePlayerStatistics: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task ReportPlayerAFK(string roomCode, bool isAFK)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    throw new UnauthorizedAccessException("User not authenticated");
+                }
+
+                // update player AFK status
+                var success = _playerService.SetPlayerAFK(roomCode, userId, isAFK);
+                if (success)
+                {
+                    // notify all clients in the room about the AFK status change
+                    if (isAFK)
+                    {
+                        await Clients.Group(roomCode).PlayerAFK(roomCode, userId);
+                    }
+                    // note: We don't send a specific "not AFK" event since that's handled by regular activity
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ReportPlayerAFK: {ex.Message}");
                 throw;
             }
         }
@@ -491,7 +554,10 @@ namespace server.Hubs
                 var success = _playerService.KickPlayerFromLobby(roomCode, playerId, userId);
                 if (success)
                 {
-                    // Notify all clients in the room
+                    // Notify the kicked user specifically
+                    await Clients.User(playerId).PlayerKicked(roomCode, $"You have been kicked from room {roomCode}");
+                    
+                    // Notify all other clients in the room
                     await Clients.Group(roomCode).PlayerLeave(roomCode, playerId);
 
                     Console.WriteLine($"Player {playerId} was kicked from room {roomCode}");
@@ -547,10 +613,9 @@ namespace server.Hubs
                                 UserId = p.UserId,
                                 WPM = p.WPM,
                                 Accuracy = p.Accuracy,
-                                // client should send these precisely; here we just forward placeholders
-                                WordsCompleted = 0,
-                                TotalWords = 0,
-                                CompletionPercentage = 0,
+                                WordsCompleted = p.WordsCompleted,
+                                TotalWords = p.TotalWords,
+                                CompletionPercentage = p.CompletionPercentage,
                                 Timestamp = DateTime.UtcNow
                             })
                             .ToList();
@@ -563,15 +628,15 @@ namespace server.Hubs
                     }
                 }, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
 
-                // for timed drills, schedule centralized end
+                // schedule centralized end for both timed and marathon drills
+                if (_drillEndTimers.ContainsKey(roomCode))
+                {
+                    _drillEndTimers[roomCode]?.Dispose();
+                    _drillEndTimers.Remove(roomCode);
+                }
+
                 if (room.DrillSettings.Type == CompetitiveDrillType.Timed)
                 {
-                    if (_drillEndTimers.ContainsKey(roomCode))
-                    {
-                        _drillEndTimers[roomCode]?.Dispose();
-                        _drillEndTimers.Remove(roomCode);
-                    }
-
                     var duration = Math.Max(1, room.DrillSettings.Duration);
                     _drillEndTimers[roomCode] = new System.Threading.Timer(async _ =>
                     {
@@ -585,11 +650,34 @@ namespace server.Hubs
                         }
                     }, null, TimeSpan.FromSeconds(duration), Timeout.InfiniteTimeSpan);
                 }
+                else if (room.DrillSettings.Type == CompetitiveDrillType.Marathon)
+                {
+                    // 10-minute time limit for marathon drills (600 seconds)
+                    var marathonTimeLimit = 180;
+                    _drillEndTimers[roomCode] = new System.Threading.Timer(async _ =>
+                    {
+                        try
+                        {
+                            await EndMarathonDrillAsync(roomCode);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error ending marathon drill: {ex.Message}");
+                        }
+                    }, null, TimeSpan.FromSeconds(marathonTimeLimit), Timeout.InfiniteTimeSpan);
+                }
             }
             return Task.CompletedTask;
         }
 
         private async Task EndTimedDrillAsync(string roomCode)
+        {
+            // stop timers
+            StopRoomTimers(roomCode);
+            await SendEndSummaryAsync(roomCode);
+        }
+
+        private async Task EndMarathonDrillAsync(string roomCode)
         {
             // stop timers
             StopRoomTimers(roomCode);

@@ -112,6 +112,9 @@ namespace server.Services
             {
                 player.WPM = stats.WPM;
                 player.Accuracy = stats.Accuracy;
+                player.WordsCompleted = stats.WordsCompleted;
+                player.TotalWords = stats.TotalWords;
+                player.CompletionPercentage = (int)Math.Round(stats.CompletionPercentage);
                 SetPlayersInRoomCache(roomCode, players);
                 
                 // record activity for AFK detection
@@ -232,7 +235,7 @@ namespace server.Services
 			return players.Count;
 		}
 
-		// Private cache methods
+		// private cache methods
 		private List<CompetitiveDrillPlayer> GetPlayersInRoomFromCache(string roomCode)
         {
             var cacheKey = $"room_players_{roomCode}";
@@ -252,6 +255,34 @@ namespace server.Services
             _cache.Set(key, DateTime.UtcNow, TimeSpan.FromHours(2));
         }
 
+        public bool SetPlayerAFK(string roomCode, string userId, bool isAFK)
+        {
+            try
+            {
+                var players = GetPlayersInRoomFromCache(roomCode);
+                var player = players.FirstOrDefault(p => p.UserId == userId);
+                
+                if (player == null)
+                {
+                    Console.WriteLine($"Player {userId} not found in room {roomCode}");
+                    return false;
+                }
+
+                // update player's AFK status
+                player.IsAFK = isAFK;
+
+                // update cache
+                SetPlayersInRoomCache(roomCode, players);
+
+                Console.WriteLine($"Set player {userId} AFK status to {isAFK} in room {roomCode}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting player AFK status: {ex.Message}");
+                return false;
+            }
+        }
 
     }
 } 

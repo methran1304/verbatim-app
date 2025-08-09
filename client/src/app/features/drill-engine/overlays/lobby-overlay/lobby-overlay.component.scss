@@ -64,7 +64,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 
     .room-code-label {
       color: var(--color-text-secondary);
@@ -109,11 +109,20 @@
 
 
   .room-actions {
+    display: flex;
     justify-content: center;
-    width: auto;
-    display: inline-flex;
     gap: 0.75rem;
     flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .waiting-text {
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+    margin-bottom: 1rem;
+
   }
 
   .post-drill-btn {
@@ -162,7 +171,7 @@
       border-color: var(--color-primary);
     }
 
-    // Override nz-button styles for the ready button
+    // override nz-button styles for the ready button
     &.ant-btn {
       background: var(--color-bg-secondary) !important;
       border: 1px solid var(--color-border) !important;
@@ -204,7 +213,7 @@
   }
 }
 
-// Dark theme for popconfirm
+// dark theme for popconfirm
 ::ng-deep .ant-popover {
   .ant-popover-inner {
     background: var(--color-bg-card) !important;
@@ -255,7 +264,7 @@
   }
 }
 
-// Dark theme for notifications
+// dark theme for notifications
 ::ng-deep .ant-notification {
   .ant-notification-notice {
     background: var(--color-bg-card) !important;

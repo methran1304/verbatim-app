@@ -91,9 +91,9 @@ export class DrillStateManagementService {
 
         let words: string[] = [];
 
-        // for timed drills, always use marathon length to ensure enough text
+        // for timed drills, always use extended length to ensure enough text
         const drillLength = drillPreferences.drillType === DrillType.Timed
-            ? 'Marathon' as any
+            ? 'Extended' as any
             : drillPreferences.drillLength;
 
         if (drillPreferences.drillType === DrillType.Adaptive) {
@@ -116,6 +116,35 @@ export class DrillStateManagementService {
             new Array(word.length).fill(undefined),
         );
 
+        const wordLocked = sourceText.map(() => false);
+
+        this.updateDrillState({
+            sourceText,
+            typedText,
+            wordLocked,
+            currentWordIndex: 0,
+            currentCharIndex: 0,
+            drillStatistic: this.drillStatisticsService.resetDrillStats()
+        });
+
+        this.adaptiveService.hideAdaptiveDrillOverlay();
+    }
+
+    /**
+     * Start drill using a provided list of words (authoritative server text)
+     */
+    startDrillWithProvidedWords(words: string[]): void {
+        this.updateDrillState({
+            showPostDrillOverlay: false,
+            isDrillActive: true
+        });
+
+        const sourceText = words.map((word, i) => {
+            const chars = word.split('');
+            return i < words.length - 1 ? [...chars, ' '] : chars;
+        });
+
+        const typedText = sourceText.map((word) => new Array(word.length).fill(undefined));
         const wordLocked = sourceText.map(() => false);
 
         this.updateDrillState({
