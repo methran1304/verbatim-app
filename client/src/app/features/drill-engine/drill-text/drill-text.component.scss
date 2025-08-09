@@ -371,7 +371,7 @@
 
 @media (max-height: 920px) {
   :host(.competitive-mode) .drill-text {
-    height: calc(2.97rem * 5.5) !important; // keep 5 lines
+    height: calc(2.97rem * 6) !important; // keep 5 lines
     margin-bottom: 1.5rem !important; // Less space since no virtual keyboard
   }
 }
@@ -379,42 +379,42 @@
 
 @media (max-height: 850px) {
   :host(.competitive-mode) .drill-text {
-    height: calc(2.97rem * 6) !important; // keep 5 lines
+    height: calc(2.97rem * 6.5) !important; // keep 5 lines
     margin-bottom: 1.5rem !important; // Less space since no virtual keyboard
   }
 }
 
 @media (max-height: 815px) {
   :host(.competitive-mode) .drill-text {
-    height: calc(2.97rem * 5) !important; // keep 5 lines
+    height: calc(2.97rem * 5.5) !important; // keep 5 lines
     margin-bottom: 1.25rem !important;
   }
 }
 
 @media (max-height: 770px) {
   :host(.competitive-mode) .drill-text {
-    height: calc(2.97rem * 5) !important; // keep 5 lines
+    height: calc(2.97rem * 5.5) !important; // keep 5 lines
     margin-bottom: 1rem !important;
   }
 }
 
 @media (max-height: 750px) {
   :host(.competitive-mode) .drill-text {
-    height: calc(2.97rem * 4) !important; // keep 5 lines
+    height: calc(2.97rem * 4.5) !important; // keep 5 lines
     margin-bottom: 0.75rem !important;
   }
 }
 
 @media (max-height: 650px) {
   :host(.competitive-mode) .drill-text {
-    height: calc(2.97rem * 4) !important; // keep 5 lines
+    height: calc(2.97rem * 4.5) !important; // keep 5 lines
     margin-bottom: 0.5rem !important;
   }
 }
 
 @media (max-height: 600px) {
   :host(.competitive-mode) .drill-text {
-    height: calc(2.97rem * 4) !important; // keep 5 lines
+    height: calc(2.97rem * 4.5) !important; // keep 5 lines
     margin-bottom: 0.25rem !important;
   }
 }

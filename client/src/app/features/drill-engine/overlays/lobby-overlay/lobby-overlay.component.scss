@@ -15,6 +15,10 @@
   border: 1px solid var(--color-border);
   padding: 0.7rem;
   text-align: center;
+
+  ::ng-deep .ant-card-body {
+    padding: 16px !important;
+  }
 }
 
 .room-mode-content {
