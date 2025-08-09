@@ -721,7 +721,158 @@
   }
 }
 
-// responsive design
+// responsive design - modest size increase to utilize freed space
+@media (max-height: 850px) {
+  .player-panel {
+    padding: 0 13px !important;
+    bottom: 13px !important;
+    transform: translateX(-50%) scale(1.02) !important;
+    transform-origin: center bottom !important;
+  }
+
+  .player-panel-card {
+    ::ng-deep .ant-card-body {
+      padding: 0.95rem !important;
+    }
+  }
+
+  .player-grid-container {
+    height: 260px !important;
+    gap: 0.7rem !important;
+  }
+
+  .player-grid-item {
+    min-height: 98px !important;
+    padding: 0.5rem !important;
+  }
+}
+
+@media (max-height: 800px) {
+  .player-panel {
+    padding: 0 11px !important;
+    bottom: 11px !important;
+    transform: translateX(-50%) scale(1) !important;
+    transform-origin: center bottom !important;
+  }
+
+  .player-panel-card {
+    ::ng-deep .ant-card-body {
+      padding: 0.9rem !important;
+    }
+  }
+
+  .player-grid-container {
+    height: 250px !important;
+    gap: 0.65rem !important;
+  }
+
+  .player-grid-item {
+    min-height: 95px !important;
+    padding: 0.48rem !important;
+  }
+}
+
+@media (max-height: 700px) {
+  .player-panel {
+    padding: 0 9px !important;
+    bottom: 9px !important;
+    transform: translateX(-50%) scale(0.98) !important;
+    transform-origin: center bottom !important;
+  }
+
+  .player-panel-card {
+    ::ng-deep .ant-card-body {
+      padding: 0.85rem !important;
+    }
+  }
+
+  .player-grid-container {
+    height: 240px !important;
+    gap: 0.6rem !important;
+  }
+
+  .player-grid-item {
+    min-height: 92px !important;
+    padding: 0.45rem !important;
+  }
+}
+
+@media (max-height: 650px) {
+  .player-panel {
+    padding: 0 7px !important;
+    bottom: 7px !important;
+    transform: translateX(-50%) scale(0.95) !important;
+    transform-origin: center bottom !important;
+  }
+
+  .player-panel-card {
+    ::ng-deep .ant-card-body {
+      padding: 0.8rem !important;
+    }
+  }
+
+  .player-grid-container {
+    height: 230px !important;
+    gap: 0.55rem !important;
+  }
+
+  .player-grid-item {
+    min-height: 90px !important;
+    padding: 0.42rem !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .player-panel {
+    padding: 0 6px !important;
+    bottom: 6px !important;
+    transform: translateX(-50%) scale(0.92) !important;
+    transform-origin: center bottom !important;
+  }
+
+  .player-panel-card {
+    ::ng-deep .ant-card-body {
+      padding: 0.75rem !important;
+    }
+  }
+
+  .player-grid-container {
+    height: 220px !important;
+    gap: 0.5rem !important;
+  }
+
+  .player-grid-item {
+    min-height: 88px !important;
+    padding: 0.4rem !important;
+  }
+}
+
+// width-based responsive scaling - modest increase
+@media (max-width: 930px) {
+  .player-panel {
+    transform: translateX(-50%) scale(0.95) !important;
+    transform-origin: center bottom !important;
+    max-width: 88vw !important;
+  }
+}
+
+@media (max-width: 870px) {
+  .player-panel {
+    transform: translateX(-50%) scale(0.9) !important;
+    transform-origin: center bottom !important;
+    max-width: 90vw !important;
+  }
+}
+
+@media (max-width: 800px) {
+  .player-panel {
+    transform: translateX(-50%) scale(0.85) !important;
+    transform-origin: center bottom !important;
+    max-width: 92vw !important;
+  }
+}
+
+// legacy mobile responsive (keeping for compatibility)
 @media (max-width: 768px) {
   .player-panel {
     padding: 0 10px;

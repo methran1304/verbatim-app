@@ -89,7 +89,7 @@
 .post-drill-overlay {
   display: block;
   position: absolute;
-  top: 38%;
+  top: 34%;
   left: 50%;
   transform: translate(-50%, -50%);
   height: auto;
@@ -150,29 +150,6 @@
   }
 }
 
-// Remove all responsive scaling - maintain consistent sizing
-// @media (max-width: 1024px) {
-//   .drill-engine-center {
-//     max-width: 900px;
-//     padding: 1.5rem 1.5rem 1.5rem 1.5rem;
-//   }
-// }
-
-// @media (max-width: 900px) {
-//   .drill-engine-center {
-//     max-width: 800px;
-//     padding: 1rem 1rem 1rem 1rem;
-//   }
-// }
-
-// @media (max-width: 800px) {
-//   .drill-engine-center {
-//     height: calc(100vh - 56px);
-//     max-width: 750px;
-//     padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-//   }
-// }
-
 // Add responsive scaling for smaller screens to ensure toolbar visibility
 @media (max-height: 880px) {
   .drill-engine-center {
@@ -213,9 +190,9 @@
 @media (max-height: 800px) {
   .drill-engine-center {
     height: calc(100vh - 50px) !important; // keep same navbar height
-    margin-top: 50px !important;
+    margin-top: 30px !important;
     padding: 0.25rem 2rem 2rem 2rem !important; // same as 800px-830px range
-    justify-content: center !important; // center content vertically
+    justify-content: flex-start !important; // keep content at top
   }
   
   .drill-page {
@@ -226,7 +203,7 @@
 @media (max-height: 700px) {
   .drill-engine-center {
     height: calc(100vh - 50px) !important; // keep same navbar height
-    margin-top: 50px !important;
+    margin-top: 15px !important;
     padding: 0.1rem 2rem 0.3rem 2rem !important; // even less bottom padding
   }
   
@@ -238,7 +215,7 @@
 @media (max-height: 650px) {
   .drill-engine-center {
     height: calc(100vh - 50px) !important; // keep same navbar height
-    margin-top: 50px !important;
+    margin-top: 10px !important;
     padding: 0.1rem 2rem 0.2rem 2rem !important; // minimal bottom padding
   }
   
@@ -250,7 +227,7 @@
 @media (max-height: 600px) {
   .drill-engine-center {
     height: calc(100vh - 50px) !important; // keep same navbar height
-    margin-top: 50px !important;
+    margin-top: 10px !important;
     padding: 0.1rem 2rem 0.1rem 2rem !important; // minimal bottom padding
   }
   
