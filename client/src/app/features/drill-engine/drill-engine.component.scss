@@ -89,7 +89,7 @@
 .post-drill-overlay {
   display: block;
   position: absolute;
-  top: 34%;
+  top: 36%;
   left: 50%;
   transform: translate(-50%, -50%);
   height: auto;
@@ -190,7 +190,7 @@
 @media (max-height: 800px) {
   .drill-engine-center {
     height: calc(100vh - 50px) !important; // keep same navbar height
-    margin-top: 30px !important;
+    margin-top: 40px !important;
     padding: 0.25rem 2rem 2rem 2rem !important; // same as 800px-830px range
     justify-content: flex-start !important; // keep content at top
   }
@@ -203,7 +203,7 @@
 @media (max-height: 700px) {
   .drill-engine-center {
     height: calc(100vh - 50px) !important; // keep same navbar height
-    margin-top: 15px !important;
+    margin-top: 25px !important;
     padding: 0.1rem 2rem 0.3rem 2rem !important; // even less bottom padding
   }
   
@@ -215,7 +215,7 @@
 @media (max-height: 650px) {
   .drill-engine-center {
     height: calc(100vh - 50px) !important; // keep same navbar height
-    margin-top: 10px !important;
+    margin-top: 15px !important;
     padding: 0.1rem 2rem 0.2rem 2rem !important; // minimal bottom padding
   }
   
@@ -227,7 +227,7 @@
 @media (max-height: 600px) {
   .drill-engine-center {
     height: calc(100vh - 50px) !important; // keep same navbar height
-    margin-top: 10px !important;
+    margin-top: 15px !important;
     padding: 0.1rem 2rem 0.1rem 2rem !important; // minimal bottom padding
   }
   
