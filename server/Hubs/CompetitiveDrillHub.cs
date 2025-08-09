@@ -653,7 +653,7 @@ namespace server.Hubs
                 else if (room.DrillSettings.Type == CompetitiveDrillType.Marathon)
                 {
                     // 10-minute time limit for marathon drills (600 seconds)
-                    var marathonTimeLimit = 180;
+                    var marathonTimeLimit = 600;
                     _drillEndTimers[roomCode] = new System.Threading.Timer(async _ =>
                     {
                         try

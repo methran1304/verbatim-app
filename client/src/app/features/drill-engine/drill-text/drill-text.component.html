@@ -20,20 +20,20 @@
   (goBack)="goBack.emit()">
 </app-room-overlay>
 
-    <app-lobby-overlay
-      [show]="showLobbyOverlay"
-      [roomCode]="roomCode"
-      [userRole]="userRole"
-      [roomState]="roomState"
-      [drillType]="drillType"
-      [difficulty]="difficulty"
-      [duration]="duration"
-      [isCurrentUserReady]="isCurrentUserReady"
-      [players]="players"
-      (leaveRoom)="leaveRoom.emit()"
-      (startDrill)="startDrill.emit()"
-      (setReady)="setReady.emit()">
-    </app-lobby-overlay>
+  <app-lobby-overlay
+    [show]="showLobbyOverlay"
+    [roomCode]="roomCode"
+    [userRole]="userRole"
+    [roomState]="roomState"
+    [drillType]="drillType"
+    [difficulty]="difficulty"
+    [duration]="duration"
+    [isCurrentUserReady]="isCurrentUserReady"
+    [players]="players"
+    (leaveRoom)="leaveRoom.emit()"
+    (startDrill)="startDrill.emit()"
+    (setReady)="setReady.emit()">
+  </app-lobby-overlay>
 
 <app-post-drill-overlay 
   [show]="showPostDrillOverlay"
