@@ -490,4 +490,32 @@ export class CompetitiveDrillService {
         const currentPlayer = currentPlayers.find(p => p.userId === currentUserId);
         return currentPlayer?.state === 'Ready';
     }
+
+    public async resetRoomToWaiting(): Promise<void> {
+        try {
+            const roomCode = this.roomStateSubject.value.roomCode;
+            if (roomCode) {
+                // Notify server that this player is continuing after drill
+                await this.signalRService.continueAfterDrill(roomCode);
+            }
+        } catch (error) {
+            console.error('Error notifying server about continue after drill:', error);
+            // Continue with local state update even if server call fails
+        }
+        
+        // Reset room state to waiting
+        this.updateRoomState({
+            roomState: 'Waiting',
+            showRoomModeOverlay: true,
+            showRoomOverlay: false
+        });
+        
+        // Reset all players to not ready
+        const currentPlayers = this.playersSubject.value;
+        const resetPlayers = currentPlayers.map(player => ({
+            ...player,
+            state: 'Connected' as const
+        }));
+        this.playersSubject.next(resetPlayers);
+    }
 }

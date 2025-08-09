@@ -309,6 +309,18 @@ export class SignalRService {
     await this.hubConnection.invoke('KickPlayer', roomCode, playerId);
   }
 
+  async continueAfterDrill(roomCode: string): Promise<void> {
+    if (!this.hubConnection) {
+      throw new Error('Not connected to SignalR hub');
+    }
+    
+    const result = await this.hubConnection.invoke<{ success: boolean; error?: string }>('ContinueAfterDrill', roomCode);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to continue after drill');
+    }
+  }
+
   private setupEventHandlers(): void {
     if (!this.hubConnection) return;
 

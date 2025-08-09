@@ -570,6 +570,52 @@ namespace server.Hubs
             }
         }
 
+        public async Task<object> ContinueAfterDrill(string roomCode)
+        {
+            try
+            {
+                var userId = GetUserId();
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return new { success = false, error = "User not authenticated" };
+                }
+
+                // get the room
+                var room = await _roomService.GetRoomByCodeAsync(roomCode);
+                if (room == null)
+                {
+                    return new { success = false, error = "Room not found" };
+                }
+
+                // check if the user is in the room
+                var players = _playerService.GetPlayersInRoom(roomCode);
+                var player = players.FirstOrDefault(p => p.UserId == userId);
+                if (player == null)
+                {
+                    return new { success = false, error = "Player not found in room" };
+                }
+
+                // reset the player's state to Connected (not ready)
+                _playerService.SetPlayerReady(roomCode, userId, false);
+
+                // if the room is in Finished state, reset it to Waiting
+                if (room.State == RoomState.Finished)
+                {
+                    await _roomService.UpdateRoomStateAsync(roomCode, RoomState.Waiting);
+                }
+
+                // notify other players that this player has continued
+                await Clients.Group(roomCode).PlayerReady(roomCode, userId);
+
+                return new { success = true };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error continuing after drill: {ex.Message}");
+                return new { success = false, error = ex.Message };
+            }
+        }
+
         private async Task StartCountdown(string roomCode)
         {
             Console.WriteLine($"Starting countdown for room {roomCode}");

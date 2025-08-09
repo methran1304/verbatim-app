@@ -76,7 +76,7 @@
       [players]="players"
       [currentUserId]="currentUserId"
       [isCreator]="roomState.userRole === 'Creator'"
-      [isActiveDrill]="roomState.roomState === 'InProgress'"
+      [isActiveDrill]="roomState.roomState === 'InProgress' || (showCompetitivePostDrillResults && !continuedPlayersSet.has(currentUserId))"
       [show]="true"
       [roomCode]="roomState.roomCode"
       [drillType]="roomState.drillType || 'Timed'"
@@ -114,3 +114,13 @@
   [isLoading]="isLoadingErrorWords"
   (closeModal)="onCloseErrorWordsModal()">
 </app-adaptive-drill-modal>
+
+<!-- competitive post-drill overlay -->
+<app-competitive-post-drill-overlay
+  [show]="showCompetitivePostDrillOverlay"
+  [winnerUsername]="competitiveWinnerUsername"
+  [isSubmitting]="isSubmitting"
+  [submitError]="submitError"
+  (continue)="onCompetitivePostDrillContinue()"
+  (leaveRoom)="onCompetitivePostDrillLeaveRoom()">
+</app-competitive-post-drill-overlay>

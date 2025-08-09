@@ -67,13 +67,26 @@
                   <!-- statistics section -->
                   @if (!isActiveDrill) {
                     <div class="competitive-stats">
-                      <div class="stats-row">
-                        <div class="stat-item">Total: ({{ player.competitiveStats?.totalDrills || 0 }})</div>
-                        <div class="stat-item">Winrate: {{ player.competitiveStats?.winrate || 0 }}%</div>
-                      </div>
-                      <div class="stats-row">
-                        <div class="stat-item">Wins: ({{ player.competitiveStats?.wins || 0 }})</div>
-                        <div class="stat-item">Losses: ({{ player.competitiveStats?.losses || 0 }})</div>
+                      <div class="metric-row stats-row">
+                        <nz-statistic 
+                          nzTitle="Total Drills" 
+                          [nzValue]="player.competitiveStats?.totalDrills || 0" 
+                          [nzValueStyle]="{ color: 'var(--color-text)' }"
+                          class="player-statistic">
+                        </nz-statistic>
+                        <nz-statistic 
+                          nzTitle="Win Rate" 
+                          [nzValue]="player.competitiveStats?.winrate || 0" 
+                          nzSuffix="%" 
+                          [nzValueStyle]="{ color: 'var(--color-success)' }"
+                          class="player-statistic">
+                        </nz-statistic>
+                        <nz-statistic 
+                          nzTitle="Record" 
+                          [nzValue]="(player.competitiveStats?.wins || 0) + ' / ' + (player.competitiveStats?.losses || 0)" 
+                          [nzValueStyle]="{ color: 'var(--color-primary)' }"
+                          class="player-statistic">
+                        </nz-statistic>
                       </div>
                     </div>
                   } @else {
