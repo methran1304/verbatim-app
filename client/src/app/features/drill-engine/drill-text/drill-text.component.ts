@@ -91,6 +91,14 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
         ) {
             this.pendingScroll = true;
         }
+        
+        // Add smooth cursor transition when cursor position changes
+        if ((changes['currentWordIndex'] || changes['currentCharIndex']) && 
+            !changes['currentWordIndex']?.firstChange && 
+            !changes['currentCharIndex']?.firstChange) {
+            this.addCursorTransition();
+        }
+        
         if (changes['isFocused'] && !this.showPostDrillOverlay) {
             if (this.isFocused) {
                 this.delayedAfkOverlay = false;
@@ -148,6 +156,19 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
         }
 
         return stroke.correct ? 'letter-correct' : 'letter-incorrect';
+    }
+
+    // Add smooth cursor transition
+    private addCursorTransition(): void {
+        // Force a reflow to ensure smooth transition
+        requestAnimationFrame(() => {
+            const activeElements = document.querySelectorAll('.letter-active');
+            activeElements.forEach(el => {
+                if (el instanceof HTMLElement) {
+                    el.style.transition = 'all 0.08s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                }
+            });
+        });
     }
 
     getWordClass(wordIdx: number): string {
