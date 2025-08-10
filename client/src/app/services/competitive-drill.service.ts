@@ -69,7 +69,7 @@ export class CompetitiveDrillService {
         private router: Router,
         private notificationService: ZorroNotificationServiceTsService
     ) {
-        console.log('COMPETITIVE SERVICE: Constructor called - new instance created');
+        // console.log('COMPETITIVE SERVICE: Constructor called - new instance created');
         this.initializeSignalRSubscriptions();
     }
 
@@ -124,7 +124,7 @@ export class CompetitiveDrillService {
 
         // subscribe to player join events
         this.signalRService.onPlayerJoin$.subscribe(({ roomId, player }) => {
-            console.log(`COMPETITIVE SERVICE: PlayerJoin event received - roomId: ${roomId}, player:`, player);
+            // console.log(`COMPETITIVE SERVICE: PlayerJoin event received - roomId: ${roomId}, player:`, player);
             this.addPlayer(player);
         });
 
@@ -134,18 +134,26 @@ export class CompetitiveDrillService {
         });
 
         // subscribe to player ready events
-        this.signalRService.onPlayerReady$.subscribe(({ roomId, playerId }) => {
-            // toggle the ready state for the player
-            const currentPlayers = this.playersSubject.value;
-            const currentPlayer = currentPlayers.find(p => p.userId === playerId);
-            const isCurrentlyReady = currentPlayer?.state === 'Ready';
-            this.updatePlayerReady(playerId, !isCurrentlyReady);
+        this.signalRService.onPlayerReady$.subscribe(({ roomId, playerId, isReady }) => {
+            // console.log(`COMPETITIVE SERVICE: PlayerReady event received - roomId: ${roomId}, playerId: ${playerId}, isReady: ${isReady}`);
+            
+            // Update the player's ready state directly with the value from the server
+            this.updatePlayerReady(playerId, isReady);
         });
 
         // subscribe to start drill events (preload drill text; countdown will follow)
         this.signalRService.onStartDrill$.subscribe(({ roomId, drillText }) => {
-            console.log(`COMPETITIVE SERVICE: StartDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
+            // console.log(`COMPETITIVE SERVICE: StartDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
             this.pendingDrillText = drillText;
+            
+            // Reset all players to not ready when drill starts
+            const currentPlayers = this.playersSubject.value;
+            const resetPlayers = currentPlayers.map(player => ({
+                ...player,
+                state: 'Connected' as const
+            }));
+            this.playersSubject.next(resetPlayers);
+            
             // keep lobby hidden now to prepare UI; actual start happens on BeginDrill
             this.updateRoomState({
                 ...this.roomStateSubject.value,
@@ -155,7 +163,7 @@ export class CompetitiveDrillService {
 
         // subscribe to begin drill events (actual drill start after countdown)
         this.signalRService.onBeginDrill$.subscribe(({ roomId, drillText }) => {
-            console.log(`COMPETITIVE SERVICE: BeginDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
+            // console.log(`COMPETITIVE SERVICE: BeginDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
             // this is when the actual drill starts after countdown
             this.updateRoomState({
                 ...this.roomStateSubject.value,
@@ -176,11 +184,11 @@ export class CompetitiveDrillService {
 
         // subscribe to player kicked events
         const kickSub = this.signalRService.onPlayerKicked$.subscribe(({ roomCode, reason }) => {
-            console.log(`COMPETITIVE SERVICE: Player kicked - roomCode: ${roomCode}, reason: ${reason}`);
+            // console.log(`COMPETITIVE SERVICE: Player kicked - roomCode: ${roomCode}, reason: ${reason}`);
             
             // Prevent handling the same kick event multiple times
             if (this.kickHandled) {
-                console.log('Kick already handled, ignoring duplicate event');
+                // console.log('Kick already handled, ignoring duplicate event');
                 return;
             }
             this.kickHandled = true;
@@ -215,6 +223,42 @@ export class CompetitiveDrillService {
         
         // Clear any existing player data
         this.playersSubject.next([]);
+        
+        // Set up disconnect handler for graceful disconnection
+        this.setupDisconnectHandler();
+    }
+
+    private setupDisconnectHandler(): void {
+        // Handle page unload/close to ensure graceful disconnection
+        window.addEventListener('beforeunload', async (event) => {
+            try {
+                // console.log('COMPETITIVE SERVICE: Page unloading, cleaning up...');
+                
+                // If we're in a room, try to leave gracefully
+                const currentRoomCode = this.roomStateSubject.value.roomCode;
+                if (currentRoomCode) {
+                    try {
+                        await this.signalRService.leaveRoom(currentRoomCode);
+                        // console.log('COMPETITIVE SERVICE: Successfully left room on page unload');
+                    } catch (error) {
+                        console.error('COMPETITIVE SERVICE: Error leaving room on page unload:', error);
+                    }
+                }
+                
+                // Clean up service state
+                this.cleanup();
+                
+                // Disconnect from SignalR
+                try {
+                    await this.signalRService.disconnect();
+                    // console.log('COMPETITIVE SERVICE: Successfully disconnected from SignalR on page unload');
+                } catch (error) {
+                    console.error('COMPETITIVE SERVICE: Error disconnecting from SignalR on page unload:', error);
+                }
+            } catch (error) {
+                console.error('COMPETITIVE SERVICE: Error in beforeunload handler:', error);
+            }
+        });
     }
 
     public async createRoom(type: string, difficulty: DrillDifficulty, duration?: number, length?: DrillLength): Promise<void> {
@@ -360,7 +404,7 @@ export class CompetitiveDrillService {
     }
 
     private startCompetitiveDrill(drillText: string[]): void {
-        console.log(`COMPETITIVE SERVICE: Starting competitive drill with ${drillText.length} words`);
+        // console.log(`COMPETITIVE SERVICE: Starting competitive drill with ${drillText.length} words`);
         // emit the drill text to the drill engine exactly as provided by server
         this.drillTextSubject.next(drillText);
     }
@@ -443,25 +487,50 @@ export class CompetitiveDrillService {
         this.kickHandled = false;
     }
 
+    public cleanup(): void {
+        try {
+            // console.log('COMPETITIVE SERVICE: Cleaning up service state');
+            // Clear all subscriptions
+            this.subscriptions.forEach(sub => {
+                try {
+                    sub.unsubscribe();
+                } catch (error) {
+                    console.error('Error unsubscribing from subscription:', error);
+                }
+            });
+            this.subscriptions.length = 0;
+            
+            // Reset state
+            this.resetState();
+            
+            // Clear pending drill text
+            this.pendingDrillText = [];
+            
+            // console.log('COMPETITIVE SERVICE: Cleanup completed');
+        } catch (error) {
+            console.error('COMPETITIVE SERVICE: Error during cleanup:', error);
+        }
+    }
+
     // player management methods
     private addPlayer(player: Player): void {
-        console.log(`COMPETITIVE SERVICE: Adding player:`, player);
+        // console.log(`COMPETITIVE SERVICE: Adding player:`, player);
         const currentPlayers = this.playersSubject.value;
-        console.log(`COMPETITIVE SERVICE: Current players before adding:`, currentPlayers);
+        // console.log(`COMPETITIVE SERVICE: Current players before adding:`, currentPlayers);
         const existingPlayerIndex = currentPlayers.findIndex(p => p.userId === player.userId);
         
         if (existingPlayerIndex >= 0) {
             // update existing player
-            console.log(`COMPETITIVE SERVICE: Updating existing player at index ${existingPlayerIndex}`);
+            // console.log(`COMPETITIVE SERVICE: Updating existing player at index ${existingPlayerIndex}`);
             const updatedPlayers = [...currentPlayers];
             updatedPlayers[existingPlayerIndex] = player;
             this.playersSubject.next(updatedPlayers);
         } else {
             // add new player
-            console.log(`COMPETITIVE SERVICE: Adding new player`);
+            // console.log(`COMPETITIVE SERVICE: Adding new player`);
             this.playersSubject.next([...currentPlayers, player]);
         }
-        console.log(`COMPETITIVE SERVICE: Players after update:`, this.playersSubject.value);
+        // console.log(`COMPETITIVE SERVICE: Players after update:`, this.playersSubject.value);
     }
 
     private removePlayer(playerId: string): void {

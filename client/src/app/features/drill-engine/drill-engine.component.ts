@@ -232,14 +232,14 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                 if (competitivePreferences) {
                     this.drillPreferences = competitivePreferences;
                     this.currentDrillType = competitivePreferences.drillType;
-                    console.log('Using competitive drill preferences:', competitivePreferences);
+                    // console.log('Using competitive drill preferences:', competitivePreferences);
                 }
             });
 
             // subscribe to players data
             this.competitiveDrillService.players$.subscribe(signalRPlayers => {
                 const currentRoomState = this.competitiveDrillService.getCurrentRoomState();
-                this.players = signalRPlayers.map(player => {
+                const updatedPlayers = signalRPlayers.map(player => {
                     const basePlayer = {
                         userId: player.userId,
                         username: player.username,
@@ -268,6 +268,34 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     return basePlayer;
                 });
                 
+                // Only update players array if there are actual changes to avoid excessive ngOnChanges calls
+                const currentPlayerIds = this.players.map(p => p.userId).sort();
+                const newPlayerIds = updatedPlayers.map(p => p.userId).sort();
+                
+                if (JSON.stringify(currentPlayerIds) !== JSON.stringify(newPlayerIds) || 
+                    this.players.length !== updatedPlayers.length) {
+                    this.players = updatedPlayers;
+                } else {
+                    // Check if any individual player data changed
+                    let hasChanges = false;
+                    for (let i = 0; i < this.players.length; i++) {
+                        const current = this.players[i];
+                        const updated = updatedPlayers[i];
+                        if (current.state !== updated.state || 
+                            current.isReady !== updated.isReady ||
+                            current.progress !== updated.progress ||
+                            current.wpm !== updated.wpm ||
+                            current.accuracy !== updated.accuracy ||
+                            current.isAFK !== updated.isAFK) {
+                            hasChanges = true;
+                            break;
+                        }
+                    }
+                    if (hasChanges) {
+                        this.players = updatedPlayers;
+                    }
+                }
+                
                 // update current user ready state
                 const currentPlayer = signalRPlayers.find(p => p.userId === this.currentUserId);
                 this.isCurrentUserReady = currentPlayer?.state === 'Ready';
@@ -287,19 +315,33 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     }
                 });
                 
-                this.players = this.players.map(p => {
+                // Only update players if there are actual changes to avoid excessive ngOnChanges calls
+                let hasChanges = false;
+                const updatedPlayers = this.players.map(p => {
                     const stat = statsByUser.get(p.userId);
                     if (!stat) return p;
+                    
                     const completion = (stat.completionPercentage ?? stat.CompletionPercentage ?? stat.completionpercentage) as number | undefined;
                     const wpm = (stat.wpm ?? stat.WPM) as number | undefined;
                     const accuracy = (stat.accuracy ?? stat.Accuracy) as number | undefined;
-                    return {
-                        ...p,
-                        progress: completion,
-                        wpm: wpm,
-                        accuracy: accuracy
-                    };
+                    
+                    // Check if any values actually changed
+                    if (p.progress !== completion || p.wpm !== wpm || p.accuracy !== accuracy) {
+                        hasChanges = true;
+                        return {
+                            ...p,
+                            progress: completion,
+                            wpm: wpm,
+                            accuracy: accuracy
+                        };
+                    }
+                    return p;
                 });
+                
+                // Only update the players array if there were actual changes
+                if (hasChanges) {
+                    this.players = updatedPlayers;
+                }
             });
 
             // subscribe to AFK events
@@ -310,7 +352,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
             // subscribe to countdown events
             this.signalRService.onCountdown$.subscribe(({ roomId, countdown }) => {
-                console.log(`DRILL ENGINE: Countdown event received - roomId: ${roomId}, countdown: ${countdown}`);
+                // console.log(`DRILL ENGINE: Countdown event received - roomId: ${roomId}, countdown: ${countdown}`);
 
                 // show/update countdown every tick
                 this.showCountdown = true;
@@ -341,7 +383,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             // subscribe to competitive drill text (authoritative list of words from server)
             this.competitiveDrillService.drillText$.subscribe(drillText => {
                 if (drillText.length > 0) {
-                    console.log(`DRILL ENGINE: Received drill text from competitive service`);
+                    // console.log(`DRILL ENGINE: Received drill text from competitive service`);
                     // start using provided words to ensure all clients have identical text
                     this.drillStateManagementService.startDrillWithProvidedWords(drillText);
                     // start timer for competitive drill
@@ -365,7 +407,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                                 timestamp: new Date()
                             } as any).catch(() => {});
                         } catch {}
-                    }, 500);
+                    }, 750); // Optimized: 750ms for better balance between smoothness and performance
                     // focus input shortly after
                     setTimeout(() => this.focusInput(), 100);
                 }
@@ -396,7 +438,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                             wpm: playerResult.wpm,
                             accuracy: playerResult.accuracy,
                             position: playerResult.position,
-                            pointsChange: playerResult.pointsChange
+                            pointsChange: playerResult.pointsChange,
+                            progress: 100 // Ensure completed drills show 100% progress
                         };
                     });
                     // Update room state to Finished
@@ -408,8 +451,16 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                 }
             });
 
-            // Note: We no longer hide drill results based on room state changes
-            // Instead, we track which players have continued and show appropriate views
+            // Subscribe to drill start to reset continued players and drill results
+            const startDrillSubscription = this.signalRService.onStartDrill$.subscribe(({ roomId, drillText }) => {
+                if (this.isCompetitive) {
+                    // Reset continued players and drill results when new drill starts
+                    this.continuedPlayers.clear();
+                    this.drillResultsData = {};
+                    this.showCompetitivePostDrillResults = false;
+                }
+            });
+            this.subscriptions.push(startDrillSubscription);
 
             // get current user ID from JWT token
             const token = localStorage.getItem('accessToken') || '';
@@ -548,6 +599,38 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             this.drillStateManagementService.updateIndices(this.currentWordIndex + 1, 0);
 
             if (this.currentWordIndex >= this.sourceText.length) {
+                // Send final stats with 100% completion before stopping drill
+                if (this.isCompetitive && this.roomState.roomCode) {
+                    const totalWords = this.sourceText.length;
+                    
+                    // Send final statistics update
+                    this.signalRService.updatePlayerStatistics(this.roomState.roomCode, {
+                        userId: this.currentUserId,
+                        wpm: this.wpm,
+                        accuracy: this.accuracy,
+                        wordsCompleted: totalWords,
+                        totalWords: totalWords,
+                        completionPercentage: 100,
+                        timestamp: new Date()
+                    } as any).catch(() => {});
+                    
+                    // Call CompleteDrill to notify server that this player has finished
+                    const drillResult = {
+                        userId: this.currentUserId,
+                        wpm: this.wpm,
+                        accuracy: this.accuracy,
+                        wordsCompleted: totalWords,
+                        totalWords: totalWords,
+                        completionPercentage: 100,
+                        position: 0,
+                        pointsChange: 0,
+                        finishedAt: new Date()
+                    };
+                    
+                    this.signalRService.completeDrill(this.roomState.roomCode, drillResult).catch((error) => {
+                        console.error('Error completing drill:', error);
+                    });
+                }
                 this.stopDrill();
                 return;
             }
@@ -1129,7 +1212,35 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        // Clean up subscriptions
-        this.subscriptions.forEach(sub => sub.unsubscribe());
+        try {
+            // console.log('DRILL ENGINE: Cleaning up component');
+            
+            // Clean up subscriptions
+            this.subscriptions.forEach(sub => {
+                try {
+                    sub.unsubscribe();
+                } catch (error) {
+                    console.error('Error unsubscribing from subscription:', error);
+                }
+            });
+            
+            // Clear any active timers
+            if (this.statsInterval) {
+                clearInterval(this.statsInterval);
+                this.statsInterval = null;
+            }
+            
+            // Stop inactivity monitoring
+            this.stopInactivityMonitoring();
+            
+            // Clean up competitive drill service if in competitive mode
+            if (this.isCompetitive) {
+                this.competitiveDrillService.cleanup();
+            }
+            
+            // console.log('DRILL ENGINE: Component cleanup completed');
+        } catch (error) {
+            console.error('DRILL ENGINE: Error during component cleanup:', error);
+        }
     }
 }

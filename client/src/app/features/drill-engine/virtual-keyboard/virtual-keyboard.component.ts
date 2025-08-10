@@ -42,7 +42,6 @@ export class VirtualKeyboardComponent implements AfterViewInit, OnChanges {
   };
 
   ngOnChanges(changes: SimpleChanges): void {
-    console.log('kb: ', changes);
     if (changes['isDarkTheme'] && this.keyboard) {
       this.updateKeyboardTheme();
     }

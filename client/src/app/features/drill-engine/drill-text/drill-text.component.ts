@@ -110,7 +110,7 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
 
     ngAfterViewChecked(): void {
         if (this.pendingScroll) {
-            setTimeout(() => this.scrollToCenterLine(), 0);
+            requestAnimationFrame(() => this.scrollToCenterLine());
             this.pendingScroll = false;
         }
     }
@@ -128,9 +128,12 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
 
         const targetScrollTop = elTop - (containerHeight / 2) + (elHeight / 2);
 
-        containerEl.scrollTo({
-            top: targetScrollTop,
-            behavior: 'smooth',
+        // Use requestAnimationFrame for smoother scrolling
+        requestAnimationFrame(() => {
+            containerEl.scrollTo({
+                top: targetScrollTop,
+                behavior: 'smooth',
+            });
         });
     }
 

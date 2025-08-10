@@ -2,6 +2,7 @@
   position: relative;
   overflow: visible;
   transition: filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0); /* Force hardware acceleration */
 }
 
 .drill-text-wrapper.blur-background {
@@ -34,8 +35,10 @@
   scrollbar-width: none; // hide scrollbar in Firefox
   -ms-overflow-style: none; // hide scrollbar in IE/Edge
   scroll-behavior: smooth;
-  padding: 0 2.75rem;
+  will-change: scroll-position;
+  padding: 0 0 2.75rem 0;
   display: block;
+  transform: translateZ(0); /* Force hardware acceleration */
 }
 
 
@@ -63,7 +66,7 @@
 
 // Competitive mode - longer fade
 :host(.competitive-mode) .fade-bottom {
-  height: 8rem;
+  height: 4.4rem;
 }
 
 .fade-top {
@@ -93,10 +96,11 @@
   font-weight: 500;
   min-height: 2.42rem;
   transition:
-    background 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    border 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    background 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    border 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: background, box-shadow, border, color;
 }
 
 .word span {
@@ -113,8 +117,9 @@
   position: relative;
   padding-bottom: 6.6px;
   transition:
-    color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: color, background;
 }
 
 .letter-correct {
@@ -128,8 +133,9 @@
 .letter-active {
   color: var(--color-key-blue-light);
   box-shadow: 0 2px 0 0 var(--color-key-blue-light);
-  transition: color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: underline-fade-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: underline-fade-in 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: color, box-shadow;
 }
 
 .letter-active-space {
@@ -165,14 +171,14 @@
   background: var(--color-success-bg);
   border: 1px solid var(--color-success-border);
   color: var(--color-success);
-  animation: word-pulse-green 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: word-pulse-green 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .word-incorrect {
   background: var(--color-error-bg);
   border: 1px solid var(--color-error-border);
   color: var(--color-error);
-  animation: word-pulse-red 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: word-pulse-red 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes word-pulse-green {

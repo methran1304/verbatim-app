@@ -130,7 +130,7 @@ namespace server.Services
                 await UpdateCompetitiveDrillAsync(competitiveDrill);
             }
 
-            // check if all active players are finished
+            // get active players
             var activePlayers = competitiveDrill.Players
                 .Where(p => p.State != PlayerState.Disconnected)
                 .ToList();
@@ -139,6 +139,27 @@ namespace server.Services
                 .Where(p => p.State == PlayerState.Finished)
                 .ToList();
 
+            // Check if any player completed with decent accuracy (50% or higher)
+            const double MIN_ACCURACY_THRESHOLD = 50.0;
+            var highAccuracyFinishers = finishedPlayers
+                .Where(p => p.Accuracy >= MIN_ACCURACY_THRESHOLD)
+                .ToList();
+
+            if (highAccuracyFinishers.Any())
+            {
+                // At least one player finished with decent accuracy - end drill immediately
+                // Determine winner based on WPM, accuracy, and completion time
+                var winner = highAccuracyFinishers
+                    .OrderByDescending(p => p.WPM)
+                    .ThenByDescending(p => p.Accuracy)
+                    .First();
+
+                await SetWinnerAsync(competitiveDrill.CompetitiveDrillId, winner.UserId);
+                await UpdateDrillStateAsync(competitiveDrill.CompetitiveDrillId, DrillState.Completed);
+                return true; // drill completed
+            }
+
+            // Check if all players are finished (regardless of accuracy)
             if (finishedPlayers.Count == activePlayers.Count)
             {
                 // all players finished - determine winner and end drill

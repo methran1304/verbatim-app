@@ -20,7 +20,7 @@ namespace server.Hubs
         Task PlayerJoin(string roomId, string userId, string username, int level, bool isCreator = false);
         Task PlayerJoinWithState(string roomId, string userId, string username, int level, bool isCreator, string state);
         Task PlayerLeave(string roomId, string userId);
-        Task PlayerReady(string roomId, string userId);
+        Task PlayerReady(string roomId, string userId, bool isReady);
         Task PlayerStatisticsUpdate(string roomId, List<PlayerStatistics> statistics);
         Task AllPlayersCompleted(string roomId);
 
@@ -86,18 +86,36 @@ namespace server.Hubs
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            Console.WriteLine($"Client disconnected: {Context.ConnectionId}");
-            
-            // handle player disconnect
-            var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!string.IsNullOrEmpty(userId))
+            try
             {
-                // find which room the player was in and remove them
-                // this is a simplified approach - in production you'd want to track room membership
-                await HandlePlayerDisconnect(userId);
+                Console.WriteLine($"Client disconnected: {Context.ConnectionId}");
+                if (exception != null)
+                {
+                    Console.WriteLine($"Disconnect exception: {exception.Message}");
+                }
+                
+                // handle player disconnect
+                var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    Console.WriteLine($"Handling disconnect for authenticated user: {userId}");
+                    // find which room the player was in and remove them
+                    await HandlePlayerDisconnect(userId);
+                }
+                else
+                {
+                    Console.WriteLine("No user ID found in disconnect context - user may not have been authenticated");
+                }
             }
-            
-            await base.OnDisconnectedAsync(exception);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in OnDisconnectedAsync: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            }
+            finally
+            {
+                await base.OnDisconnectedAsync(exception);
+            }
         }
 
         public async Task<object> CreateRoom(CreateRoomRequest request)
@@ -338,7 +356,7 @@ namespace server.Hubs
 
 
                 // notify all clients in the room
-                await Clients.Group(roomCode).PlayerReady(roomCode, userId);
+                await Clients.Group(roomCode).PlayerReady(roomCode, userId, isReady);
 
                 return new { success = true };
             }
@@ -605,7 +623,8 @@ namespace server.Hubs
                 }
 
                 // notify other players that this player has continued
-                await Clients.Group(roomCode).PlayerReady(roomCode, userId);
+                // The player is now Connected (not ready) after continuing
+                await Clients.Group(roomCode).PlayerReady(roomCode, userId, false);
 
                 return new { success = true };
             }
@@ -672,7 +691,7 @@ namespace server.Hubs
                     {
                         Console.WriteLine($"Error broadcasting progress: {ex.Message}");
                     }
-                }, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(500));
+                }, null, TimeSpan.Zero, TimeSpan.FromMilliseconds(750)); // Optimized: 750ms for better balance
 
                 // schedule centralized end for both timed and marathon drills
                 if (_drillEndTimers.ContainsKey(roomCode))
@@ -732,18 +751,39 @@ namespace server.Hubs
 
         private void StopRoomTimers(string roomCode)
         {
-            lock (_timerLock)
+            try
             {
-                if (_progressTimers.TryGetValue(roomCode, out var progressTimer))
+                lock (_timerLock)
                 {
-                    progressTimer.Dispose();
-                    _progressTimers.Remove(roomCode);
+                    if (_progressTimers.TryGetValue(roomCode, out var progressTimer))
+                    {
+                        try
+                        {
+                            progressTimer?.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error disposing progress timer for room {roomCode}: {ex.Message}");
+                        }
+                        _progressTimers.Remove(roomCode);
+                    }
+                    if (_drillEndTimers.TryGetValue(roomCode, out var endTimer))
+                    {
+                        try
+                        {
+                            endTimer?.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"Error disposing end timer for room {roomCode}: {ex.Message}");
+                        }
+                        _drillEndTimers.Remove(roomCode);
+                    }
                 }
-                if (_drillEndTimers.TryGetValue(roomCode, out var endTimer))
-                {
-                    endTimer.Dispose();
-                    _drillEndTimers.Remove(roomCode);
-                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error stopping timers for room {roomCode}: {ex.Message}");
             }
         }
 
@@ -803,44 +843,138 @@ namespace server.Hubs
                 
                 foreach (var room in allRooms.Where(r => r.IsActive))
                 {
-                    var players = _playerService.GetPlayersInRoom(room.RoomCode);
-                    var disconnectedPlayer = players.FirstOrDefault(p => p.UserId == userId);
-                    
-                    if (disconnectedPlayer != null)
+                    try
                     {
-                        Console.WriteLine($"Found user {userId} in room {room.RoomCode}");
+                        var players = _playerService.GetPlayersInRoom(room.RoomCode);
+                        var disconnectedPlayer = players.FirstOrDefault(p => p.UserId == userId);
                         
-                        // check if this is the room creator
-                        if (room.CreatedBy == userId)
+                        if (disconnectedPlayer != null)
                         {
-                            // disband the room if creator disconnects
-                            Console.WriteLine($"Room creator {userId} disconnected, disbanding room {room.RoomCode}");
+                            Console.WriteLine($"Found user {userId} in room {room.RoomCode}");
                             
-                            // notify all players in the room
-                            await Clients.Group(room.RoomCode).RoomDisbanded(room.RoomId, "Room creator has disconnected");
+                            // Stop any active timers for this room to prevent crashes
+                            StopRoomTimers(room.RoomCode);
                             
-                            // deactivate the room
-                            await _roomService.DeactivateRoomAsync(room.RoomCode);
+                            // Handle active drill if player disconnects during drill
+                            if (room.State == RoomState.InProgress && !string.IsNullOrEmpty(room.ActiveCompetitiveDrillId))
+                            {
+                                Console.WriteLine($"Player {userId} disconnected during active drill in room {room.RoomCode}");
+                                
+                                // Mark player as disconnected in the drill
+                                var disconnectResult = new DrillResult
+                                {
+                                    UserId = userId,
+                                    WPM = 0,
+                                    Accuracy = 0,
+                                    WordsCompleted = 0,
+                                    TotalWords = 0,
+                                    CompletionPercentage = 0,
+                                    Position = 0,
+                                    PointsChange = 0,
+                                    FinishedAt = DateTime.UtcNow
+                                };
+                                
+                                _playerService.SetPlayerFinished(room.RoomCode, userId, disconnectResult);
+                                
+                                // Check if all players are now finished
+                                var finishedCount = await _competitiveDrillService.GetFinishedPlayerCountAsync(room.RoomCode);
+                                var activeCount = await _competitiveDrillService.GetActivePlayerCountAsync(room.RoomCode);
+                                
+                                if (finishedCount == activeCount)
+                                {
+                                    Console.WriteLine($"All players finished due to disconnect, ending drill in room {room.RoomCode}");
+                                    await EndTimedDrillAsync(room.RoomCode);
+                                }
+                            }
                             
-
+                            // check if this is the room creator
+                            if (room.CreatedBy == userId)
+                            {
+                                // disband the room if creator disconnects
+                                Console.WriteLine($"Room creator {userId} disconnected, disbanding room {room.RoomCode}");
+                                
+                                try
+                                {
+                                    // notify all players in the room
+                                    await Clients.Group(room.RoomCode).RoomDisbanded(room.RoomId, "Room creator has disconnected");
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error notifying room disbanded: {ex.Message}");
+                                }
+                                
+                                try
+                                {
+                                    // deactivate the room
+                                    await _roomService.DeactivateRoomAsync(room.RoomCode);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error deactivating room: {ex.Message}");
+                                }
+                            }
+                            else
+                            {
+                                // regular player disconnect - just remove them and notify others
+                                try
+                                {
+                                    _playerService.RemovePlayerFromRoom(room.RoomCode, userId);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error removing player from room: {ex.Message}");
+                                }
+                                
+                                try
+                                {
+                                    await Clients.Group(room.RoomCode).PlayerLeave(room.RoomId, userId);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"Error notifying player leave: {ex.Message}");
+                                }
+                                
+                                // If room is empty after player removal, clean it up
+                                var remainingPlayers = _playerService.GetPlayersInRoom(room.RoomCode);
+                                if (remainingPlayers.Count == 0)
+                                {
+                                    Console.WriteLine($"Room {room.RoomCode} is empty after disconnect, cleaning up");
+                                    try
+                                    {
+                                        await _roomService.DeactivateRoomAsync(room.RoomCode);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine($"Error cleaning up empty room: {ex.Message}");
+                                    }
+                                }
+                            }
+                            
+                            // remove from SignalR group (this should be safe)
+                            try
+                            {
+                                await Groups.RemoveFromGroupAsync(Context.ConnectionId, room.RoomCode);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Error removing from SignalR group: {ex.Message}");
+                            }
+                            
+                            // Only handle one room per disconnect (player should only be in one room)
+                            break;
                         }
-                        else
-                        {
-                            // regular player disconnect - just remove them and notify others
-                            _playerService.RemovePlayerFromRoom(room.RoomCode, userId);
-                            await Clients.Group(room.RoomCode).PlayerLeave(room.RoomId, userId);
-                            
-
-                        }
-                        
-                        // remove from SignalR group
-                        await Groups.RemoveFromGroupAsync(Context.ConnectionId, room.RoomCode);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error processing room {room.RoomCode} for disconnect: {ex.Message}");
+                        // Continue with other rooms even if one fails
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error handling player disconnection: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
         }
 

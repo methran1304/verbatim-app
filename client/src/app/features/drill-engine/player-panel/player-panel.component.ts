@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -76,9 +76,21 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
     this.loadCompetitiveStatistics();
   }
 
-  ngOnChanges(): void {
-    // reload statistics when players array changes
-    this.loadCompetitiveStatistics();
+  ngOnChanges(changes: SimpleChanges): void {
+    // Only reload statistics when players array actually changes (not just updates)
+    if (changes['players'] && !changes['players'].firstChange) {
+      const previousPlayers = changes['players'].previousValue || [];
+      const currentPlayers = changes['players'].currentValue || [];
+      
+      // Only reload if the actual player list changed (players added/removed), not just stats updates
+      const previousPlayerIds = previousPlayers.map((p: Player) => p.userId).sort();
+      const currentPlayerIds = currentPlayers.map((p: Player) => p.userId).sort();
+      
+      if (JSON.stringify(previousPlayerIds) !== JSON.stringify(currentPlayerIds)) {
+        this.loadCompetitiveStatistics();
+      }
+    }
+    
     // assign colors when players change
     this.assignPlayerColors();
   }
@@ -86,17 +98,30 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
   ngOnDestroy(): void {}
 
   private async loadCompetitiveStatistics(): Promise<void> {
+    // Only load statistics if we have players and we're not in an active drill
+    if (this.players.length === 0 || this.isActiveDrill) {
+      return;
+    }
+
     // load competitive statistics for all players
     for (const player of this.players) {
+      // Skip if we already have stats for this player
+      if (player.competitiveStats) {
+        continue;
+      }
+
       try {
         const stats = await this.http.get<CompetitiveStatistics>(
-          `${this.baseUrl}/api/competitive/statistics/${player.userId}`
+          `${this.baseUrl}/competitive/statistics/${player.userId}`
         ).toPromise();
         
         if (stats) {
           player.competitiveStats = stats;
         }
+
+        console.log('stat success', stats);
       } catch (error) {
+        console.log(error);
         console.warn(`Failed to load competitive stats for player ${player.userId}:`, error);
         // set default stats if loading fails
         player.competitiveStats = {
