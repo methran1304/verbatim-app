@@ -1,0 +1,466 @@
+<div class="ai-insights-container">
+  <nz-card class="ai-insights-card">
+    <!-- initial state - no insights generated yet -->
+    @if (!aiFeedback) {
+      <div class="initial-state">
+        <div class="initial-content">
+          <!-- header -->
+          <div class="initial-header">
+            <h1 class="title">AI Insights</h1>
+            <p class="subtitle">Get personalized feedback on your typing performance</p>
+          </div>
+
+                      <!-- benefits section -->
+          <div class="benefits-section">
+            <h2>What you'll discover:</h2>
+            <div class="benefits-grid">
+              <div class="benefit-item">
+                <div class="benefit-icon">
+                  <span nz-icon nzType="bulb" nzTheme="outline"></span>
+                </div>
+                <div class="benefit-content">
+                  <h3>Performance Patterns</h3>
+                  <p>Identify your typing strengths and weaknesses</p>
+                </div>
+              </div>
+              
+              <div class="benefit-item">
+                <div class="benefit-icon">
+                  <span nz-icon nzType="aim" nzTheme="outline"></span>
+                </div>
+                <div class="benefit-content">
+                  <h3>Targeted Practice</h3>
+                  <p>Focus on words and characters you struggle with</p>
+                </div>
+              </div>
+              
+              <div class="benefit-item">
+                <div class="benefit-icon">
+                  <span nz-icon nzType="rise" nzTheme="outline"></span>
+                </div>
+                <div class="benefit-content">
+                  <h3>Progress Tracking</h3>
+                  <p>See how your skills improve over time</p>
+                </div>
+              </div>
+              
+              <div class="benefit-item">
+                <div class="benefit-icon">
+                  <span nz-icon nzType="rocket" nzTheme="outline"></span>
+                </div>
+                <div class="benefit-content">
+                  <h3>Smart Recommendations</h3>
+                  <p>Get AI-powered suggestions for improvement</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+                      <!-- generate button -->
+          <div class="generate-section">
+            <button 
+              nz-button 
+              nzType="primary" 
+              nzSize="large"
+              class="generate-button"
+              [disabled]="isGenerating"
+              (click)="generateNewInsights()">
+              @if (!isGenerating) {
+                <img 
+                  [src]="'assets/icons/gemini-color-light.svg'" 
+                  alt="Gemini AI" 
+                  class="gemini-icon">
+              }
+              @if (isGenerating) {
+                <span nz-icon nzType="loading" nzTheme="outline"></span>
+              }
+              {{ generateButtonText }}
+            </button>
+            
+            <p class="generate-note">
+              <span nz-icon nzType="info-circle" nzTheme="outline"></span>
+              AI analysis takes up to 30 seconds to 1 minute to complete
+            </p>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ai insights tabs view -->
+    @if (aiFeedback && !isGenerating) {
+      <div class="insights-tabs">
+        <div class="title-section">
+          <div class="title-content">
+            <h1 class="insights-title">AI Insights Analysis</h1>
+          </div>
+          <p class="insights-subtitle">
+            Personalized analysis of your typing patterns, performance trends, and improvement recommendations
+          </p>
+          @if (lastGeneratedAt) {
+            <p class="insights-timestamp">
+              Generated at {{ lastGeneratedAt | date:'medium' }}
+            </p>
+          }
+        </div>
+        @if (isRegenerating) {
+          <div class="skeleton-loader">
+            <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }"></nz-skeleton>
+          </div>
+        } @else {
+          <nz-tabs nzCentered>
+            <nz-tab nzTitle="Overview">
+            <div class="tab-content">
+              <h2>
+                Performance Summary
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Your overall typing performance metrics including level, speed, and accuracy"></span>
+              </h2>
+              <div class="performance-grid">
+                <div class="performance-card">
+                  <nz-statistic
+                    nzTitle="Overall Level"
+                    [nzValue]="aiFeedback.performanceSummary.overallLevel"
+                    [nzValueStyle]="{ color: getLevelColor(aiFeedback.performanceSummary.overallLevel) }">
+                  </nz-statistic>
+                </div>
+                <div class="performance-card">
+                  <nz-statistic
+                    nzTitle="Average WPM"
+                    [nzValue]="aiFeedback.performanceSummary.currentWPM"
+                    [nzValueStyle]="{ color: getWPMColor(aiFeedback.performanceSummary.currentWPM) }">
+                  </nz-statistic>
+                </div>
+                <div class="performance-card">
+                  <nz-statistic
+                    nzTitle="Accuracy"
+                    [nzValue]="aiFeedback.performanceSummary.currentAccuracy"
+                    nzSuffix="%"
+                    [nzValueStyle]="{ color: getAccuracyColor(aiFeedback.performanceSummary.currentAccuracy) }">
+                  </nz-statistic>
+                </div>
+              </div>
+              
+              <h3>
+                Immediate Actions
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Critical issues that need immediate attention and quick fixes you can implement right away"></span>
+              </h3>
+              <div class="actions-list">
+                @for (action of aiFeedback.immediateActions.criticalIssues; track action) {
+                  <div class="action-item">
+                    <span nz-icon nzType="warning" nzTheme="outline" class="action-icon"></span>
+                    <span [innerHTML]="formatBoldText(action)"></span>
+                  </div>
+                }
+                @for (action of aiFeedback.immediateActions.quickFixes; track action) {
+                  <div class="action-item">
+                    <span nz-icon nzType="check-circle" nzTheme="outline" class="action-icon"></span>
+                    <span [innerHTML]="formatBoldText(action)"></span>
+                  </div>
+                }
+              </div>
+
+              <h3>
+                Improvement Focus
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Specific areas where you should focus your practice efforts to improve your typing skills"></span>
+              </h3>
+              @if (aiFeedback.performanceSummary.improvementNeeded) {
+                <div class="improvement-focus">
+                  <p [innerHTML]="formatBoldText(aiFeedback.performanceSummary.improvementNeeded)"></p>
+                </div>
+              }
+
+              <h3>
+                Next Drill Focus
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Recommended practice drills and exercises to target your specific weaknesses"></span>
+              </h3>
+              <div class="drill-focus-list">
+                @for (focus of aiFeedback.immediateActions.nextDrillFocus; track focus) {
+                  <div class="focus-item">
+                    <span nz-icon nzType="target" nzTheme="outline" class="focus-icon"></span>
+                    <span [innerHTML]="formatBoldText(focus)"></span>
+                  </div>
+                }
+              </div>
+            </div>
+          </nz-tab>
+          
+          <nz-tab nzTitle="Word Issues">
+            <div class="tab-content">
+              <h2>
+                Word Error Patterns
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Words you commonly misspell or mistype, along with the patterns and likely causes of these errors"></span>
+              </h2>
+              <nz-table
+                #wordTable
+                [nzData]="aiFeedback.wordLevelAnalysis.topErrorWords"
+                [nzPageSize]="10"
+                [nzShowPagination]="true">
+                <thead>
+                  <tr>
+                    @for (column of wordErrorTableColumns; track column) {
+                      <th [nzWidth]="column.width">
+                        {{ column.title }}
+                      </th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (word of wordTable.data; track word) {
+                    <tr>
+                      <td>{{ word.word }}</td>
+                      <td>{{ word.errorCount }}</td>
+                      <td>{{ word.pattern }}</td>
+                      <td [innerHTML]="formatBoldText(word.likelyCause)"></td>
+                    </tr>
+                  }
+                </tbody>
+              </nz-table>
+              
+              <h3>
+                Word Patterns
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Common patterns in your word errors that reveal underlying typing habits or keyboard layout challenges"></span>
+              </h3>
+              <div class="patterns-grid">
+                @for (pattern of aiFeedback.wordLevelAnalysis.wordPatterns; track pattern) {
+                  <div class="pattern-card">
+                    <h4>{{ pattern.pattern }}</h4>
+                    <p [innerHTML]="formatBoldText(pattern.description)"></p>
+                    <div class="affected-words">
+                      @for (word of pattern.affectedWords.slice(0, 5); track word) {
+                        <span class="word-tag">{{ word }}</span>
+                      }
+                      @if (pattern.affectedWords.length > 5) {
+                        <span 
+                          class="more-words"
+                          nz-popover
+                          [nzPopoverTitle]="'All Affected Words'"
+                          [nzPopoverContent]="pattern.affectedWords.slice(5).join(', ')"
+                          nzPopoverPlacement="top">
+                          +{{ pattern.affectedWords.length - 5 }} more
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </nz-tab>
+          
+          <nz-tab nzTitle="Character Issues">
+            <div class="tab-content">
+              <h2>
+                Character Error Analysis
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Individual characters you struggle with, including keyboard zones and finger positioning issues"></span>
+              </h2>
+              <div class="character-analysis">
+                <div class="top-errors">
+                  <h3>
+                    Top Error Characters
+                    <span nz-icon nzType="info-circle" nzTheme="outline" 
+                          nz-tooltip nzTooltipTitle="Characters you most frequently mistype, with details about keyboard zones and finger usage"></span>
+                  </h3>
+                  <nz-table
+                    #charTable
+                    [nzData]="aiFeedback.characterLevelAnalysis.topErrorChars"
+                    [nzPageSize]="8"
+                    [nzShowPagination]="true">
+                    <thead>
+                      <tr>
+                        @for (column of characterErrorTableColumns; track column) {
+                          <th [nzWidth]="column.width">
+                            {{ column.title }}
+                          </th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (char of charTable.data; track char) {
+                        <tr>
+                          <td>{{ char.character }}</td>
+                          <td>{{ char.errorCount }}</td>
+                          <td>{{ char.keyboardZone }}</td>
+                          <td>{{ char.finger }}</td>
+                          <td>
+                            @for (mistake of char.commonMistakes.slice(0, 2); track mistake) {
+                              <span class="mistake-tag">{{ mistake }}</span>
+                            }
+                            @if (char.commonMistakes.length > 2) {
+                              <span 
+                                class="more-mistakes"
+                                nz-popover
+                                [nzPopoverTitle]="'All Common Mistakes'"
+                                [nzPopoverContent]="char.commonMistakes.slice(2).join(', ')"
+                                nzPopoverPlacement="top">
+                                +{{ char.commonMistakes.length - 2 }} more
+                              </span>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </nz-table>
+                </div>
+                
+                <div class="keyboard-weaknesses">
+                  <h3>
+                    Keyboard Weaknesses
+                    <span nz-icon nzType="info-circle" nzTheme="outline" 
+                          nz-tooltip nzTooltipTitle="Specific areas of your keyboard where you struggle, including error rates and affected characters"></span>
+                  </h3>
+                  <nz-table
+                    #weaknessTable
+                    [nzData]="aiFeedback.characterLevelAnalysis.keyboardWeaknesses"
+                    [nzPageSize]="6"
+                    [nzShowPagination]="true">
+                    <thead>
+                      <tr>
+                        @for (column of keyboardWeaknessTableColumns; track column) {
+                          <th [nzWidth]="column.width">
+                            {{ column.title }}
+                          </th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (weakness of weaknessTable.data; track weakness) {
+                        <tr>
+                          <td>{{ weakness.zone }}</td>
+                          <td>
+                            <nz-progress
+                              [nzPercent]="weakness.errorRate"
+                              [nzShowInfo]="false"
+                              [nzStrokeColor]="getProgressColor(weakness.errorRate)">
+                            </nz-progress>
+                          </td>
+                          <td [innerHTML]="formatBoldText(weakness.description)"></td>
+                          <td>
+                            @for (char of weakness.affectedChars.slice(0, 3); track char) {
+                              <span class="char-tag">{{ char }}</span>
+                            }
+                            @if (weakness.affectedChars.length > 3) {
+                              <span 
+                                class="more-chars"
+                                nz-popover
+                                [nzPopoverTitle]="'All Affected Characters'"
+                                [nzPopoverContent]="weakness.affectedChars.slice(3).join(', ')"
+                                nzPopoverPlacement="top">
+                                +{{ weakness.affectedChars.length - 3 }} more
+                              </span>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </nz-table>
+                </div>
+              </div>
+            </div>
+          </nz-tab>
+          
+          <nz-tab nzTitle="Trends">
+            <div class="tab-content">
+              <h2>
+                Recent Trends
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Your typing performance trends over time, showing improvements and areas that need attention"></span>
+              </h2>
+              <div class="trends-overview">
+                <div class="trend-card">
+                  <h3>WPM Trend</h3>
+                  <div class="trend-indicator">
+                    <span nz-icon 
+                          [nzType]="getTrendIcon(aiFeedback.recentTrends.wpmTrend)" 
+                          [nzTheme]="'outline'"
+                          [style.color]="getTrendColor(aiFeedback.recentTrends.wpmTrend)">
+                    </span>
+                    <span class="trend-text">{{ aiFeedback.recentTrends.wpmTrend }}</span>
+                  </div>
+                </div>
+                
+                <div class="trend-card">
+                  <h3>Accuracy Trend</h3>
+                  <div class="trend-indicator">
+                    <span nz-icon 
+                          [nzType]="getTrendIcon(aiFeedback.recentTrends.accuracyTrend)" 
+                          [nzTheme]="'outline'"
+                          [style.color]="getTrendColor(aiFeedback.recentTrends.accuracyTrend)">
+                    </span>
+                    <span class="trend-text">{{ aiFeedback.recentTrends.accuracyTrend }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <h3>
+                Improving Areas
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Aspects of your typing that are getting better over time - celebrate these improvements!"></span>
+              </h3>
+              <div class="areas-grid">
+                @for (area of aiFeedback.recentTrends.improvingAreas; track area) {
+                  <div class="area-item improving">
+                    <span nz-icon nzType="arrow-up" nzTheme="outline" class="area-icon"></span>
+                    <span [innerHTML]="formatBoldText(area)"></span>
+                  </div>
+                }
+              </div>
+              
+              <h3>
+                Areas Needing Attention
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="Typing skills that have declined or need more practice to maintain your current level"></span>
+              </h3>
+              <div class="areas-grid">
+                @for (area of aiFeedback.recentTrends.decliningAreas; track area) {
+                  <div class="area-item declining">
+                    <span nz-icon nzType="arrow-down" nzTheme="outline" class="area-icon"></span>
+                    <span [innerHTML]="formatBoldText(area)"></span>
+                  </div>
+                }
+              </div>
+              
+              <h3>
+                Error Pattern Trends
+                <span nz-icon nzType="info-circle" nzTheme="outline" 
+                      nz-tooltip nzTooltipTitle="How your error patterns are changing over time, helping you understand if your practice is effective"></span>
+              </h3>
+              <div class="pattern-trends">
+                @for (pattern of aiFeedback.recentTrends.errorPatterns; track pattern) {
+                  <div class="pattern-trend">
+                    <span class="pattern-name" [innerHTML]="formatBoldText(pattern)"></span>
+                  </div>
+                }
+              </div>
+            </div>
+          </nz-tab>
+        </nz-tabs>
+        }
+        
+        <!-- regenerate button section -->
+        <div class="regenerate-section">
+          <nz-divider></nz-divider>
+          <div class="regenerate-content">
+            <p class="regenerate-text">
+              Need fresh insights? Generate new AI analysis based on your latest typing data.
+            </p>
+            <button 
+              nz-button 
+              nzType="primary" 
+              nzSize="large"
+              [disabled]="isGenerating || isRegenerating"
+              (click)="generateNewInsights()"
+              class="regenerate-button">
+              <span nz-icon nzType="reload" nzTheme="outline"></span>
+              {{ isRegenerating ? 'Regenerating...' : 'Regenerate AI Insights' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </nz-card>
+</div>

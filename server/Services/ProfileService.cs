@@ -6,6 +6,7 @@ using MongoDB.Driver;
 using server.Constants;
 using server.Data.Mongo;
 using server.Entities;
+using server.Entities.Models;
 using server.Services.Interfaces;
 
 namespace server.Services
@@ -84,6 +85,32 @@ namespace server.Services
 			var updateResult = await _profiles.UpdateOneAsync(userFilter, updateDefinition);
 
 			return updateResult.IsAcknowledged;
+		}
+
+		public async Task<AiInsight?> GetLastAiInsight(string userId)
+		{
+			var profile = await _profiles.Find(p => p.ProfileId == userId).FirstOrDefaultAsync();
+			if (profile is null)
+				return null;
+
+			return profile.AiInsightDetails;
+		}
+
+		public async Task<bool> SaveAiInsightAsync(string userId, AIFeedbackDTO aiFeedback)
+		{
+			var profile = await _profiles.Find(p => p.ProfileId == userId).FirstOrDefaultAsync();
+			if (profile is null)
+				return false;
+
+			profile.AiInsightDetails = new AiInsight
+			{
+				LastGeneratedAt = DateTime.UtcNow,
+				Insight = aiFeedback
+			};
+
+			var result = await _profiles.UpdateOneAsync(p => p.ProfileId == userId, Builders<Profile>.Update.Set(p => p.AiInsightDetails, profile.AiInsightDetails));
+
+			return result.IsAcknowledged;
 		}
 	}
 }

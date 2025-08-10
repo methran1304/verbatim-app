@@ -1,16 +1,23 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using MongoDB.Driver;
+using server.Data.Mongo;
+using server.Entities;
 using server.Entities.Models;
 using server.Services.Interfaces;
 
 namespace server.Services
 {
-  public class FeedbackService : IFeedbackService
+  public class AIInsightService : IAIInsightService
   {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly IDrillService _drillService;
+    private readonly IUserService _userService;
+    private readonly IProfileService _profileService;
+    private readonly IMongoCollection<Profile> _profiles;
+    private readonly IMongoCollection<User> _users;
 
     const string GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     const string GEMINI_API_KEY = "AIzaSyCDPf8O4kkrlO0yKBDrymibceBAkdK0oxA";
@@ -39,11 +46,15 @@ IMPORTANT: You MUST provide specific, actionable recommendations in the immediat
 Provide detailed, actionable insights for improving typing accuracy and speed. Be specific and practical in your recommendations.
 ";
 
-    public FeedbackService(HttpClient httpClient, IConfiguration configuration, IDrillService drillService)
+    public AIInsightService(HttpClient httpClient, IConfiguration configuration, IDrillService drillService, IUserService userService, IProfileService profileService, MongoDbContext context)
     {
       _httpClient = httpClient;
       _configuration = configuration;
       _drillService = drillService;
+      _userService = userService;
+      _profileService = profileService;
+      _profiles = context.Profiles;
+      _users = context.Users;
     }
 
     public async Task<object> GetRequestStatisticsAsync(string userId)
@@ -411,6 +422,9 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
       // validate and ensure all required sections exist
       aiFeedback = ValidateAndFixAIFeedback(aiFeedback);
 
+      // save the ai feedback to the profile
+      await _profileService.SaveAiInsightAsync(userId, aiFeedback);
+
       return aiFeedback;
     }
 
@@ -491,13 +505,82 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
 
       return actions;
     }
-    public async Task<bool> CanGenerateFeedback(string userId)
-    {
-      var drills = await _drillService.GetAllDrillsAsync(userId);
 
-      // check if there is at least 1 error word in all drills combined (if not, return false)
-      var errorWordsCount = drills.SelectMany(d => d.Statistics.ErrorMap.WordErrorMap.Values).Sum();
-      return errorWordsCount > 0;
+    public async Task<(bool CanGenerate, string? Reason)> CanGenerateFeedbackAsync(string userId)
+    {
+      // get user data
+      var user = await _userService.GetByUserId(userId);
+      if (user == null)
+        return (false, "User not found");
+
+      // get profile data
+      var profile = await _profileService.GetByUserId(userId);
+      if (profile == null)
+        return (false, "Profile not found");
+
+      // check if user has enough drill data to generate insights
+      var drills = await _drillService.GetAllDrillsAsync(userId);
+      if (drills == null || drills.Count == 0)
+        return (false, "Insufficient data: No drills completed yet");
+
+      // check if user has enough recent data (at least 3 drills in the last 30 days)
+      var recentDrills = drills.Where(d => d.CreatedAt >= DateTime.UtcNow.AddDays(-30)).ToList();
+      if (recentDrills.Count < 3) // change to user.maxAiCall
+        return (false, $"Insufficient data: Only {recentDrills.Count} drills completed in the last 30 days. Need at least 3 drills to generate meaningful insights.");
+
+      var now = DateTime.UtcNow;
+
+      // first time generating insights
+      if (profile.AiInsightDetails == null)
+        return (true, null);
+
+      var lastGenerated = profile.AiInsightDetails.LastGeneratedAt;
+
+      // check if 24 hours have passed since last generation
+      var hoursSinceLastGeneration = (now - lastGenerated).TotalHours;
+      
+      // if more than 24 hours have passed, reset the counter
+      if (hoursSinceLastGeneration >= 24)
+      {
+        // reset the daily counter
+        var filter = Builders<Profile>.Filter.Eq(p => p.ProfileId, userId);
+        var update = Builders<Profile>.Update
+          .Set(p => p.AiInsightDetails.LastGeneratedAt, now)
+          .Set("ai_insights_generated_today", 0);
+
+        await _profiles.UpdateOneAsync(filter, update);
+        
+        // update local user object
+        user.AiInsightsGeneratedToday = 0;
+      }
+
+      // check if user has reached their daily limit
+      if (user.AiInsightsGeneratedToday >= user.MaxAiInsightsPerDay)
+      {
+        var nextResetTime = lastGenerated.AddHours(24);
+        var timeUntilReset = nextResetTime - now;
+        var hoursUntilReset = Math.Ceiling(timeUntilReset.TotalHours);
+        
+        return (false, $"Daily limit reached: You've generated {user.AiInsightsGeneratedToday}/{user.MaxAiInsightsPerDay} AI insights today. Limit resets in approximately {hoursUntilReset} hours.");
+      }
+
+      return (true, null);
+    }
+
+    public async Task IncrementAiInsightsCounterAsync(string userId)
+    {
+      // increment the daily counter
+      var filter = Builders<User>.Filter.Eq(u => u.UserId, userId);
+      var update = Builders<User>.Update.Inc(u => u.AiInsightsGeneratedToday, 1);
+
+      await _users.UpdateOneAsync(filter, update);
+
+      // update the profile's last generated timestamp
+      var profileFilter = Builders<Profile>.Filter.Eq(p => p.ProfileId, userId);
+      var profileUpdate = Builders<Profile>.Update
+        .Set(p => p.AiInsightDetails.LastGeneratedAt, DateTime.UtcNow);
+
+      await _profiles.UpdateOneAsync(profileFilter, profileUpdate);
     }
   }
 }

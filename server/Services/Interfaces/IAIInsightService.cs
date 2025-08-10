@@ -8,10 +8,11 @@ using server.Entities.Models;
 
 namespace server.Services.Interfaces
 {
-    public interface IFeedbackService
+    public interface IAIInsightService
     {
         Task<object> GetRequestStatisticsAsync(string userId);
         Task<AIFeedbackDTO> GetAIInsightsAsync(string userId);
-        Task<bool> CanGenerateFeedback(string userId);
+        Task<(bool CanGenerate, string? Reason)> CanGenerateFeedbackAsync(string userId);
+        Task IncrementAiInsightsCounterAsync(string userId);
     }
-}
+} 

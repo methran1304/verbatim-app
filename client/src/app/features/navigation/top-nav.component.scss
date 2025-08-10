@@ -198,13 +198,17 @@
   border: none !important;
   box-shadow: none !important;
   
-  .gemini-icon {
-    width: 1.2em;
-    height: 1.2em;
-    margin-right: 0.5rem;
-    transition: all 0.3s ease;
-    filter: drop-shadow(0 0 4px rgba(49, 134, 255, 0.3));
-  }
+      .gemini-icon {
+      width: 1.2em;
+      height: 1.2em;
+      margin-right: 0.5rem;
+      transition: all 0.3s ease;
+      // enhanced visibility for light theme
+      filter: 
+        drop-shadow(0 0 2px rgba(0, 0, 0, 0.2))
+        drop-shadow(0 0 4px rgba(49, 134, 255, 0.4))
+        drop-shadow(0 0 6px rgba(49, 134, 255, 0.2));
+    }
   
   color: var(--color-text);
   transition: all 0.3s ease;
@@ -241,27 +245,33 @@
     left: 100%;
   }
   
-  &:hover {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    
-    .gemini-icon {
-      transform: scale(1.1);
-      filter: drop-shadow(0 0 8px rgba(49, 134, 255, 0.6));
+      &:hover {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      
+      .gemini-icon {
+        transform: scale(1.1);
+        filter: 
+          drop-shadow(0 0 3px rgba(0, 0, 0, 0.3))
+          drop-shadow(0 0 6px rgba(49, 134, 255, 0.6))
+          drop-shadow(0 0 10px rgba(49, 134, 255, 0.4));
+      }
     }
-  }
   
-  &.active {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    
-    .gemini-icon {
-      transform: scale(1.05);
-      filter: drop-shadow(0 0 6px rgba(49, 134, 255, 0.5));
+      &.active {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      
+      .gemini-icon {
+        transform: scale(1.05);
+        filter: 
+          drop-shadow(0 0 2px rgba(0, 0, 0, 0.25))
+          drop-shadow(0 0 5px rgba(49, 134, 255, 0.5))
+          drop-shadow(0 0 8px rgba(49, 134, 255, 0.3));
+      }
     }
-  }
   
   &::before {
     animation: periodic-shine 3s ease-in-out infinite;

@@ -1,6 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using server.Entities.Enums;
+using server.Entities.Models;
 
 namespace server.Entities
 {
@@ -74,5 +75,17 @@ namespace server.Entities
 
 		[BsonElement("total_drill_duration")]
 		public int TotalDrillDuration { get; set; } = 0; // in seconds
+
+		[BsonElement("ai_insights")]
+		public AiInsight AiInsightDetails { get; set; } = null!;
+	}
+
+	public class AiInsight
+	{
+		[BsonElement("last_generated_at")]
+		public DateTime LastGeneratedAt { get; set; } = DateTime.UtcNow;
+
+		[BsonElement("last_ai_insight")]
+		public AIFeedbackDTO Insight { get; set; } = new();
 	}
 }

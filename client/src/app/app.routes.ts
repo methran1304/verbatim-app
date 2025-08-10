@@ -5,6 +5,7 @@ import { RegisterComponent } from './features/auth/register/register.component';
 import { DrillEngineComponent } from './features/drill-engine/drill-engine.component';
 import { DrillStatsComponent } from './features/drill-stats/drill-stats.component';
 import { ProfileComponent } from './features/profile/profile.component';
+import { AIInsightsComponent } from './features/ai-insights/ai-insights.component';
 import { authGuard } from './auth.guard';
 import { redirectIfAuthenticatedGuard } from './auth-redirect.guard';
 
@@ -41,7 +42,7 @@ export const routes: Routes = [
     },
     {
         path: 'ai-insights',
-        component: DrillEngineComponent, // TODO
+        component: AIInsightsComponent,
         canActivate: [authGuard],
     },
     {

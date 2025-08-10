@@ -44,11 +44,11 @@ builder.Services.AddScoped<IDrillSourceTextService, DrillSourceTextService>();
 builder.Services.AddScoped<ICompetitiveDrillService, CompetitiveDrillService>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
-builder.Services.AddHttpClient<IFeedbackService, FeedbackService>(client =>
+builder.Services.AddHttpClient<IAIInsightService, AIInsightService>(client =>
 {
 	client.Timeout = TimeSpan.FromSeconds(120);
 });
-builder.Services.AddScoped<IFeedbackService, FeedbackService>();
+builder.Services.AddScoped<IAIInsightService, AIInsightService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHttpClient<IFuzzySearchService, FuzzySearchService>(client =>
 {
