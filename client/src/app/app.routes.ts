@@ -30,6 +30,21 @@ export const routes: Routes = [
         canActivate: [authGuard],
     },
     {
+        path: 'classics',
+        component: DrillEngineComponent, // TODO
+        canActivate: [authGuard],
+    },
+    {
+        path: 'guide',
+        component: DrillEngineComponent, // TODO
+        canActivate: [authGuard],
+    },
+    {
+        path: 'ai-insights',
+        component: DrillEngineComponent, // TODO
+        canActivate: [authGuard],
+    },
+    {
         path: 'leaderboard',
         component: ProfileComponent, // TODO: Replace with LeaderboardComponent
         canActivate: [authGuard],

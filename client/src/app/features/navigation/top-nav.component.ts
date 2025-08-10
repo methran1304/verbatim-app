@@ -202,6 +202,9 @@ export class TopNavComponent implements OnInit {
       case 'guide':
         this.router.navigate(['/guide']);
         break;
+      case 'ai-insights':
+        this.router.navigate(['/ai-insights']);
+        break;
     }
   }
 
