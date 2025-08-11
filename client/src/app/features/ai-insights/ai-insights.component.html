@@ -61,15 +61,12 @@
             <button 
               nz-button 
               nzType="primary" 
-              nzSize="large"
+              nzSize="default"
               class="generate-button"
               [disabled]="isGenerating"
               (click)="generateNewInsights()">
               @if (!isGenerating) {
-                <img 
-                  [src]="'assets/icons/gemini-color-light.svg'" 
-                  alt="Gemini AI" 
-                  class="gemini-icon">
+                <span nz-icon nzType="bulb" nzTheme="outline" class="bulb-icon"></span>
               }
               @if (isGenerating) {
                 <span nz-icon nzType="loading" nzTheme="outline"></span>
@@ -451,7 +448,7 @@
             <button 
               nz-button 
               nzType="primary" 
-              nzSize="large"
+              nzSize="default"
               [disabled]="isGenerating || isRegenerating"
               (click)="generateNewInsights()"
               class="regenerate-button">

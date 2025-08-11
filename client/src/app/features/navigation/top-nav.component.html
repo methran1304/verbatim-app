@@ -106,11 +106,7 @@
         nz-tooltip
         nzTooltipTitle="Get AI-powered insights and feedback on your typing performance. Analyze patterns and improve your skills."
         [nzTooltipMouseEnterDelay]="1.5">
-        <img 
-          [src]="isDarkMode ? 'assets/icons/gemini-color-dark.svg' : 'assets/icons/gemini-color-light.svg'" 
-          alt="Gemini AI" 
-          class="gemini-icon"
-          [class.dark]="isDarkMode">
+        <span nz-icon nzType="bulb" nzTheme="outline" class="bulb-icon"></span>
         <span class="ai-text">AI Insights</span>
       </button>
     </div>
