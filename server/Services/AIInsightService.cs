@@ -513,6 +513,9 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
       if (user == null)
         return (false, "User not found");
 
+      Console.WriteLine("Generated today: " + user.AiInsightsGeneratedToday);
+      Console.WriteLine("Max per day: " + user.MaxAiInsightsPerDay);
+
       // get profile data
       var profile = await _profileService.GetByUserId(userId);
       if (profile == null)
@@ -553,6 +556,10 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
         // update local user object
         user.AiInsightsGeneratedToday = 0;
       }
+
+      Console.WriteLine("Generated today: " + user.AiInsightsGeneratedToday);
+      Console.WriteLine("Max per day: " + user.MaxAiInsightsPerDay);
+      Console.WriteLine("Hours since last generation: " + hoursSinceLastGeneration);
 
       // check if user has reached their daily limit
       if (user.AiInsightsGeneratedToday >= user.MaxAiInsightsPerDay)
