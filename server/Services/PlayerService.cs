@@ -193,7 +193,7 @@ namespace server.Services
                 return false;
 
             // can only kick players in lobby (not during drill)
-            if (room.State != RoomState.Waiting && room.State != RoomState.Ready)
+            if (room.State != RoomState.Waiting)
                 return false;
 
             return RemovePlayerFromRoom(roomCode, userId);

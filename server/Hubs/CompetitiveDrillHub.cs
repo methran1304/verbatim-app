@@ -18,7 +18,7 @@ namespace server.Hubs
         
         // player management
         Task PlayerJoin(string roomId, string userId, string username, int level, bool isCreator = false);
-        Task PlayerJoinWithState(string roomId, string userId, string username, int level, bool isCreator, string state);
+        Task PlayerStateUpdate(string roomId, string userId, string username, bool isReady, bool isCreator);
         Task PlayerLeave(string roomId, string userId);
         Task PlayerReady(string roomId, string userId, bool isReady);
         Task PlayerStatisticsUpdate(string roomId, List<PlayerStatistics> statistics);
@@ -41,7 +41,6 @@ namespace server.Hubs
     {
         private readonly ICompetitiveDrillOrchestrator _orchestrator;
         private readonly IRoomService _roomService;
-        private readonly IPlayerService _playerService;
         private readonly ICompetitiveDrillService _competitiveDrillService;
         private readonly IAFKDetectionService _afkDetectionService;
         private readonly IDrillTextService _drillTextService;
@@ -53,10 +52,13 @@ namespace server.Hubs
         private static readonly Dictionary<string, System.Threading.Timer> _progressTimers = new();
         private static readonly Dictionary<string, System.Threading.Timer> _drillEndTimers = new();
         private static readonly object _timerLock = new();
+        
+        // In-memory statistics cache for active drills
+        private static readonly Dictionary<string, Dictionary<string, PlayerStatistics>> _activeDrillStats = new();
+        private static readonly object _statsLock = new();
         public CompetitiveDrillHub(
             ICompetitiveDrillOrchestrator orchestrator,
             IRoomService roomService,
-            IPlayerService playerService,
             ICompetitiveDrillService competitiveDrillService,
             IAFKDetectionService afkDetectionService,
             IDrillTextService drillTextService,
@@ -64,7 +66,6 @@ namespace server.Hubs
         {
             _orchestrator = orchestrator;
             _roomService = roomService;
-            _playerService = playerService;
             _competitiveDrillService = competitiveDrillService;
             _afkDetectionService = afkDetectionService;
             _drillTextService = drillTextService;
@@ -137,18 +138,9 @@ namespace server.Hubs
                     Length = request.Length ?? 50
                 };
 
-                // create room
+                // create room (creator is automatically added)
                 var room = await _roomService.CreateRoomAsync(userId, settings);
                 Console.WriteLine($"Room created: {room.RoomCode} by user {userId}");
-                
-                // add creator to room
-                var success = _playerService.AddPlayerToRoom(room.RoomCode, userId);
-                if (!success)
-                {
-                    return new { success = false, error = "Failed to add player to room" };
-                }
-
-
 
                 // add connection to group
                 await Groups.AddToGroupAsync(Context.ConnectionId, room.RoomCode);
@@ -199,16 +191,31 @@ namespace server.Hubs
 
                 Console.WriteLine($"Room found: RoomId={room.RoomId}, RoomCode={room.RoomCode}, State={room.State}, CreatedBy={room.CreatedBy}, IsActive={room.IsActive}");
                 
-                if (room.State != RoomState.Waiting && room.State != RoomState.Ready)
+                // Check if room is in waiting state and has available slots
+                if (room.State != RoomState.Waiting)
                 {
                     Console.WriteLine($"ERROR: Room state '{room.State}' is not accepting new players");
                     return new { success = false, error = "Room is not accepting new players" };
                 }
 
+                // Check if room has available slots
+                if (room.Availability == RoomAvailability.Full)
+                {
+                    Console.WriteLine($"ERROR: Room {roomCode} is full");
+                    return new { success = false, error = "Room is full" };
+                }
+
+                // Check if there's an active drill (prevent joins during drills)
+                if (room.ActiveCompetitiveDrillId != null)
+                {
+                    Console.WriteLine($"ERROR: Room {roomCode} has an active drill in progress");
+                    return new { success = false, error = "Cannot join room during an active drill" };
+                }
+
                 Console.WriteLine($"Room state is valid. Attempting to add player {userId} to room {roomCode}");
-                // add player to room
-                var success = _playerService.AddPlayerToRoom(roomCode, userId);
-                Console.WriteLine($"AddPlayerToRoom result: {success}");
+                // add player to room using database
+                var success = await _roomService.AddPlayerToRoomAsync(roomCode, userId, false);
+                Console.WriteLine($"AddPlayerToRoomAsync result: {success}");
                 
                 if (!success)
                 {
@@ -222,16 +229,24 @@ namespace server.Hubs
                 Console.WriteLine($"Successfully added connection to group");
 
                 // send current player list to the joining player
-                var currentPlayers = _playerService.GetPlayersInRoom(roomCode);
+                var currentPlayers = await _roomService.GetPlayersInRoomAsync(roomCode);
                 Console.WriteLine($"Current players in room {roomCode}: {currentPlayers.Count}");
                 foreach (var player in currentPlayers)
                 {
                     var playerUsername = await GetUsernameAsync(player.UserId);
                     var playerLevel = GetUserLevel(player.UserId);
-                    var isPlayerCreator = room.CreatedBy == player.UserId;
-                    var playerState = player.State.ToString();
-                    Console.WriteLine($"Sending existing player to joining user: userId={player.UserId}, username={playerUsername}, level={playerLevel}, state={player.State}, isCreator={isPlayerCreator}");
-                    await Clients.Caller.PlayerJoinWithState(room.RoomId, player.UserId, playerUsername, playerLevel, isPlayerCreator, playerState);
+                    var isPlayerCreator = player.IsCreator;
+                    var isPlayerReady = player.IsReady;
+                    
+                    // Send PlayerJoin for basic player information
+                    await Clients.Caller.PlayerJoin(room.RoomId, player.UserId, playerUsername, playerLevel, isPlayerCreator);
+
+
+                    // every player should be not ready when they join
+                    // Send PlayerStateUpdate for ready state
+                    // await Clients.Caller.PlayerStateUpdate(room.RoomId, player.UserId, playerUsername, isPlayerReady, isPlayerCreator);
+                    
+                    Console.WriteLine($"Sent player info to joining user: userId={player.UserId}, username={playerUsername}, level={playerLevel}, isReady={isPlayerReady}, isCreator={isPlayerCreator}");
                 }
 
                 // notify all clients in the room about the new player
@@ -270,21 +285,29 @@ namespace server.Hubs
                     return new { success = false, error = "User not authenticated" };
                 }
 
-                // remove player from room
-                var success = _playerService.RemovePlayerFromRoom(roomCode, userId);
+                // If there's an active drill, mark the player as disconnected in the drill
+                var room = await _roomService.GetRoomByCodeAsync(roomCode);
+                if (room?.ActiveCompetitiveDrillId != null)
+                {
+                    await _competitiveDrillService.MarkPlayerDisconnectedAsync(roomCode, userId);
+                }
+
+                // remove player from room using database
+                var success = await _roomService.RemovePlayerFromRoomAsync(roomCode, userId);
                 if (!success)
                 {
                     return new { success = false, error = "Failed to leave room" };
                 }
 
                 // if the room is empty, delete it
-                if (_playerService.GetPlayerCount(roomCode) == 0)
+                var remainingPlayers = await _roomService.GetPlayersInRoomAsync(roomCode);
+                if (remainingPlayers.Count == 0)
                 {
                     Console.WriteLine($"Room {roomCode} is empty, deleting room");
                     await _roomService.DeleteRoomAsync(roomCode, userId);
+                    // clear statistics cache
+                    ClearDrillStatistics(roomCode);
                 }
-
-
 
                 // remove connection from group
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
@@ -346,17 +369,23 @@ namespace server.Hubs
                     return new { success = false, error = "User not authenticated" };
                 }
 
-                // set player ready status
-                var success = _playerService.SetPlayerReady(roomCode, userId, isReady);
+                // set player ready status using database
+                var success = await _roomService.UpdatePlayerReadyStateAsync(roomCode, userId, isReady);
                 if (!success)
                 {
                     return new { success = false, error = "Failed to set ready status" };
                 }
 
-
-
-                // notify all clients in the room
-                await Clients.Group(roomCode).PlayerReady(roomCode, userId, isReady);
+                // Get player info for the state update event
+                var player = await _roomService.GetPlayerInRoomAsync(roomCode, userId);
+                if (player != null)
+                {
+                    var playerUsername = await GetUsernameAsync(userId);
+                    var isPlayerCreator = player.IsCreator;
+                    
+                    // notify all clients in the room about the state change
+                    await Clients.Group(roomCode).PlayerStateUpdate(roomCode, userId, playerUsername, isReady, isPlayerCreator);
+                }
 
                 return new { success = true };
             }
@@ -377,29 +406,30 @@ namespace server.Hubs
                     throw new UnauthorizedAccessException("User not authenticated");
                 }
 
-                // update player statistics
-                var success = _playerService.UpdatePlayerStatistics(roomCode, userId, statistics);
-                if (success)
+                // ONLY update in-memory statistics cache - NO DATABASE CALLS
+                lock (_statsLock)
                 {
-                    // get all players' current statistics
-                    var players = _playerService.GetPlayersInRoom(roomCode);
-                    var allStatistics = players
-                        .Where(p => p.State == PlayerState.Typing || p.State == PlayerState.Finished)
-                        .Select(p => new PlayerStatistics
-                        {
-                            UserId = p.UserId,
-                            WPM = p.WPM,
-                            Accuracy = p.Accuracy,
-                            WordsCompleted = p.WordsCompleted,
-                            TotalWords = p.TotalWords,
-                            CompletionPercentage = p.CompletionPercentage,
-                            Timestamp = DateTime.UtcNow
-                        })
-                        .ToList();
+                    if (!_activeDrillStats.ContainsKey(roomCode))
+                    {
+                        _activeDrillStats[roomCode] = new Dictionary<string, PlayerStatistics>();
+                    }
 
-                    // notify all clients in the room
-                    await Clients.Group(roomCode).PlayerStatisticsUpdate(roomCode, allStatistics);
+                    _activeDrillStats[roomCode][userId] = statistics;
                 }
+
+                // Get all current statistics from cache (NO DATABASE CALL)
+                Dictionary<string, PlayerStatistics> roomStats;
+                lock (_statsLock)
+                {
+                    roomStats = _activeDrillStats.ContainsKey(roomCode) 
+                        ? new Dictionary<string, PlayerStatistics>(_activeDrillStats[roomCode])
+                        : new Dictionary<string, PlayerStatistics>();
+                }
+
+                var allStatistics = roomStats.Values.ToList();
+
+                // notify all clients in the room
+                await Clients.Group(roomCode).PlayerStatisticsUpdate(roomCode, allStatistics);
             }
             catch (Exception ex)
             {
@@ -418,17 +448,13 @@ namespace server.Hubs
                     throw new UnauthorizedAccessException("User not authenticated");
                 }
 
-                // update player AFK status
-                var success = _playerService.SetPlayerAFK(roomCode, userId, isAFK);
-                if (success)
+                // AFK status is now handled at the drill level, not room level
+                // For now, we'll just notify clients about the AFK status change
+                if (isAFK)
                 {
-                    // notify all clients in the room about the AFK status change
-                    if (isAFK)
-                    {
-                        await Clients.Group(roomCode).PlayerAFK(roomCode, userId);
-                    }
-                    // note: We don't send a specific "not AFK" event since that's handled by regular activity
+                    await Clients.Group(roomCode).PlayerAFK(roomCode, userId);
                 }
+                // note: We don't send a specific "not AFK" event since that's handled by regular activity
             }
             catch (Exception ex)
             {
@@ -471,27 +497,48 @@ namespace server.Hubs
                 }
 
                 // get consistent drill text for the room based on settings (ensure same for all)
-                var drillText = _drillTextService.GetDrillTextForRoom(roomCode);
-                if (drillText == null || drillText.Count == 0)
-                {
-                    drillText = _drillTextService.GenerateDrillText(room.DrillSettings);
-                    _drillTextService.SetDrillTextForRoom(roomCode, drillText);
-                }
+                var drillText = _drillTextService.GenerateDrillText(room.DrillSettings);
+                _drillTextService.SetDrillTextForRoom(roomCode, drillText);
+                
                 Console.WriteLine($"Using drill text with {drillText.Count} words");
 
-                // ensure all players are ready BEFORE switching to typing
-                if (!_playerService.AreAllPlayersReady(roomCode))
+                Console.WriteLine($"Creating competitive drill for room {roomCode}");
+                var success = await _orchestrator.StartDrillAsync(roomCode);
+                if (!success)
                 {
-                    Console.WriteLine($"ERROR: Not all players are ready in room {roomCode}");
-                    return new { success = false, error = "All players must be ready" };
+                    Console.WriteLine($"ERROR: Failed to create competitive drill for room {roomCode}");
+                    return new { success = false, error = "Failed to start competitive drill" };
+                }
+                Console.WriteLine($"Competitive drill created successfully for room {roomCode}");
+                
+                // Refresh room data to get the updated ActiveCompetitiveDrillId
+                room = await _roomService.GetRoomByCodeAsync(roomCode);
+                if (room?.ActiveCompetitiveDrillId == null)
+                {
+                    Console.WriteLine($"ERROR: ActiveCompetitiveDrillId not set after creating competitive drill for room {roomCode}");
+                    return new { success = false, error = "Failed to initialize competitive drill" };
+                }
+                Console.WriteLine($"ActiveCompetitiveDrillId set: {room.ActiveCompetitiveDrillId}");
+
+                // Initialize statistics cache for all players in the room
+                var roomPlayers = await _roomService.GetPlayersInRoomAsync(roomCode);
+                var playerIds = roomPlayers.Select(p => p.UserId).ToList();
+                InitializeDrillStatistics(roomCode, playerIds);
+
+                // Add all ready players to the competitive drill
+                foreach (var player in roomPlayers.Where(p => p.IsReady))
+                {
+                    var addPlayerSuccess = await _competitiveDrillService.AddPlayerToCompetitiveDrillAsync(roomCode, player.UserId);
+                    var resetReadyState = await _roomService.UpdatePlayerReadyStateAsync(roomCode, player.UserId, false);
+                    
+                    if (!addPlayerSuccess || !resetReadyState)
+                    {
+                        Console.WriteLine($"Warning: Failed to add player {player.UserId} to competitive drill");
+                    }
                 }
 
-                // update all players to typing state
-                var players = _playerService.GetPlayersInRoom(roomCode);
-                foreach (var player in players)
-                {
-                    _playerService.StartPlayerTyping(roomCode, player.UserId);
-                }
+                // clear statistics cache
+                ClearDrillStatistics(roomCode);
 
                 // set countdown in progress flag
                 _countdownInProgress[roomCode] = true;
@@ -529,10 +576,33 @@ namespace server.Hubs
         {
             try
             {
+                Console.WriteLine($"=== COMPLETE DRILL DEBUG START ===");
+                Console.WriteLine($"CompleteDrill called for room: {roomCode}, user: {result.UserId}");
+                
                 var userId = GetUserId();
                 if (string.IsNullOrEmpty(userId))
                 {
                     throw new UnauthorizedAccessException("User not authenticated");
+                }
+
+                // Check room state and ActiveCompetitiveDrillId before processing
+                var room = await _roomService.GetRoomByCodeAsync(roomCode);
+                Console.WriteLine($"Room state: {room?.State}, ActiveCompetitiveDrillId: {room?.ActiveCompetitiveDrillId}");
+                
+                if (room?.ActiveCompetitiveDrillId == null)
+                {
+                    Console.WriteLine($"ERROR: ActiveCompetitiveDrillId is null for room {roomCode}");
+                    Console.WriteLine($"Room state: {room?.State}, DrillSettings: {room?.DrillSettings?.Type}");
+                    throw new InvalidOperationException("No active competitive drill found for this room");
+                }
+
+                Console.WriteLine($"ActiveCompetitiveDrillId found: {room.ActiveCompetitiveDrillId}");
+
+                // Mark player as finished in the database
+                var markFinishedSuccess = await _competitiveDrillService.MarkPlayerFinishedAsync(roomCode, userId, result);
+                if (!markFinishedSuccess)
+                {
+                    Console.WriteLine($"Warning: Failed to mark player {userId} as finished in database");
                 }
 
                 // handle player completion
@@ -543,10 +613,18 @@ namespace server.Hubs
                     StopRoomTimers(roomCode);
                     await SendEndSummaryAsync(roomCode);
                 }
+                else
+                {
+                    Console.WriteLine($"Drill completion condition NOT met for room {roomCode}. Waiting for other players.");
+                }
+                
+                Console.WriteLine($"=== COMPLETE DRILL DEBUG END ===");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in CompleteDrill: {ex.Message}");
+                Console.WriteLine($"ERROR in CompleteDrill: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                Console.WriteLine($"=== COMPLETE DRILL DEBUG END (ERROR) ===");
                 throw;
             }
         }
@@ -568,8 +646,14 @@ namespace server.Hubs
                     throw new UnauthorizedAccessException("Only room creator can kick players");
                 }
 
-                // kick player
-                var success = _playerService.KickPlayerFromLobby(roomCode, playerId, userId);
+                // If there's an active drill, mark the player as disconnected in the drill
+                if (room.ActiveCompetitiveDrillId != null)
+                {
+                    await _competitiveDrillService.MarkPlayerDisconnectedAsync(roomCode, playerId);
+                }
+
+                // kick player using database
+                var success = await _roomService.RemovePlayerFromRoomAsync(roomCode, playerId);
                 if (success)
                 {
                     // Notify the kicked user specifically
@@ -606,15 +690,20 @@ namespace server.Hubs
                 }
 
                 // check if the user is in the room
-                var players = _playerService.GetPlayersInRoom(roomCode);
-                var player = players.FirstOrDefault(p => p.UserId == userId);
-                if (player == null)
+                var isPlayerInRoom = await _roomService.IsPlayerInRoomAsync(roomCode, userId);
+                if (!isPlayerInRoom)
                 {
                     return new { success = false, error = "Player not found in room" };
                 }
 
-                // reset the player's state to Connected (not ready)
-                _playerService.SetPlayerReady(roomCode, userId, false);
+                // If there's an active drill, reset the player's drill state for the next drill
+                if (room.ActiveCompetitiveDrillId != null)
+                {
+                    await _competitiveDrillService.ResetPlayerForNextDrillAsync(roomCode, userId);
+                }
+
+                // reset the player's state to not ready
+                await _roomService.UpdatePlayerReadyStateAsync(roomCode, userId, false);
 
                 // if the room is in Finished state, reset it to Waiting
                 if (room.State == RoomState.Finished)
@@ -622,9 +711,18 @@ namespace server.Hubs
                     await _roomService.UpdateRoomStateAsync(roomCode, RoomState.Waiting);
                 }
 
-                // notify other players that this player has continued
-                // The player is now Connected (not ready) after continuing
-                await Clients.Group(roomCode).PlayerReady(roomCode, userId, false);
+                // Get the current player's updated state
+                var currentPlayer = await _roomService.GetPlayerInRoomAsync(roomCode, userId);
+                if (currentPlayer != null)
+                {
+                    var playerUsername = await GetUsernameAsync(userId);
+                    var isPlayerCreator = currentPlayer.IsCreator;
+                    
+                    // Only notify about this specific player's state change
+                    await Clients.Group(roomCode).PlayerStateUpdate(room.RoomId, userId, playerUsername, false, isPlayerCreator);
+                }
+
+                Console.WriteLine($"Player {userId} continued after drill in room {roomCode}. Player returned to lobby.");
 
                 return new { success = true };
             }
@@ -670,22 +768,28 @@ namespace server.Hubs
                 {
                     try
                     {
-                        var players = _playerService.GetPlayersInRoom(roomCode);
-                        var allStatistics = players
-                            .Where(p => p.State == PlayerState.Typing || p.State == PlayerState.Finished)
-                            .Select(p => new PlayerStatistics
-                            {
-                                UserId = p.UserId,
-                                WPM = p.WPM,
-                                Accuracy = p.Accuracy,
-                                WordsCompleted = p.WordsCompleted,
-                                TotalWords = p.TotalWords,
-                                CompletionPercentage = p.CompletionPercentage,
-                                Timestamp = DateTime.UtcNow
-                            })
-                            .ToList();
+                        // Get active players from the competitive drill
+                        if (room.ActiveCompetitiveDrillId != null)
+                        {
+                            var competitiveDrill = await _competitiveDrillService.GetCompetitiveDrillAsync(room.ActiveCompetitiveDrillId);
+                            var activePlayers = competitiveDrill?.Players?.Where(p => p.State != PlayerState.Disconnected).ToList() ?? new List<CompetitiveDrillPlayer>();
 
-                        await Clients.Group(roomCode).PlayerStatisticsUpdate(roomCode, allStatistics);
+                            var allStatistics = activePlayers
+                                .Where(p => p.State == PlayerState.Typing || p.State == PlayerState.Finished)
+                                .Select(p => new PlayerStatistics
+                                {
+                                    UserId = p.UserId,
+                                    WPM = p.WPM,
+                                    Accuracy = p.Accuracy,
+                                    WordsCompleted = p.WordsCompleted,
+                                    TotalWords = p.TotalWords,
+                                    CompletionPercentage = p.CompletionPercentage,
+                                    Timestamp = DateTime.UtcNow
+                                })
+                                .ToList();
+
+                            await Clients.Group(roomCode).PlayerStatisticsUpdate(roomCode, allStatistics);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -737,16 +841,28 @@ namespace server.Hubs
 
         private async Task EndTimedDrillAsync(string roomCode)
         {
+            Console.WriteLine($"Ending timed drill for room {roomCode}");
+            
             // stop timers
             StopRoomTimers(roomCode);
+            
+            // Send end summary and reset room state
             await SendEndSummaryAsync(roomCode);
+            
+            Console.WriteLine($"Timed drill ended for room {roomCode}");
         }
 
         private async Task EndMarathonDrillAsync(string roomCode)
         {
+            Console.WriteLine($"Ending marathon drill for room {roomCode}");
+            
             // stop timers
             StopRoomTimers(roomCode);
+            
+            // Send end summary and reset room state
             await SendEndSummaryAsync(roomCode);
+            
+            Console.WriteLine($"Marathon drill ended for room {roomCode}");
         }
 
         private void StopRoomTimers(string roomCode)
@@ -787,20 +903,92 @@ namespace server.Hubs
             }
         }
 
+        /// <summary>
+        /// Clears the in-memory statistics cache for a specific room
+        /// </summary>
+        private void ClearDrillStatistics(string roomCode)
+        {
+            lock (_statsLock)
+            {
+                if (_activeDrillStats.ContainsKey(roomCode))
+                {
+                    _activeDrillStats.Remove(roomCode);
+                    Console.WriteLine($"Cleared statistics cache for room {roomCode}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Initializes the statistics cache for a room when a drill starts
+        /// </summary>
+        private void InitializeDrillStatistics(string roomCode, List<string> playerIds)
+        {
+            lock (_statsLock)
+            {
+                if (!_activeDrillStats.ContainsKey(roomCode))
+                {
+                    _activeDrillStats[roomCode] = new Dictionary<string, PlayerStatistics>();
+                }
+
+                // Initialize all players with zero statistics
+                foreach (var playerId in playerIds)
+                {
+                    if (!_activeDrillStats[roomCode].ContainsKey(playerId))
+                    {
+                        _activeDrillStats[roomCode][playerId] = new PlayerStatistics
+                        {
+                            UserId = playerId,
+                            WPM = 0,
+                            Accuracy = 0,
+                            WordsCompleted = 0,
+                            TotalWords = 0,
+                            CompletionPercentage = 0,
+                            Timestamp = DateTime.UtcNow
+                        };
+                    }
+                }
+
+                Console.WriteLine($"Initialized statistics cache for room {roomCode} with {playerIds.Count} players");
+            }
+        }
+
+        /// <summary>
+        /// Gets current statistics from the cache for a specific room
+        /// </summary>
+        private List<PlayerStatistics> GetCurrentStatistics(string roomCode)
+        {
+            lock (_statsLock)
+            {
+                if (_activeDrillStats.ContainsKey(roomCode))
+                {
+                    return _activeDrillStats[roomCode].Values.ToList();
+                }
+                return new List<PlayerStatistics>();
+            }
+        }
+
+        /// <summary>
+        /// Gets current statistics for a specific player from the cache
+        /// </summary>
+        private PlayerStatistics? GetPlayerStatistics(string roomCode, string userId)
+        {
+            lock (_statsLock)
+            {
+                if (_activeDrillStats.ContainsKey(roomCode) && _activeDrillStats[roomCode].ContainsKey(userId))
+                {
+                    return _activeDrillStats[roomCode][userId];
+                }
+                return null;
+            }
+        }
+
         private async Task SendEndSummaryAsync(string roomCode)
         {
             var room = await _roomService.GetRoomByCodeAsync(roomCode);
             if (room == null) return;
 
-            var players = _playerService.GetPlayersInRoom(roomCode);
-            var activePlayers = players.Where(p => p.State != PlayerState.Disconnected).ToList();
-            var winner = activePlayers
-                .OrderByDescending(p => p.WPM)
-                .ThenByDescending(p => p.Accuracy)
-                .FirstOrDefault();
-
-            var winnerId = winner?.UserId ?? string.Empty;
-
+            var (playerResults, winnerId, totalPlayers) = await BuildPlayerResultsAsync(room.ActiveCompetitiveDrillId!, room.RoomCode, room.DrillSettings!.Type);
+            
             var summary = new DrillSummary
             {
                 CompetitiveDrillId = room.ActiveCompetitiveDrillId ?? string.Empty,
@@ -808,47 +996,99 @@ namespace server.Hubs
                 WinnerId = winnerId,
                 StartedAt = DateTime.UtcNow,
                 EndedAt = DateTime.UtcNow,
-                TotalPlayers = activePlayers.Count,
+                TotalPlayers = totalPlayers,
                 DrillSettings = room.DrillSettings,
-                PlayerResults = new List<PlayerResult>()
+                PlayerResults = playerResults
             };
 
-            foreach (var p in activePlayers)
+            // Send end drill summary to all clients
+            await Clients.Group(roomCode).EndDrill(room.RoomId, summary);
+
+            // Clear the active competitive drill ID and reset room state to Waiting
+            await _roomService.ClearActiveCompetitiveDrillAsync(roomCode);
+            await _roomService.UpdateRoomStateAsync(roomCode, RoomState.Waiting);
+
+            Console.WriteLine($"Drill completed for room {roomCode}. ActiveCompetitiveDrillId cleared and room state reset to Waiting.");
+        }
+
+        private async Task<(List<PlayerResult> playerResults, string winnerId, int totalPlayers)> BuildPlayerResultsAsync(string competitiveDrillId, string roomCode, CompetitiveDrillType drillType)
+        {
+            List<PlayerResult> playerResults = new();
+            string winnerId = string.Empty;
+            int totalPlayers = 0;
+
+            // Get the room code from the competitive drill to access the cache
+            var competitiveDrill = await _competitiveDrillService.GetCompetitiveDrillAsync(competitiveDrillId);
+            if (competitiveDrill == null) return (playerResults, winnerId, totalPlayers);
+
+            // Get current statistics from the in-memory cache
+            var currentStats = GetCurrentStatistics(roomCode);
+            if (!currentStats.Any()) return (playerResults, winnerId, totalPlayers);
+
+            
+
+            totalPlayers = currentStats.Count;
+            
+            // Determine winner from cached statistics
+            var winner = currentStats
+                .OrderByDescending(p => p.WPM)
+                .ThenByDescending(p => p.Accuracy)
+                .FirstOrDefault();
+            winnerId = winner?.UserId ?? string.Empty;
+            
+            // Build player results from cached statistics + drill player data for position/points
+            var isMarathon = drillType == CompetitiveDrillType.Marathon;
+            foreach (var stat in currentStats)
             {
-                var username = await GetUsernameAsync(p.UserId);
-                summary.PlayerResults.Add(new PlayerResult
+                var username = await GetUsernameAsync(stat.UserId);
+                
+                // Get position and points from the competitive drill player
+                var drillPlayer = competitiveDrill.Players.FirstOrDefault(p => p.UserId == stat.UserId);
+                var position = drillPlayer?.Position ?? 0;
+                var pointsChange = drillPlayer?.PointsChange ?? 0;
+                
+                playerResults.Add(new PlayerResult
                 {
-                    UserId = p.UserId,
+                    UserId = stat.UserId,
                     Username = username,
-                    WPM = p.WPM,
-                    Accuracy = p.Accuracy,
-                    Position = 0,
-                    PointsChange = 0,
+                    WPM = stat.WPM,
+                    Accuracy = stat.Accuracy,
+                    Position = position,
+                    PointsChange = pointsChange,
                     FinishedAt = DateTime.UtcNow,
-                    IsWinner = p.UserId == winnerId
+                    IsWinner = stat.UserId == winnerId
                 });
             }
 
-            await Clients.Group(roomCode).EndDrill(room.RoomId, summary);
+            return (playerResults, winnerId, totalPlayers);
+        }
+
+        private string DetermineWinner(List<CompetitiveDrillPlayer> activePlayers)
+        {
+            var winner = activePlayers
+                .OrderByDescending(p => p.WPM)
+                .ThenByDescending(p => p.Accuracy)
+                .FirstOrDefault();
+             
+            return winner?.UserId ?? string.Empty;
         }
 
         private async Task HandlePlayerDisconnect(string userId)
         {
             try
             {
-                Console.WriteLine($"Handling disconnect for player {userId}");
+                Console.WriteLine($"Handling disconnect for user: {userId}");
                 
-                // get all active rooms and check if this user is in any of them
+                // Get all active rooms to find which one the user was in
                 var allRooms = await _roomService.GetAllRoomsAsync();
                 
                 foreach (var room in allRooms.Where(r => r.IsActive))
                 {
                     try
                     {
-                        var players = _playerService.GetPlayersInRoom(room.RoomCode);
-                        var disconnectedPlayer = players.FirstOrDefault(p => p.UserId == userId);
+                        var isPlayerInRoom = await _roomService.IsPlayerInRoomAsync(room.RoomCode, userId);
                         
-                        if (disconnectedPlayer != null)
+                        if (isPlayerInRoom)
                         {
                             Console.WriteLine($"Found user {userId} in room {room.RoomCode}");
                             
@@ -860,21 +1100,12 @@ namespace server.Hubs
                             {
                                 Console.WriteLine($"Player {userId} disconnected during active drill in room {room.RoomCode}");
                                 
-                                // Mark player as disconnected in the drill
-                                var disconnectResult = new DrillResult
+                                // Mark player as disconnected in the competitive drill
+                                var disconnectSuccess = await _competitiveDrillService.MarkPlayerDisconnectedAsync(room.RoomCode, userId);
+                                if (!disconnectSuccess)
                                 {
-                                    UserId = userId,
-                                    WPM = 0,
-                                    Accuracy = 0,
-                                    WordsCompleted = 0,
-                                    TotalWords = 0,
-                                    CompletionPercentage = 0,
-                                    Position = 0,
-                                    PointsChange = 0,
-                                    FinishedAt = DateTime.UtcNow
-                                };
-                                
-                                _playerService.SetPlayerFinished(room.RoomCode, userId, disconnectResult);
+                                    Console.WriteLine($"Warning: Failed to mark player {userId} as disconnected in competitive drill");
+                                }
                                 
                                 // Check if all players are now finished
                                 var finishedCount = await _competitiveDrillService.GetFinishedPlayerCountAsync(room.RoomCode);
@@ -888,7 +1119,8 @@ namespace server.Hubs
                             }
                             
                             // check if this is the room creator
-                            if (room.CreatedBy == userId)
+                            var isCreator = await _roomService.IsPlayerCreatorAsync(room.RoomCode, userId);
+                            if (isCreator)
                             {
                                 // disband the room if creator disconnects
                                 Console.WriteLine($"Room creator {userId} disconnected, disbanding room {room.RoomCode}");
@@ -918,7 +1150,7 @@ namespace server.Hubs
                                 // regular player disconnect - just remove them and notify others
                                 try
                                 {
-                                    _playerService.RemovePlayerFromRoom(room.RoomCode, userId);
+                                    await _roomService.RemovePlayerFromRoomAsync(room.RoomCode, userId);
                                 }
                                 catch (Exception ex)
                                 {
@@ -935,45 +1167,36 @@ namespace server.Hubs
                                 }
                                 
                                 // If room is empty after player removal, clean it up
-                                var remainingPlayers = _playerService.GetPlayersInRoom(room.RoomCode);
+                                var remainingPlayers = await _roomService.GetPlayersInRoomAsync(room.RoomCode);
                                 if (remainingPlayers.Count == 0)
                                 {
                                     Console.WriteLine($"Room {room.RoomCode} is empty after disconnect, cleaning up");
                                     try
                                     {
                                         await _roomService.DeactivateRoomAsync(room.RoomCode);
+                                        // clear statistics cache
+                                        ClearDrillStatistics(room.RoomCode);
                                     }
                                     catch (Exception ex)
                                     {
-                                        Console.WriteLine($"Error cleaning up empty room: {ex.Message}");
+                                        Console.WriteLine($"Error deactivating empty room: {ex.Message}");
                                     }
                                 }
                             }
                             
-                            // remove from SignalR group (this should be safe)
-                            try
-                            {
-                                await Groups.RemoveFromGroupAsync(Context.ConnectionId, room.RoomCode);
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine($"Error removing from SignalR group: {ex.Message}");
-                            }
-                            
-                            // Only handle one room per disconnect (player should only be in one room)
+                            // User can only be in one room, so break after finding them
                             break;
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error processing room {room.RoomCode} for disconnect: {ex.Message}");
-                        // Continue with other rooms even if one fails
+                        Console.WriteLine($"Error handling disconnect for room {room.RoomCode}: {ex.Message}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error handling player disconnection: {ex.Message}");
+                Console.WriteLine($"Error in HandlePlayerDisconnect: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
         }

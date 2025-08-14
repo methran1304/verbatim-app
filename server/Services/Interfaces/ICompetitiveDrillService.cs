@@ -17,5 +17,21 @@ namespace server.Services.Interfaces
         Task<bool> HandleMarathonCompletionAsync(string roomCode, string userId, DrillResult result);
         Task<int> GetFinishedPlayerCountAsync(string roomCode);
         Task<int> GetActivePlayerCountAsync(string roomCode);
+        Task<bool> AddPlayerToCompetitiveDrillAsync(string roomCode, string userId);
+        
+        // Drill-level player management methods
+        Task<bool> UpdatePlayerStateAsync(string roomCode, string userId, PlayerState state);
+        Task<bool> UpdatePlayerProgressAsync(string roomCode, string userId, PlayerStatistics statistics);
+        Task<bool> MarkPlayerFinishedAsync(string roomCode, string userId, DrillResult result);
+        Task<bool> MarkPlayerDisconnectedAsync(string roomCode, string userId);
+        Task<bool> ReconnectPlayerAsync(string roomCode, string userId);
+        Task<bool> ResetPlayerForNextDrillAsync(string roomCode, string userId);
+        Task<PlayerState> GetPlayerStateAsync(string roomCode, string userId);
+        Task<List<CompetitiveDrillPlayer>> GetActiveDrillPlayersAsync(string roomCode);
+        Task<CompetitiveDrillPlayer?> GetDrillPlayerAsync(string roomCode, string userId);
+        Task<bool> IsPlayerInDrillAsync(string roomCode, string userId);
+        Task<bool> IsPlayerFinishedAsync(string roomCode, string userId);
+        Task<int> GetTypingPlayerCountAsync(string roomCode);
+        Task<int> GetDisconnectedPlayerCountAsync(string roomCode);
     }
 }

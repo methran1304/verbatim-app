@@ -79,6 +79,7 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     // Only reload statistics when players array actually changes (not just updates)
     if (changes['players'] && !changes['players'].firstChange) {
+      
       const previousPlayers = changes['players'].previousValue || [];
       const currentPlayers = changes['players'].currentValue || [];
       
@@ -87,7 +88,11 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
       const currentPlayerIds = currentPlayers.map((p: Player) => p.userId).sort();
       
       if (JSON.stringify(previousPlayerIds) !== JSON.stringify(currentPlayerIds)) {
+        console.log(this.players);
         this.loadCompetitiveStatistics();
+      }
+      else {
+        console.log(this.players);
       }
     }
     

@@ -40,8 +40,5 @@ namespace server.Entities
 
 		[BsonElement("max_ai_insights_per_day")]
 		public int MaxAiInsightsPerDay { get; set; } = 3;
-
-		[BsonElement("ai_insights_generated_today")]
-		public int AiInsightsGeneratedToday { get; set; } = 0;
 	}
 }

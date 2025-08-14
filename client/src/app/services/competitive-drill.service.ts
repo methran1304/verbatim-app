@@ -134,11 +134,24 @@ export class CompetitiveDrillService {
         });
 
         // subscribe to player ready events
-        this.signalRService.onPlayerReady$.subscribe(({ roomId, playerId, isReady }) => {
-            // console.log(`COMPETITIVE SERVICE: PlayerReady event received - roomId: ${roomId}, playerId: ${playerId}, isReady: ${isReady}`);
+        this.signalRService.onPlayerStateUpdate$.subscribe(({ roomId, userId, username, isReady, isCreator }) => {
+            // console.log(`COMPETITIVE SERVICE: PlayerStateUpdate event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, isReady: ${isReady}, isCreator: ${isCreator}`);
             
-            // Update the player's ready state directly with the value from the server
-            this.updatePlayerReady(playerId, isReady);
+            // Update the specific player's ready state
+            const currentPlayers = this.playersSubject.value;
+            const playerIndex = currentPlayers.findIndex(p => p.userId === userId);
+            
+            if (playerIndex >= 0) {
+                // Update existing player
+                const updatedPlayers = [...currentPlayers];
+                updatedPlayers[playerIndex] = {
+                    ...updatedPlayers[playerIndex],
+                    state: isReady ? 'Ready' as const : 'Connected' as const,
+                    isReady: isReady,
+                    isCreator: isCreator
+                };
+                this.playersSubject.next(updatedPlayers);
+            }
         });
 
         // subscribe to start drill events (preload drill text; countdown will follow)
@@ -207,6 +220,31 @@ export class CompetitiveDrillService {
             
         });
         this.subscriptions.push(kickSub);
+
+        // subscribe to end drill events
+        this.signalRService.onEndDrill$.subscribe(({ roomId, results }) => {
+            // console.log(`COMPETITIVE SERVICE: EndDrill event received - roomId: ${roomId}`);
+            // Update room state to Finished
+            this.updateRoomState({
+                roomState: 'Finished',
+                showRoomModeOverlay: false,
+                showRoomOverlay: true
+            });
+        });
+
+        // subscribe to waiting for other players events
+        this.signalRService.onWaitingForOtherPlayers$.subscribe(({ finishedCount, totalCount }) => {
+            // console.log(`COMPETITIVE SERVICE: Waiting for other players - finished: ${finishedCount}, total: ${totalCount}`);
+            // This event indicates some players have finished but others are still typing
+            // Room state remains InProgress
+        });
+
+        // subscribe to all players completed events
+        this.signalRService.onAllPlayersCompleted$.subscribe(({ roomId }) => {
+            // console.log(`COMPETITIVE SERVICE: All players completed drill in room ${roomId}`);
+            // This event indicates all players have finished the drill
+            // The EndDrill event will follow shortly
+        });
     }
 
     public async initializeCompetitiveMode(): Promise<void> {
@@ -520,10 +558,21 @@ export class CompetitiveDrillService {
         const existingPlayerIndex = currentPlayers.findIndex(p => p.userId === player.userId);
         
         if (existingPlayerIndex >= 0) {
-            // update existing player
+            // update existing player with new properties
             // console.log(`COMPETITIVE SERVICE: Updating existing player at index ${existingPlayerIndex}`);
             const updatedPlayers = [...currentPlayers];
-            updatedPlayers[existingPlayerIndex] = player;
+            updatedPlayers[existingPlayerIndex] = {
+                ...updatedPlayers[existingPlayerIndex],
+                ...player,
+                // Preserve existing properties that might not be in the update
+                username: player.username || updatedPlayers[existingPlayerIndex].username,
+                level: player.level || updatedPlayers[existingPlayerIndex].level,
+                // Update state and ready status
+                state: player.state || updatedPlayers[existingPlayerIndex].state,
+                isReady: player.isReady !== undefined ? player.isReady : updatedPlayers[existingPlayerIndex].isReady,
+                isCreator: player.isCreator !== undefined ? player.isCreator : updatedPlayers[existingPlayerIndex].isCreator,
+                joinedAt: player.joinedAt || updatedPlayers[existingPlayerIndex].joinedAt
+            };
             this.playersSubject.next(updatedPlayers);
         } else {
             // add new player
@@ -586,5 +635,13 @@ export class CompetitiveDrillService {
             state: 'Connected' as const
         }));
         this.playersSubject.next(resetPlayers);
+    }
+
+    public hideRoomOverlays(): void {
+        // Hide room overlays when post drill overlay is shown
+        this.updateRoomState({
+            showRoomOverlay: false,
+            showRoomModeOverlay: false
+        });
     }
 }

@@ -87,5 +87,8 @@ namespace server.Entities
 
 		[BsonElement("last_ai_insight")]
 		public AIFeedbackDTO Insight { get; set; } = new();
+		
+		[BsonElement("ai_insights_generated_today")]
+		public int AiInsightsGeneratedToday { get; set; } = 0;
 	}
 }

@@ -238,29 +238,47 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
             // subscribe to players data
             this.competitiveDrillService.players$.subscribe(signalRPlayers => {
-                const currentRoomState = this.competitiveDrillService.getCurrentRoomState();
                 const updatedPlayers = signalRPlayers.map(player => {
-                    const basePlayer = {
-                        userId: player.userId,
-                        username: player.username,
-                        level: player.level,
-                        state: player.state,
-                        isReady: player.state === 'Ready',
-                        isCreator: player.isCreator || false,
-                        progress: player.statistics?.completionPercentage,
-                        wpm: player.statistics?.wpm,
-                        accuracy: player.statistics?.accuracy,
-                        isAFK: this.afkPlayers.has(player.userId)
-                    };
+                    let basePlayer: Player;
+                    if (this.drillResultsData[player.userId]) {
+                        const drillData = this.drillResultsData[player.userId];
+                        basePlayer = {
+                            userId: player.userId,
+                            username: player.username,
+                            level: player.level,
+                            state: player.state,
+                            isReady: player.state === 'Ready',
+                            isCreator: player.isCreator || false,
+                            isAFK: this.afkPlayers.has(player.userId),
+                            wpm: drillData.wpm,
+                            accuracy: drillData.accuracy,
+                            progress: drillData.progress ?? player.statistics?.completionPercentage
+                        };
+                    }
+                    else {
+                        basePlayer = {
+                            userId: player.userId,
+                            username: player.username,
+                            level: player.level,
+                            state: player.state,
+                            isReady: player.state === 'Ready',
+                            isCreator: player.isCreator || false,
+                            progress: player.statistics?.completionPercentage ?? this.drillResultsData[player.userId]?.progress,
+                            wpm: player.statistics?.wpm,
+                            accuracy: player.statistics?.accuracy,
+                            isAFK: this.afkPlayers.has(player.userId)
+                        };
+                    }
+
                     
-                    // If this player hasn't continued and we have drill results for them, preserve the drill data
+                    // SIMPLE LOGIC: If this player hasn't continued and we have drill results, preserve the drill data
                     if (!this.continuedPlayers.has(player.userId) && this.drillResultsData[player.userId]) {
                         const drillData = this.drillResultsData[player.userId];
                         return {
                             ...basePlayer,
                             wpm: drillData.wpm,
                             accuracy: drillData.accuracy,
-                            progress: 100, // Show as completed
+                            progress: drillData.progress,
                             state: 'Finished' as const
                         };
                     }
@@ -268,33 +286,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     return basePlayer;
                 });
                 
-                // Only update players array if there are actual changes to avoid excessive ngOnChanges calls
-                const currentPlayerIds = this.players.map(p => p.userId).sort();
-                const newPlayerIds = updatedPlayers.map(p => p.userId).sort();
-                
-                if (JSON.stringify(currentPlayerIds) !== JSON.stringify(newPlayerIds) || 
-                    this.players.length !== updatedPlayers.length) {
-                    this.players = updatedPlayers;
-                } else {
-                    // Check if any individual player data changed
-                    let hasChanges = false;
-                    for (let i = 0; i < this.players.length; i++) {
-                        const current = this.players[i];
-                        const updated = updatedPlayers[i];
-                        if (current.state !== updated.state || 
-                            current.isReady !== updated.isReady ||
-                            current.progress !== updated.progress ||
-                            current.wpm !== updated.wpm ||
-                            current.accuracy !== updated.accuracy ||
-                            current.isAFK !== updated.isAFK) {
-                            hasChanges = true;
-                            break;
-                        }
-                    }
-                    if (hasChanges) {
-                        this.players = updatedPlayers;
-                    }
-                }
+                // Update players array with the merged data
+                this.players = updatedPlayers;
                 
                 // update current user ready state
                 const currentPlayer = signalRPlayers.find(p => p.userId === this.currentUserId);
@@ -348,6 +341,41 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             this.signalRService.onPlayerAFK$.subscribe(({ roomId, playerId }) => {
                 this.afkPlayers.add(playerId);
                 this.players = this.players.map(p => p.userId === playerId ? { ...p, isAFK: true } : p);
+            });
+
+            // subscribe to AFK warning events
+            this.signalRService.onAFKWarning$.subscribe(({ roomId, playerId, timeoutSeconds }) => {
+                // console.log(`DRILL ENGINE: AFK warning for player ${playerId}, timeout: ${timeoutSeconds}s`);
+                // Show AFK warning overlay for the current user if they are the one being warned
+                if (playerId === this.currentUserId) {
+                    this.afkReason = `You will be marked as AFK in ${timeoutSeconds} seconds if you don't start typing`;
+                    // You could show a notification or overlay here
+                }
+            });
+
+            // subscribe to waiting for other players events
+            this.signalRService.onWaitingForOtherPlayers$.subscribe(({ finishedCount, totalCount }) => {
+                // console.log(`DRILL ENGINE: Waiting for other players - finished: ${finishedCount}, total: ${totalCount}`);
+                // Update UI to show waiting state
+                this.winnerMessage = `Waiting for ${totalCount - finishedCount} more player(s) to finish...`;
+            });
+
+            // subscribe to all players completed events
+            this.signalRService.onAllPlayersCompleted$.subscribe(({ roomId }) => {
+                // console.log(`DRILL ENGINE: All players completed drill in room ${roomId}`);
+                // This event indicates all players have finished the drill
+                // The EndDrill event will follow shortly
+            });
+
+            // subscribe to player kicked events
+            this.signalRService.onPlayerKicked$.subscribe(({ roomCode, reason }) => {
+                // console.log(`DRILL ENGINE: Player kicked from room ${roomCode}, reason: ${reason}`);
+                // If the current user is kicked, handle accordingly
+                if (roomCode === this.roomState.roomCode) {
+                    // Show notification and redirect
+                    this.notificationService.createNotification('error', 'Kicked from Room', reason);
+                    this.onLeaveRoom();
+                }
             });
 
             // subscribe to countdown events
@@ -427,8 +455,10 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     this.competitiveWinnerUsername = winner ? winner.username : '';
                     this.showCompetitivePostDrillOverlay = true;
                     this.showCompetitivePostDrillResults = true; // Show drill results in player panel
-                    // Reset continued players for new drill
-                    this.continuedPlayers.clear();
+                    
+                    // Hide room overlays when post drill overlay is shown
+                    this.competitiveDrillService.hideRoomOverlays();
+                    
                     // Clear previous drill results data
                     this.drillResultsData = {};
                     // Store drill results data for each player
@@ -439,7 +469,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                             accuracy: playerResult.accuracy,
                             position: playerResult.position,
                             pointsChange: playerResult.pointsChange,
-                            progress: 100 // Ensure completed drills show 100% progress
+                            progress: playerResult.progress // Ensure completed drills show 100% progress
                         };
                     });
                     // Update room state to Finished
@@ -912,8 +942,11 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     onCompetitivePostDrillLeaveRoom(): void {
         this.showCompetitivePostDrillOverlay = false;
         this.showCompetitivePostDrillResults = false; // Hide drill results when leaving room
-        this.continuedPlayers.clear(); // Reset continued players
         this.drillResultsData = {}; // Clear drill results data
+        
+        // Ensure room overlays are hidden when leaving room
+        this.competitiveDrillService.hideRoomOverlays();
+        
         this.onLeaveRoom();
     }
 

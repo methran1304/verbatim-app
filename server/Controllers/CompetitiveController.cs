@@ -12,18 +12,15 @@ namespace server.Controllers
     public class CompetitiveController : BaseController
     {
         private readonly IRoomService _roomService;
-        private readonly IPlayerService _playerService;
         private readonly IUserService _userService;
         private readonly IProfileService _profileService;
 
         public CompetitiveController(
             IRoomService roomService,
-            IPlayerService playerService,
             IUserService userService,
             IProfileService profileService)
         {
             _roomService = roomService;
-            _playerService = playerService;
             _userService = userService;
             _profileService = profileService;
         }
@@ -41,12 +38,12 @@ namespace server.Controllers
                     return Unauthorized("User not authenticated");
                 }
 
-                // get players from the room
-                var players = _playerService.GetPlayersInRoom(roomCode);
+                // get players from the room using the new database-driven approach
+                var roomPlayers = await _roomService.GetPlayersInRoomAsync(roomCode);
                 
                 // convert to API response format
                 var playersResponse = new List<object>();
-                foreach (var player in players)
+                foreach (var player in roomPlayers)
                 {
                     // get user details
                     var user = await _userService.GetByUserId(player.UserId);
@@ -56,13 +53,8 @@ namespace server.Controllers
                         userId = player.UserId,
                         username = user?.Username ?? $"User{player.UserId.Substring(0, 4)}",
                         level = 1, // default level for now, can be calculated from profile stats later
-                        state = player.State.ToString(),
-                        statistics = player.State == PlayerState.Typing ? new
-                        {
-                            wpm = player.WPM,
-                            accuracy = player.Accuracy,
-                            completionPercentage = (int)((player.Position / (double)players.Count) * 100)
-                        } : null
+                        isReady = player.IsReady,
+                        isCreator = player.IsCreator
                     });
                 }
 

@@ -19,7 +19,6 @@ namespace server.Services
     public class AFKDetectionService : IAFKDetectionService
     {
         private readonly IMemoryCache _cache;
-        private readonly IPlayerService _playerService;
         private readonly ICompetitiveDrillService _competitiveDrillService;
         private readonly IRoomService _roomService;
         private readonly Dictionary<string, Timer> _afkTimers = new();
@@ -27,12 +26,10 @@ namespace server.Services
 
         public AFKDetectionService(
             IMemoryCache cache,
-            IPlayerService playerService,
             ICompetitiveDrillService competitiveDrillService,
             IRoomService roomService)
         {
             _cache = cache;
-            _playerService = playerService;
             _competitiveDrillService = competitiveDrillService;
             _roomService = roomService;
         }
@@ -73,12 +70,13 @@ namespace server.Services
         {
             try
             {
-                var players = _playerService.GetPlayersInRoom(roomCode);
+                // Get active players from the competitive drill instead of PlayerService cache
+                var activePlayers = await _competitiveDrillService.GetActiveDrillPlayersAsync(roomCode);
                 var now = DateTime.UtcNow;
                 var timeout = GetAFKTimeout(drillSettings);
                 var drillStartTime = GetDrillStartTime(roomCode);
 
-                foreach (var player in players.Where(p => p.State == PlayerState.Typing))
+                foreach (var player in activePlayers.Where(p => p.State == PlayerState.Typing))
                 {
                     var lastActivity = GetLastActivity(roomCode, player.UserId);
                     if (lastActivity.HasValue)
@@ -109,21 +107,12 @@ namespace server.Services
 
         public async Task HandleAFKPlayerAsync(string roomCode, string userId)
         {
-            // mark player as disconnected
-            var afkResult = new DrillResult
+            // mark player as disconnected in the competitive drill
+            var disconnectSuccess = await _competitiveDrillService.MarkPlayerDisconnectedAsync(roomCode, userId);
+            if (!disconnectSuccess)
             {
-                UserId = userId,
-                WPM = 0,
-                Accuracy = 0,
-                WordsCompleted = 0,
-                TotalWords = 0,
-                CompletionPercentage = 0,
-                Position = 0,
-                PointsChange = 0,
-                FinishedAt = DateTime.UtcNow
-            };
-
-            _playerService.SetPlayerFinished(roomCode, userId, afkResult);
+                Console.WriteLine($"Warning: Failed to mark player {userId} as disconnected due to AFK");
+            }
 
             // check if this was a marathon drill and if all remaining players are finished
             var finishedCount = await _competitiveDrillService.GetFinishedPlayerCountAsync(roomCode);

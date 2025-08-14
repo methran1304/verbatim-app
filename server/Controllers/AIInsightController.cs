@@ -29,13 +29,19 @@ namespace server.Controllers
         public async Task<IActionResult> GetAIInsights()
         {
             var userId = UserIdRequired;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User not authenticated" });
+            }
 
             var (canGenerate, reason) = await _aiInsightService.CanGenerateFeedbackAsync(userId);
             if (!canGenerate)
             {
+                var errorMessage = reason ?? "Unknown error";
+                var canRetry = errorMessage.Contains("Daily limit reached") ? false : true;
                 return BadRequest(new { 
-                    error = reason,
-                    canRetry = reason.Contains("Daily limit reached") ? false : true
+                    error = errorMessage,
+                    canRetry = canRetry
                 });
             }
 
@@ -51,6 +57,10 @@ namespace server.Controllers
         public async Task<IActionResult> GetLastAiInsight()
         {
             var userId = UserIdRequired;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User not authenticated" });
+            }
             var lastInsight = await _profileService.GetLastAiInsight(userId);
             return Ok(lastInsight);
         }

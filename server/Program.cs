@@ -42,7 +42,6 @@ builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<IDrillInputService, DrillInputService>();
 builder.Services.AddScoped<IDrillSourceTextService, DrillSourceTextService>();
 builder.Services.AddScoped<ICompetitiveDrillService, CompetitiveDrillService>();
-builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddHttpClient<IAIInsightService, AIInsightService>(client =>
 {
@@ -60,7 +59,6 @@ builder.Services.AddScoped<server.Utils.WordPoolManager>();
 // Competitive Drill Services
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<ICompetitiveDrillService, CompetitiveDrillService>();
-builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IAFKDetectionService, AFKDetectionService>();
 builder.Services.AddScoped<IDrillTextService, DrillTextService>();
 builder.Services.AddScoped<ICompetitiveDrillOrchestrator, CompetitiveDrillOrchestrator>();

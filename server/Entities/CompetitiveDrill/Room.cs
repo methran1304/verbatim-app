@@ -33,7 +33,6 @@ namespace server.Entities
 		public RoomAvailability Availability { get; set; } = RoomAvailability.Available;
 
 		[BsonElement("associated_competitive_drill_ids")]
-		[BsonRepresentation(BsonType.ObjectId)]
 		public List<string> AssociatedCompetitiveDrillIds { get; set; } = new();
 
 		[BsonElement("active_competitive_drill_id")]
@@ -42,5 +41,24 @@ namespace server.Entities
 
 		[BsonElement("drill_settings")]
 		public DrillSettings DrillSettings { get; set; } = null!;
+
+		[BsonElement("room_players")]
+		public List<RoomPlayer> RoomPlayers { get; set; } = new();
+	}
+
+	public class RoomPlayer
+	{
+		[BsonElement("user_id")]
+		[BsonRepresentation(BsonType.ObjectId)]
+		public string UserId { get; set; } = null!;
+
+		[BsonElement("joined_at")]
+		public DateTime JoinedAt { get; set; }
+
+		[BsonElement("is_ready")]
+		public bool IsReady { get; set; }
+
+		[BsonElement("is_creator")]
+		public bool IsCreator { get; set; }
 	}
 }

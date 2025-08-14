@@ -10,13 +10,11 @@ namespace server.Entities
 		[BsonRepresentation(BsonType.ObjectId)]
 		public string CompetitiveDrillId { get; set; } = null!;
 
-
 		[BsonElement("winner_id")]
 		[BsonRepresentation(BsonType.ObjectId)]
 		public string WinnerId { get; set; } = null!;
 
 		[BsonElement("room_id")]
-		[BsonRepresentation(BsonType.ObjectId)]
 		public string RoomId { get; set; } = null!;
 
 		[BsonElement("created_at")]
@@ -28,7 +26,7 @@ namespace server.Entities
 
 		[BsonElement("state")]
 		[BsonRepresentation(BsonType.String)]
-		public DrillState State { get; set; } = DrillState.NotStarted;
+		public DrillState State { get; set; } = DrillState.InProgress;
 
 		[BsonElement("players")]
 		public List<CompetitiveDrillPlayer> Players { get; set; } = new();

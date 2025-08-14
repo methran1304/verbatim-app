@@ -27,6 +27,8 @@ export interface Player {
   state: 'Connected' | 'Ready' | 'Typing' | 'Finished' | 'Disconnected';
   statistics?: PlayerStatistics;
   isCreator?: boolean;
+  isReady?: boolean; // New property from backend RoomPlayer entity
+  joinedAt?: Date; // New property from backend RoomPlayer entity
 }
 
 export interface Room {
@@ -43,6 +45,8 @@ export interface Room {
     length?: number;
   };
   drillText?: string[];
+  activeCompetitiveDrillId?: string; // New property from backend
+  associatedCompetitiveDrillIds?: string[]; // New property from backend
 }
 
 export interface DrillSettings {
@@ -86,6 +90,34 @@ export interface CompetitiveDrillResults {
   endedAt: Date;
 }
 
+export interface ICompetitiveDrillClient {
+  // room management
+  roomCreated(roomId: string, roomCode: string): void;
+  roomJoined(roomId: string, roomCode: string): void;
+  roomInfo(roomId: string, roomCode: string, createdBy: string): void;
+  roomDisbanded(roomId: string, reason: string): void;
+  
+  // player management
+  playerJoin(roomId: string, userId: string, username: string, level: number, isCreator?: boolean): void;
+  playerStateUpdate(roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean): void;
+  playerLeave(roomId: string, userId: string): void;
+  playerReady(roomId: string, userId: string, isReady: boolean): void;
+  playerStatisticsUpdate(roomId: string, statistics: any[]): void;
+  allPlayersCompleted(roomId: string): void;
+
+  // drill lifecycle
+  startDrill(roomId: string, drillText: string[]): void;
+  beginDrill(roomId: string, drillText: string[]): void;
+  endDrill(roomId: string, results: CompetitiveDrillResults): void;
+  waitingForOtherPlayers(finishedCount: number, totalCount: number): void;
+  
+  // misc
+  playerAFK(roomId: string, userId: string): void;
+  afkWarning(roomId: string, userId: string, timeoutSeconds: number): void;
+  playerKicked(roomCode: string, reason: string): void;
+  countdown(roomId: string, countdown: number): void;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -110,6 +142,7 @@ export class SignalRService {
   private playerKicked$ = new Subject<{ roomCode: string; reason: string }>();
   private countdown$ = new Subject<{ roomId: string; countdown: number }>();
   private roomCreated$ = new Subject<{ roomId: string; roomCode: string }>();
+  private playerStateUpdate$ = new Subject<{ roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean }>();
 
   constructor() {}
 
@@ -361,18 +394,6 @@ export class SignalRService {
       this.playerJoin$.next({ roomId, player });
     });
 
-    this.hubConnection.on('PlayerJoinWithState', (roomId: string, userId: string, username: string, level: string, isCreator: boolean, state: string) => {
-      // console.log(`CLIENT: PlayerJoinWithState event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, level: ${level}, isCreator: ${isCreator}, state: ${state}`);
-      const player: Player = {
-        userId,
-        username,
-        level: parseInt(level),
-        state: state as 'Connected' | 'Ready' | 'Typing' | 'Finished' | 'Disconnected',
-        isCreator: isCreator
-      };
-      this.playerJoin$.next({ roomId, player });
-    });
-
     this.hubConnection.on('PlayerLeave', (roomId: string, userId: string) => {
       // console.log(`CLIENT: PlayerLeave event received - roomId: ${roomId}, userId: ${userId}`);
       this.playerLeave$.next({ roomId, playerId: userId });
@@ -380,12 +401,35 @@ export class SignalRService {
 
     this.hubConnection.on('PlayerReady', (roomId: string, userId: string, isReady: boolean) => {
       // console.log(`CLIENT: PlayerReady event received - roomId: ${roomId}, userId: ${userId}, isReady: ${isReady}`);
+      
+      // Update the player's ready state and overall state
+      const playerState = isReady ? 'Ready' as const : 'Connected' as const;
+      
+      // Emit both the ready state change and the player join with updated state
       this.playerReady$.next({ roomId, playerId: userId, isReady });
+      
+      // Also emit a player join event to update the player's overall state
+      // This ensures the UI reflects both the ready state and the player state
+      const updatedPlayer: Player = {
+        userId,
+        username: '', // Will be filled by the component
+        level: 0, // Will be filled by the component
+        state: playerState,
+        isReady: isReady,
+        isCreator: false // Will be filled by the component
+      };
+      
+      this.playerJoin$.next({ roomId, player: updatedPlayer });
     });
 
     this.hubConnection.on('PlayerStatisticsUpdate', (roomId: string, statistics: PlayerStatistics[]) => {
       // console.log(`CLIENT: PlayerStatisticsUpdate event received - roomId: ${roomId}, statistics count: ${statistics.length}`);
       this.playerStatisticsUpdate$.next({ roomId, statistics });
+    });
+
+    this.hubConnection.on('PlayerStateUpdate', (roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean) => {
+      // console.log(`CLIENT: PlayerStateUpdate event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, isReady: ${isReady}, isCreator: ${isCreator}`);
+      this.playerStateUpdate$.next({ roomId, userId, username, isReady, isCreator });
     });
 
     this.hubConnection.on('StartDrill', (roomId: string, drillText: string[]) => {
@@ -468,6 +512,10 @@ export class SignalRService {
 
   get onPlayerStatisticsUpdate$(): Observable<{ roomId: string; statistics: PlayerStatistics[] }> {
     return this.playerStatisticsUpdate$.asObservable();
+  }
+
+  get onPlayerStateUpdate$(): Observable<{ roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean }> {
+    return this.playerStateUpdate$.asObservable();
   }
 
   get onStartDrill$(): Observable<{ roomId: string; drillText: string[] }> {
