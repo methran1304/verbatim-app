@@ -513,9 +513,6 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
       if (user == null)
         return (false, "User not found");
 
-      Console.WriteLine("Generated today: " + user.AiInsightsGeneratedToday);
-      Console.WriteLine("Max per day: " + user.MaxAiInsightsPerDay);
-
       // get profile data
       var profile = await _profileService.GetByUserId(userId);
       if (profile == null)
@@ -542,33 +539,25 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
       // check if 24 hours have passed since last generation
       var hoursSinceLastGeneration = (now - lastGenerated).TotalHours;
       
-      // if more than 24 hours have passed, reset the counter
+      // if more than 24 hours have passed, reset today's counter (keep lastGenerated as the time of last generation)
       if (hoursSinceLastGeneration >= 24)
       {
-        // reset the daily counter
         var filter = Builders<Profile>.Filter.Eq(p => p.ProfileId, userId);
         var update = Builders<Profile>.Update
-          .Set(p => p.AiInsightDetails.LastGeneratedAt, now)
-          .Set("ai_insights_generated_today", 0);
+          .Set(p => p.AiInsightDetails.AiInsightsGeneratedToday, 0);
 
         await _profiles.UpdateOneAsync(filter, update);
-        
-        // update local user object
-        user.AiInsightsGeneratedToday = 0;
       }
 
-      Console.WriteLine("Generated today: " + user.AiInsightsGeneratedToday);
-      Console.WriteLine("Max per day: " + user.MaxAiInsightsPerDay);
-      Console.WriteLine("Hours since last generation: " + hoursSinceLastGeneration);
-
-      // check if user has reached their daily limit
-      if (user.AiInsightsGeneratedToday >= user.MaxAiInsightsPerDay)
+      // check if user has reached their daily limit (using effective count)
+      var insightsToday = hoursSinceLastGeneration >= 24 ? 0 : profile.AiInsightDetails.AiInsightsGeneratedToday;
+      if (insightsToday >= user.MaxAiInsightsPerDay)
       {
         var nextResetTime = lastGenerated.AddHours(24);
         var timeUntilReset = nextResetTime - now;
         var hoursUntilReset = Math.Ceiling(timeUntilReset.TotalHours);
         
-        return (false, $"Daily limit reached: You've generated {user.AiInsightsGeneratedToday}/{user.MaxAiInsightsPerDay} AI insights today. Limit resets in approximately {hoursUntilReset} hours.");
+        return (false, $"Daily limit reached: You've generated {insightsToday}/{user.MaxAiInsightsPerDay} AI insights today. Limit resets in approximately {hoursUntilReset} hours.");
       }
 
       return (true, null);
@@ -576,18 +565,13 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
 
     public async Task IncrementAiInsightsCounterAsync(string userId)
     {
-      // increment the daily counter
-      var filter = Builders<User>.Filter.Eq(u => u.UserId, userId);
-      var update = Builders<User>.Update.Inc(u => u.AiInsightsGeneratedToday, 1);
-
-      await _users.UpdateOneAsync(filter, update);
-
-      // update the profile's last generated timestamp
-      var profileFilter = Builders<Profile>.Filter.Eq(p => p.ProfileId, userId);
-      var profileUpdate = Builders<Profile>.Update
+      // increment the daily counter and update last generated timestamp on the profile
+      var filter = Builders<Profile>.Filter.Eq(p => p.ProfileId, userId);
+      var update = Builders<Profile>.Update
+        .Inc(p => p.AiInsightDetails.AiInsightsGeneratedToday, 1)
         .Set(p => p.AiInsightDetails.LastGeneratedAt, DateTime.UtcNow);
 
-      await _profiles.UpdateOneAsync(profileFilter, profileUpdate);
+      await _profiles.UpdateOneAsync(filter, update);
     }
   }
 }
