@@ -6,6 +6,7 @@ import { DrillEngineComponent } from './features/drill-engine/drill-engine.compo
 import { DrillStatsComponent } from './features/drill-stats/drill-stats.component';
 import { ProfileComponent } from './features/profile/profile.component';
 import { AIInsightsComponent } from './features/ai-insights/ai-insights.component';
+import { ClassicsComponent } from './features/classics/classics.component';
 import { authGuard } from './auth.guard';
 import { redirectIfAuthenticatedGuard } from './auth-redirect.guard';
 
@@ -32,7 +33,7 @@ export const routes: Routes = [
     },
     {
         path: 'classics',
-        component: DrillEngineComponent, // TODO
+        component: ClassicsComponent,
         canActivate: [authGuard],
     },
     {

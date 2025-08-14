@@ -1,0 +1,108 @@
+<div class="classics-container">
+    <div class="classics-header">
+        <h1>Books</h1>
+        <p>Practice typing with classic literature and famous passages</p>
+    </div>
+
+    <div class="books-grid-container">
+        @if (loading) {
+            <div class="loading-container">
+                <nz-icon nzType="loading" nzTheme="outline" class="loading-icon"></nz-icon>
+                <p>Loading books...</p>
+            </div>
+        } @else {
+            <div class="books-grid">
+                @for (book of books; track book.id) {
+                    <nz-card class="book-card" [nzBodyStyle]="{ padding: '16px' }">
+                        <div class="book-layout">
+                            <div class="book-cover">
+                                <img [src]="'https://picsum.photos/200/300'" [alt]="book.title" class="cover-image">
+                            </div>
+                            
+                            <div class="book-info">
+                                <h3 class="book-title" [nz-tooltip]="book.title">{{ book.title }}</h3>
+                                <p class="book-author">{{ book.author }}</p>
+                                
+                                @if (book.publishedYear) {
+                                    <span class="published-year">{{ book.publishedYear }}</span>
+                                }
+                                
+                                @if (book.genre) {
+                                    <span class="genre-text">{{ book.genre }}</span>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="progress-section">
+                            <div class="progress-info">
+                                <span class="progress-text">Progress</span>
+                                <span class="progress-percentage">{{ getProgressPercentage(book) }}%</span>
+                            </div>
+                            <nz-progress 
+                                [nzPercent]="getProgressPercentage(book)" 
+                                [nzShowInfo]="false"
+                                [nzStrokeColor]="'#1890ff'"
+                                class="progress-bar">
+                            </nz-progress>
+                            <div class="word-count">
+                                {{ book.progress?.typedWordCount || 0 }} / {{ book.totalWordCount }} words
+                            </div>
+                        </div>
+
+                        <div class="book-actions">
+                            @if (!book.progress?.isStarted) {
+                                <button 
+                                    nz-button 
+                                    nzType="default" 
+                                    class="action-button start-button"
+                                    (click)="startBook(book)"
+                                    nz-tooltip
+                                    nzTooltipTitle="Begin typing this book">
+                                    <span nz-icon nzType="play" nzTheme="outline"></span>
+                                    Start
+                                </button>
+                            } @else {
+                                <div class="action-buttons">
+                                    <button 
+                                        nz-button 
+                                        nzType="default" 
+                                        class="action-button resume-button"
+                                        (click)="resumeBook(book)"
+                                        nz-tooltip
+                                        nzTooltipTitle="Continue from where you left off">
+                                        <span nz-icon nzType="play-circle" nzTheme="outline"></span>
+                                        Resume
+                                    </button>
+                                    <button 
+                                        nz-button 
+                                        nzType="default" 
+                                        class="action-button restart-button"
+                                        (click)="restartBook(book)"
+                                        nz-tooltip
+                                        nzTooltipTitle="Start over from the beginning">
+                                        <span nz-icon nzType="reload" nzTheme="outline"></span>
+                                        Restart
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </nz-card>
+                }
+            </div>
+
+            <!-- Pagination temporarily disabled due to import issues -->
+            <!-- @if (totalBooks > pageSize) {
+                <div class="pagination-container">
+                    <nz-pagination
+                        [nzCurrent]="currentPage"
+                        [nzTotal]="totalBooks"
+                        [nzPageSize]="pageSize"
+                        [nzShowSizeChanger]="false"
+                        (nzPageIndexChange)="onPageChange($event)"
+                        nzShowQuickJumper>
+                    </nz-pagination>
+                </div>
+            } -->
+        }
+    </div>
+</div>

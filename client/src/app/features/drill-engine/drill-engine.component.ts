@@ -2,6 +2,7 @@
 import { Component, NgZone, OnInit, ViewChild, HostListener, Input, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { DrillTextComponent } from './drill-text/drill-text.component';
 import { DrillInputComponent } from './drill-input/drill-input.component';
 import { SpecialKeys } from '../../core/constants/keys.constant';
@@ -37,6 +38,7 @@ import { SignalRService } from '../../services/signalr.service';
 
 import { CompetitiveDrillService, RoomState } from '../../services/competitive-drill.service';
 import { JwtDecoderUtil } from '../../core/utils/jwt-decoder.util';
+import { BookService } from '../../services/book.service';
 
 @Component({
     selector: 'app-drill-engine',
@@ -57,7 +59,7 @@ import { JwtDecoderUtil } from '../../core/utils/jwt-decoder.util';
         NzModalModule,
         NzTagModule
     ],
-    providers: [],
+    providers: [BookService],
     templateUrl: './drill-engine.component.html',
     styleUrl: './drill-engine.component.scss',
 })
@@ -132,6 +134,11 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     private drillResultsData: { [userId: string]: any } = {}; // Store drill results data for each player
     private afkPlayers: Set<string> = new Set<string>();
     private subscriptions: Subscription[] = [];
+    
+    // Book progress tracking for classics
+    private currentBookId: string | null = null;
+    private progressSaveInterval: any;
+    private readonly PROGRESS_SAVE_INTERVAL = 30000; // Save every 30 seconds
 
 
     constructor(
@@ -148,7 +155,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         private router: Router,
         private notificationService: ZorroNotificationServiceTsService,
         private signalRService: SignalRService,
-        private competitiveDrillService: CompetitiveDrillService
+        private competitiveDrillService: CompetitiveDrillService,
+        private http: HttpClient,
+        private bookService: BookService
     ) {
         // get drill preference
         let storedPreference: DrillPreference = JSON.parse(localStorage.getItem('drillPreference') ?? '{}');
@@ -199,6 +208,10 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         // get drill type from url query parameters
         this.route.queryParams.subscribe(params => {
             const drillType = params['type'];
+            const bookId = params['bookId'];
+            const source = params['source'];
+            const restart = params['restart'];
+
             if (drillType && Object.values(DrillType).includes(drillType)) {
                 this.currentDrillType = drillType as DrillType;
                 this.navigationService.setCurrentDrillType(this.currentDrillType);
@@ -208,6 +221,14 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
                 localStorage.setItem('drillPreference', JSON.stringify(this.drillPreferences));
 
+                // Handle classics source - just set drill type to Marathon, onNewDrill will handle the rest
+                if (source === 'classics' && bookId) {
+                    this.drillPreferences.drillType = DrillType.Marathon;
+                    this.currentDrillType = DrillType.Marathon;
+                    this.navigationService.setCurrentDrillType(this.currentDrillType);
+                    localStorage.setItem('drillPreference', JSON.stringify(this.drillPreferences));
+                }
+                
                 this.onNewDrill();
             } else if (!drillType) {
                 // if no drill type in url, start with current drill type from preferences
@@ -217,6 +238,17 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
         this.themeService.getDarkMode().subscribe(isDark => {
             this.isDarkMode = isDark;
+        });
+
+        // Listen for route changes to save progress when navigating away
+        this.router.events.subscribe(event => {
+            if (event.type === 1) { // NavigationStart
+                // Save progress when navigating away from classics
+                if (this.currentBookId) {
+                    this.saveBookProgress(this.sourceText.length);
+                    this.stopProgressSaving();
+                }
+            }
         });
 
         // check for active room session if in competitive mode
@@ -498,8 +530,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         }
     }
 
-    startDrill(adaptiveWords: string[] = []): void {
-        this.drillStateManagementService.startDrill(adaptiveWords, this.drillPreferences);
+    startDrill(adaptiveWords: string[] = [], bookContent?: string): void {
+        this.drillStateManagementService.startDrill(adaptiveWords, this.drillPreferences, bookContent);
     }
 
     stopDrill(isAdaptive: boolean = false): void {
@@ -561,6 +593,29 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         if (value === SpecialKeys.Backspace.toString()) {
             this.handleBackspace();
             return;
+        }
+
+        // Handle Enter key for line breaks
+        if (value === 'Enter') {
+            const currentWord = this.sourceText[this.currentWordIndex];
+            if (currentWord && currentWord[0] === '↵') {
+                // User pressed Enter on a line break character - mark it as completed and advance
+                const updatedTypedText = [...this.typedText];
+                // The source text for line break is ['↵'], so we need to match that structure
+                updatedTypedText[this.currentWordIndex] = [{
+                    key: '↵',
+                    correct: true
+                }];
+                this.drillStateManagementService.updateTypedText(updatedTypedText);
+                
+                // Mark word as locked (completed)
+                this.wordLocked[this.currentWordIndex] = true;
+                
+                // Advance to next word
+                this.drillInputComponent.clearDrillInput();
+                this.drillStateManagementService.updateIndices(this.currentWordIndex + 1, 0);
+                return;
+            }
         }
 
         this.updateUserActivity();
@@ -833,6 +888,10 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         else if (this.drillPreferences.drillType === DrillType.Adaptive) {
             this.onNewAdaptiveDrill();
         }
+        // handle classics - load book content and start marathon drill
+        else if (this.drillPreferences.drillType === DrillType.Marathon && this.route.snapshot.queryParams['source'] === 'classics') {
+            this.loadClassicsBook();
+        }
         else {
             this.drillStateManagementService.setInputFocusState(true);
 
@@ -857,6 +916,89 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         }
         this.adaptiveService.showAdaptiveDrillOverlay();
     }
+
+    private loadClassicsBook(): void {
+        const bookId = this.route.snapshot.queryParams['bookId'];
+        if (!bookId) {
+            console.error('No book ID provided for classics');
+            this.startDrill();
+            return;
+        }
+
+        // Store book ID for progress tracking
+        this.currentBookId = bookId;
+
+        // Import BookService dynamically to avoid circular dependency
+        import('../../services/book.service').then(({ BookService }) => {
+            const bookService = new BookService(this.http);
+            bookService.getBookById(bookId).subscribe({
+                next: (book) => {
+                    if (book) {
+                        this.drillStateManagementService.setInputFocusState(true);
+                        // Start drill with book content
+                        this.startDrill([], book.content);
+                        this.focusInput();
+                        
+                        // Start progress saving for classics
+                        this.startProgressSaving(book.totalWordCount);
+                    } else {
+                        console.error('Book not found:', bookId);
+                        // Fallback to random drill text
+                        this.startDrill();
+                        this.focusInput();
+                    }
+                },
+                error: (error) => {
+                    console.error('Error loading book:', error);
+                    // Fallback to random drill text
+                    this.startDrill();
+                    this.focusInput();
+                }
+            });
+        });
+    }
+
+    private startProgressSaving(totalWordCount: number): void {
+        if (!this.currentBookId) return;
+        
+        // Save progress immediately
+        this.saveBookProgress(totalWordCount);
+        
+        // Set up periodic saving
+        this.progressSaveInterval = setInterval(() => {
+            this.saveBookProgress(totalWordCount);
+        }, this.PROGRESS_SAVE_INTERVAL);
+    }
+
+    private stopProgressSaving(): void {
+        if (this.progressSaveInterval) {
+            clearInterval(this.progressSaveInterval);
+            this.progressSaveInterval = null;
+        }
+    }
+
+    private saveBookProgress(totalWordCount: number): void {
+        if (!this.currentBookId) return;
+        
+        const typedWordCount = this.currentWordIndex;
+        const isCompleted = typedWordCount >= totalWordCount;
+        
+        this.bookService.saveBookProgress(
+            this.currentBookId, 
+            typedWordCount, 
+            totalWordCount, 
+            isCompleted
+        ).subscribe({
+            next: (progress) => {
+                console.log('Book progress saved:', progress);
+            },
+            error: (error) => {
+                console.error('Failed to save book progress:', error);
+            }
+        });
+    }
+
+
 
     onViewErrorWords(): void {
         this.adaptiveService.showErrorWordsModal();
@@ -1247,6 +1389,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         try {
             // console.log('DRILL ENGINE: Cleaning up component');
+            
+            // Stop progress saving
+            this.stopProgressSaving();
             
             // Clean up subscriptions
             this.subscriptions.forEach(sub => {

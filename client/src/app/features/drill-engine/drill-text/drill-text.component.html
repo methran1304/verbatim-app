@@ -53,20 +53,29 @@
     }
     <div class="drill-text-inner">
       @for (word of sourceText; track wi; let wi = $index) {
-        <nz-tag class="word" [ngClass]="getWordClass(wi)" #wordEl>
-          @for (char of word; track ci; let ci = $index) {
-            <span
-              [ngClass]="
-                getLetterClass(wi, ci) +
-                (char === ' ' && getLetterClass(wi, ci) === 'letter-active'
-                  ? ' letter-active-space'
-                  : '')
-              "
-            >
-              {{ char === " " ? "␣" : char }}
-            </span>
-          }
-        </nz-tag>
+        @if (word[0] === '↵') {
+          <!-- Line break - show ↵ character and force new line -->
+          <nz-tag class="word" [ngClass]="getWordClass(wi)">
+            <span class="line-break-char">↵</span>
+          </nz-tag>
+          <!-- Force line break -->
+          <div class="force-line-break"></div>
+        } @else {
+          <nz-tag class="word" [ngClass]="getWordClass(wi)" #wordEl>
+            @for (char of word; track ci; let ci = $index) {
+              <span
+                [ngClass]="
+                  getLetterClass(wi, ci) +
+                  (char === ' ' && getLetterClass(wi, ci) === 'letter-active'
+                    ? ' letter-active-space'
+                    : '')
+                "
+              >
+                {{ char === " " ? "␣" : char }}
+              </span>
+            }
+          </nz-tag>
+        }
       }
     </div>
   </nz-card>

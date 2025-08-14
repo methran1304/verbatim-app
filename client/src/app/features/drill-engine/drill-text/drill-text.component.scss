@@ -79,6 +79,23 @@
   background: linear-gradient(to top, var(--color-bg), rgba(255, 255, 255, 0));
 }
 
+// line break word styling
+  // Line break character styling
+  .line-break-char {
+    color: var(--color-text-secondary);
+    font-size: 0.9em;
+    font-weight: 600;
+  }
+
+// Force line break after the line break character
+.force-line-break {
+  width: 100%;
+  height: 0;
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 // word tags
 .word {
   display: inline-flex;

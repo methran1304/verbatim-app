@@ -81,42 +81,103 @@ export class DrillStateManagementService {
     }
 
     /**
-     * Start drill with optional adaptive words
+     * Start drill with optional adaptive words or book content
      */
-    startDrill(adaptiveWords: string[] = [], drillPreferences: DrillPreference): void {
+    startDrill(adaptiveWords: string[] = [], drillPreferences: DrillPreference, bookContent?: string): void {
         this.updateDrillState({
             showPostDrillOverlay: false,
             isDrillActive: true
         });
 
-        let words: string[] = [];
+        let sourceText: string[][] = [];
+        let typedText: (any | undefined)[][] = [];
+        let wordLocked: boolean[] = [];
 
-        // for timed drills, always use extended length to ensure enough text
-        const drillLength = drillPreferences.drillType === DrillType.Timed
-            ? 'Extended' as any
-            : drillPreferences.drillLength;
+        if (bookContent) {
+            // Pre-process book content to normalize all newline characters
+            let normalizedContent = bookContent
+                .replace(/\r\n/g, '↵')  // Windows line endings
+                .replace(/\r/g, '↵')    // Mac line endings (old)
+                .replace(/\n/g, '↵')    // Unix line endings
+                .replace(/↵↵/g, '↵');   // Normalize multiple consecutive line breaks to single
+            
+            // Handle book content with normalized line breaks
+            const lines = normalizedContent.split('↵');
+            
+            lines.forEach((line, lineIndex) => {
+                if (line.trim() === '') {
+                    // Empty line - add a space to maintain line breaks
+                    sourceText.push([' ']);
+                    typedText.push([undefined]);
+                    wordLocked.push(false);
+                    return;
+                }
 
-        if (drillPreferences.drillType === DrillType.Adaptive) {
-            words = adaptiveWords;
+                const words = line.trim().split(' ');
+                words.forEach((word, wordIndex) => {
+                    // Filter out punctuation and keep only alphanumeric characters
+                    const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '');
+                    
+                    // Skip empty words after cleaning
+                    if (cleanWord.length === 0) {
+                        return;
+                    }
+                    
+                    const chars = cleanWord.split('');
+                    // Add space after each word except the last word in the line
+                    // if (wordIndex < words.length - 1) {
+                    //     chars.push(' ');
+                    // }
+
+                    chars.push(' ');
+
+                    
+                    sourceText.push(chars);
+                    typedText.push(new Array(chars.length).fill(undefined));
+                    wordLocked.push(false);
+                });
+
+                // Add line break after each line (except the last line)
+                // This ensures the next word starts on a new line in the drill interface
+                if (lineIndex < lines.length - 1) {
+                    // Add a special line break token that will force a new line
+                    // We use the normalized '↵' character that the drill text component can interpret
+                    sourceText.push(['↵']);
+                    typedText.push([undefined]);
+                    wordLocked.push(false);
+                }
+            });
         } else {
-            words = this.drillTextService.getRandomDrillText(
-                drillPreferences.drillDifficulty,
-                drillLength,
+            // Handle regular drill words
+            let words: string[] = [];
+
+            // for timed drills, always use extended length to ensure enough text
+            const drillLength = drillPreferences.drillType === DrillType.Timed
+                ? 'Extended' as any
+                : drillPreferences.drillLength;
+
+            if (drillPreferences.drillType === DrillType.Adaptive) {
+                words = adaptiveWords;
+            } else {
+                words = this.drillTextService.getRandomDrillText(
+                    drillPreferences.drillDifficulty,
+                    drillLength,
+                );
+            }
+
+            // add space for every word except last
+            sourceText = words.map((word, i) => {
+                const chars = word.split('');
+                return i < words.length - 1 ? [...chars, ' '] : chars;
+            });
+
+            // create undefined 2d array with same source text structure
+            typedText = sourceText.map((word) =>
+                new Array(word.length).fill(undefined),
             );
+
+            wordLocked = sourceText.map(() => false);
         }
-
-        // add space for every word except last
-        const sourceText = words.map((word, i) => {
-            const chars = word.split('');
-            return i < words.length - 1 ? [...chars, ' '] : chars;
-        });
-
-        // create undefined 2d array with same source text structure
-        const typedText = sourceText.map((word) =>
-            new Array(word.length).fill(undefined),
-        );
-
-        const wordLocked = sourceText.map(() => false);
 
         this.updateDrillState({
             sourceText,
@@ -217,6 +278,8 @@ export class DrillStateManagementService {
             currentCharIndex: 0
         });
     }
+
+
 
     /**
      * Set typing state
