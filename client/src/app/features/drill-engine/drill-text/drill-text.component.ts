@@ -92,7 +92,7 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
             this.pendingScroll = true;
         }
         
-        // Add smooth cursor transition when cursor position changes
+        // add smooth cursor transition when cursor position changes
         if ((changes['currentWordIndex'] || changes['currentCharIndex']) && 
             !changes['currentWordIndex']?.firstChange && 
             !changes['currentCharIndex']?.firstChange) {
@@ -125,18 +125,23 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
 
     private scrollToCenterLine(): void {
         const elements = this.wordElements.toArray();
-        const activeEl = elements[this.currentWordIndex]?.nativeElement;
         const containerEl = this.drillTextEl?.nativeElement;
 
-        if (!activeEl || !containerEl) return;
+        if (!containerEl) return;
 
-        const elTop = activeEl.offsetTop;
-        const elHeight = activeEl.offsetHeight;
+        const targetElement = elements[this.currentWordIndex]?.nativeElement;
+
+        if (!targetElement) return;
+
+        const elTop = targetElement.offsetTop;
+        const elHeight = targetElement.offsetHeight;
         const containerHeight = containerEl.clientHeight;
 
         const targetScrollTop = elTop - (containerHeight / 2) + (elHeight / 2);
 
-        // Use requestAnimationFrame for smoother scrolling
+        console.log(`Scrolling to word index ${this.currentWordIndex}, scroll position: ${targetScrollTop}`);
+
+        // use requestAnimationFrame for smoother scrolling
         requestAnimationFrame(() => {
             containerEl.scrollTo({
                 top: targetScrollTop,
@@ -158,9 +163,9 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
         return stroke.correct ? 'letter-correct' : 'letter-incorrect';
     }
 
-    // Add smooth cursor transition
+    // add smooth cursor transition
     private addCursorTransition(): void {
-        // Force a reflow to ensure smooth transition
+        // force a reflow to ensure smooth transition
         requestAnimationFrame(() => {
             const activeElements = document.querySelectorAll('.letter-active');
             activeElements.forEach(el => {

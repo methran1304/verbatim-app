@@ -28,21 +28,27 @@ export interface DrillState {
     providedIn: 'root'
 })
 export class DrillStateManagementService {
-    private drillState$ = new BehaviorSubject<DrillState>({
-        isDrillActive: false,
+    private drillStateSubject = new BehaviorSubject<DrillState>({
         sourceText: [],
-        wordLocked: [],
         typedText: [],
+        wordLocked: [],
         currentWordIndex: 0,
         currentCharIndex: 0,
+        isDrillActive: false,
+        showPostDrillOverlay: false,
         drillStatistic: {} as DrillStatistic,
         isInputFocused: true,
         currentInput: '',
         isTyping: false,
-        showPostDrillOverlay: false,
         isSubmitting: false,
         submitError: ''
     });
+
+    private drillStatisticSubject = new BehaviorSubject<DrillStatistic>({} as DrillStatistic);
+
+    // store full book content for chunked loading
+    private fullBookContent: string = '';
+    private readonly CHUNK_SIZE = 500; // words per chunk
 
     constructor(
         private drillStatisticsService: DrillStatisticsService,
@@ -50,7 +56,7 @@ export class DrillStateManagementService {
         private adaptiveService: AdaptiveService,
         private timerManagementService: TimerManagementService
     ) {
-        // Initialize drill statistic
+        // initialize drill statistic
         this.updateDrillState({
             drillStatistic: this.drillStatisticsService.resetDrillStats()
         });
@@ -60,22 +66,22 @@ export class DrillStateManagementService {
      * Get drill state as observable
      */
     getDrillState(): Observable<DrillState> {
-        return this.drillState$.asObservable();
+        return this.drillStateSubject.asObservable();
     }
 
     /**
      * Get current drill state
      */
     getCurrentDrillState(): DrillState {
-        return this.drillState$.value;
+        return this.drillStateSubject.value;
     }
 
     /**
      * Update drill state
      */
     private updateDrillState(updates: Partial<DrillState>): void {
-        this.drillState$.next({
-            ...this.drillState$.value,
+        this.drillStateSubject.next({
+            ...this.drillStateSubject.value,
             ...updates
         });
     }
@@ -94,61 +100,14 @@ export class DrillStateManagementService {
         let wordLocked: boolean[] = [];
 
         if (bookContent) {
-            // Pre-process book content to normalize all newline characters
-            let normalizedContent = bookContent
-                .replace(/\r\n/g, '↵')  // Windows line endings
-                .replace(/\r/g, '↵')    // Mac line endings (old)
-                .replace(/\n/g, '↵')    // Unix line endings
-                .replace(/↵↵/g, '↵');   // Normalize multiple consecutive line breaks to single
-            
-            // Handle book content with normalized line breaks
-            const lines = normalizedContent.split('↵');
-            
-            lines.forEach((line, lineIndex) => {
-                if (line.trim() === '') {
-                    // Empty line - add a space to maintain line breaks
-                    sourceText.push([' ']);
-                    typedText.push([undefined]);
-                    wordLocked.push(false);
-                    return;
-                }
-
-                const words = line.trim().split(' ');
-                words.forEach((word, wordIndex) => {
-                    // Filter out punctuation and keep only alphanumeric characters
-                    const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '');
-                    
-                    // Skip empty words after cleaning
-                    if (cleanWord.length === 0) {
-                        return;
-                    }
-                    
-                    const chars = cleanWord.split('');
-                    // Add space after each word except the last word in the line
-                    // if (wordIndex < words.length - 1) {
-                    //     chars.push(' ');
-                    // }
-
-                    chars.push(' ');
-
-                    
-                    sourceText.push(chars);
-                    typedText.push(new Array(chars.length).fill(undefined));
-                    wordLocked.push(false);
-                });
-
-                // Add line break after each line (except the last line)
-                // This ensures the next word starts on a new line in the drill interface
-                if (lineIndex < lines.length - 1) {
-                    // Add a special line break token that will force a new line
-                    // We use the normalized '↵' character that the drill text component can interpret
-                    sourceText.push(['↵']);
-                    typedText.push([undefined]);
-                    wordLocked.push(false);
-                }
-            });
+            // store full book content for chunked loading
+            this.fullBookContent = bookContent;
+            // for large book content, use chunked loading
+            sourceText = this.processBookContentInChunks(bookContent);
+            typedText = sourceText.map((word) => new Array(word.length).fill(undefined));
+            wordLocked = sourceText.map(() => false);
         } else {
-            // Handle regular drill words
+            // handle regular drill words
             let words: string[] = [];
 
             // for timed drills, always use extended length to ensure enough text
@@ -185,10 +144,112 @@ export class DrillStateManagementService {
             wordLocked,
             currentWordIndex: 0,
             currentCharIndex: 0,
-            drillStatistic: this.drillStatisticsService.resetDrillStats()
+        });
+    }
+
+    private processBookContentInChunks(bookContent: string): string[][] {
+        const MAX_WORDS_PER_CHUNK = this.CHUNK_SIZE; // Adjust based on performance
+        const sourceText: string[][] = [];
+        
+        // pre-process book content to normalize all newline characters
+        let normalizedContent = bookContent
+            .replace(/\r\n/g, '↵')  // Windows line endings
+            .replace(/\r/g, '↵')    // Mac line endings (old)
+            .replace(/\n/g, '↵')    // Unix line endings
+            .replace(/↵↵/g, '↵');   // Normalize multiple consecutive line breaks to single
+        
+        // handle book content with normalized line breaks
+        const lines = normalizedContent.split('↵');
+        let wordCount = 0;
+        
+        lines.forEach((line, lineIndex) => {
+            if (line.trim() === '') {
+                // empty line - add a space to maintain line breaks
+                sourceText.push([' ']);
+                wordCount++;
+                return;
+            }
+
+            const words = line.trim().split(' ');
+            words.forEach((word, wordIndex) => {
+                // stop processing if we've reached the chunk limit
+                if (wordCount >= MAX_WORDS_PER_CHUNK) {
+                    return;
+                }
+                
+                // filter out punctuation and keep only alphanumeric characters
+                const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '');
+                
+                // skip empty words after cleaning
+                if (cleanWord.length === 0) {
+                    return;
+                }
+                
+                const chars = cleanWord.split('');
+                chars.push(' ');
+
+                sourceText.push(chars);
+                wordCount++;
+            });
+
+            // add line break after each line (except the last line)
+            if (lineIndex < lines.length - 1 && wordCount < MAX_WORDS_PER_CHUNK) {
+                sourceText.push(['↵']);
+                wordCount++;
+            }
         });
 
-        this.adaptiveService.hideAdaptiveDrillOverlay();
+        return sourceText;
+    }
+
+    // method to load next chunk when user reaches end of current chunk
+    loadNextChunk(bookContent: string, currentWordIndex: number): string[][] {
+        const MAX_WORDS_PER_CHUNK = 500;
+        const sourceText: string[][] = [];
+        
+        // pre-process book content
+        let normalizedContent = bookContent
+            .replace(/\r\n/g, '↵')
+            .replace(/\r/g, '↵')
+            .replace(/\n/g, '↵')
+            .replace(/↵↵/g, '↵');
+        
+        const lines = normalizedContent.split('↵');
+        let wordCount = 0;
+        let processedWords = 0;
+        
+        lines.forEach((line, lineIndex) => {
+            if (line.trim() === '') {
+                if (processedWords >= currentWordIndex) {
+                    sourceText.push([' ']);
+                    wordCount++;
+                }
+                processedWords++;
+                return;
+            }
+
+            const words = line.trim().split(' ');
+            words.forEach((word, wordIndex) => {
+                if (processedWords >= currentWordIndex && wordCount < MAX_WORDS_PER_CHUNK) {
+                    const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '');
+                    
+                    if (cleanWord.length > 0) {
+                        const chars = cleanWord.split('');
+                        chars.push(' ');
+                        sourceText.push(chars);
+                        wordCount++;
+                    }
+                }
+                processedWords++;
+            });
+
+            if (lineIndex < lines.length - 1 && processedWords >= currentWordIndex && wordCount < MAX_WORDS_PER_CHUNK) {
+                sourceText.push(['↵']);
+                wordCount++;
+            }
+        });
+
+        return sourceText;
     }
 
     /**
@@ -356,19 +417,53 @@ export class DrillStateManagementService {
     restartDrill(): void {
         const currentState = this.getCurrentDrillState();
         
-        // Reset only the progress-related state, keep the words
+        // reset only the progress-related state, keep the words
         this.updateDrillState({
             currentWordIndex: 0,
             currentCharIndex: 0,
             isDrillActive: true,
             showPostDrillOverlay: false,
             drillStatistic: this.drillStatisticsService.resetDrillStats(),
-            // Reset typed text to all undefined
+            // reset typed text to all undefined
             typedText: currentState.sourceText.map((word) =>
                 new Array(word.length).fill(undefined)
             ),
-            // Reset word locked state
+            // reset word locked state
             wordLocked: currentState.sourceText.map(() => false)
         });
+    }
+
+            // check if we need to load the next chunk
+    shouldLoadNextChunk(currentWordIndex: number): boolean {
+        if (!this.fullBookContent) return false;
+        
+        const currentState = this.getCurrentDrillState();
+        const remainingWords = currentState.sourceText.length - currentWordIndex;
+        
+        // load next chunk when user is within 50 words of the end
+        return remainingWords <= 50;
+    }
+
+            // load next chunk and append to current source text
+    loadNextChunkIfNeeded(currentWordIndex: number): void {
+        if (!this.shouldLoadNextChunk(currentWordIndex) || !this.fullBookContent) {
+            return;
+        }
+
+        const currentState = this.getCurrentDrillState();
+        const nextChunk = this.loadNextChunk(this.fullBookContent, currentWordIndex);
+        
+        if (nextChunk.length > 0) {
+            // append new chunk to existing source text
+            const newSourceText = [...currentState.sourceText, ...nextChunk];
+            const newTypedText = [...currentState.typedText, ...nextChunk.map(() => new Array().fill(undefined))];
+            const newWordLocked = [...currentState.wordLocked, ...nextChunk.map(() => false)];
+
+            this.updateDrillState({
+                sourceText: newSourceText,
+                typedText: newTypedText,
+                wordLocked: newWordLocked
+            });
+        }
     }
 } 

@@ -11,9 +11,10 @@ using server.Services.Interfaces;
 
 namespace server.Services
 {
-	public class ProfileService(MongoDbContext context) : IProfileService
+	public class ProfileService(MongoDbContext context, IBookService bookService) : IProfileService
 	{
 		private readonly IMongoCollection<Profile> _profiles = context.Profiles;
+		private readonly IBookService _bookService = bookService;
 		public async Task CreateProfileAsync(Profile profile)
 		{
 			await _profiles.InsertOneAsync(profile);
@@ -111,6 +112,119 @@ namespace server.Services
 			var result = await _profiles.UpdateOneAsync(p => p.ProfileId == userId, Builders<Profile>.Update.Set(p => p.AiInsightDetails, profile.AiInsightDetails));
 
 			return result.IsAcknowledged;
+		}
+
+		        // book progress methods
+		public async Task<bool> StartBookProgress(string userId, string bookId, int totalWords)
+		{
+			var profile = await _profiles.Find(p => p.ProfileId == userId).FirstOrDefaultAsync();
+			if (profile is null)
+				return false;
+
+			            // check if book progress already exists
+			var existingProgress = profile.BookProgress.FirstOrDefault(bp => bp.BookId == bookId);
+			if (existingProgress != null)
+			{
+				                // book already started, just update total words if different
+				if (existingProgress.TotalWords != totalWords)
+				{
+					existingProgress.TotalWords = totalWords;
+				}
+			}
+			else
+			{
+				            // add new book progress entry
+				var newBookProgress = new BookProgress
+				{
+					BookId = bookId,
+					TotalWords = totalWords,
+					CompletedWords = 0,
+					IsCompleted = false
+				};
+				profile.BookProgress.Add(newBookProgress);
+			}
+
+			var result = await _profiles.UpdateOneAsync(
+				p => p.ProfileId == userId,
+				Builders<Profile>.Update.Set(p => p.BookProgress, profile.BookProgress)
+			);
+
+			return result.IsAcknowledged;
+		}
+
+		public async Task<bool> UpdateBookProgress(string userId, string bookId, int completedWords, bool isCompleted = false)
+		{
+			var profile = await _profiles.Find(p => p.ProfileId == userId).FirstOrDefaultAsync();
+			if (profile is null || profile.BookProgress == null)
+				return false;
+
+			var bookProgress = profile.BookProgress.FirstOrDefault(bp => bp.BookId == bookId);
+			if (bookProgress == null)
+				return false;
+
+			bookProgress.CompletedWords = completedWords;
+			bookProgress.IsCompleted = isCompleted;
+
+			var result = await _profiles.UpdateOneAsync(
+				p => p.ProfileId == userId,
+				Builders<Profile>.Update.Set(p => p.BookProgress, profile.BookProgress)
+			);
+
+			return result.IsAcknowledged;
+		}
+
+		public async Task<bool> ResetBookProgress(string userId, string bookId)
+		{
+			var profile = await _profiles.Find(p => p.ProfileId == userId).FirstOrDefaultAsync();
+			if (profile is null || profile.BookProgress == null)
+				return false;
+
+			var bookProgress = profile.BookProgress.FirstOrDefault(bp => bp.BookId == bookId);
+			if (bookProgress == null)
+				return false;
+
+			            // reset progress but keep the entry
+			bookProgress.CompletedWords = 0;
+			bookProgress.IsCompleted = false;
+
+			var result = await _profiles.UpdateOneAsync(
+				p => p.ProfileId == userId,
+				Builders<Profile>.Update.Set(p => p.BookProgress, profile.BookProgress)
+			);
+
+			return result.IsAcknowledged;
+		}
+
+		public async Task<List<BookProgress>> GetAllBookProgress(string userId)
+		{
+			var profile = await _profiles.Find(p => p.ProfileId == userId).FirstOrDefaultAsync();
+
+			if (profile is null)
+				return new List<BookProgress>();
+
+			            // get all books to get their total word counts
+            var allBooks = await _bookService.GetAllBooksAsync(1, 1000); // get all books
+			if (allBooks == null || !allBooks.Any())
+				return new List<BookProgress>();
+
+			var result = new List<BookProgress>();
+
+			foreach (var book in allBooks)
+			{
+				var existingProgress = profile.BookProgress?.FirstOrDefault(bp => bp.BookId == book.Id);
+
+				if (existingProgress != null)
+				{
+					                // only include books that have actually been started (have progress)
+                // update with actual book data and keep progress
+					existingProgress.TotalWords = book.TotalWordCount;
+					result.Add(existingProgress);
+				}
+				                // don't create default progress for books not started
+                // this way, books without progress will show "Start" button
+			}
+
+			return result;
 		}
 	}
 }

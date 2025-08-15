@@ -30,6 +30,10 @@ namespace server.Data.Mongo
 		// Competitive
 		public IMongoCollection<CompetitiveDrill> CompetitiveDrills => _mongoDatabase.GetCollection<CompetitiveDrill>("competitiveDrills");
 		public IMongoCollection<Room> Rooms => _mongoDatabase.GetCollection<Room>("rooms");
+		
+		// Classics
+		public IMongoCollection<Book> Books => _mongoDatabase.GetCollection<Book>("books");
+		
 		// Logging
 		public IMongoCollection<ErrorLog> ErrorLog => _mongoDatabase.GetCollection<ErrorLog>("errorLog");
 	}

@@ -10,13 +10,20 @@
                 <nz-icon nzType="loading" nzTheme="outline" class="loading-icon"></nz-icon>
                 <p>Loading books...</p>
             </div>
+        } @else if (books.length === 0) {
+            <div class="no-books-container">
+                <nz-icon nzType="book" nzTheme="outline" class="no-books-icon"></nz-icon>
+                <h3>No books available</h3>
+                <p>Books will appear here once they are loaded from the database.</p>
+                <p>Make sure the backend server is running and the database has been seeded.</p>
+            </div>
         } @else {
             <div class="books-grid">
                 @for (book of books; track book.id) {
                     <nz-card class="book-card" [nzBodyStyle]="{ padding: '16px' }">
                         <div class="book-layout">
                             <div class="book-cover">
-                                <img [src]="'https://picsum.photos/200/300'" [alt]="book.title" class="cover-image">
+                                <img [src]="getBookCoverUrl(book)" [alt]="book.title" class="cover-image">
                             </div>
                             
                             <div class="book-info">
@@ -45,12 +52,16 @@
                                 class="progress-bar">
                             </nz-progress>
                             <div class="word-count">
-                                {{ book.progress?.typedWordCount || 0 }} / {{ book.totalWordCount }} words
+                                @if (book.progress) {
+                                    {{ book.progress.completedWords }} / {{ book.progress.totalWords }} words
+                                } @else {
+                                    0 / {{ book.totalWordCount }} words
+                                }
                             </div>
                         </div>
 
                         <div class="book-actions">
-                            @if (!book.progress?.isStarted) {
+                            @if (!book.progress) {
                                 <button 
                                     nz-button 
                                     nzType="default" 
@@ -90,7 +101,7 @@
                 }
             </div>
 
-            <!-- Pagination temporarily disabled due to import issues -->
+            <!-- pagination temporarily disabled due to import issues -->
             <!-- @if (totalBooks > pageSize) {
                 <div class="pagination-container">
                     <nz-pagination

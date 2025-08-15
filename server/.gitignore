@@ -2,3 +2,4 @@ appsettings.json
 secrets.txt
 bin
 obj
+/Constants/BooksRepo

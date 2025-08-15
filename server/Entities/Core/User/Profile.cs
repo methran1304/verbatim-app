@@ -9,7 +9,7 @@ namespace server.Entities
 	{
 		[BsonId]
 		[BsonRepresentation(BsonType.ObjectId)]
-		public string ProfileId { get; set; } = null!; // should match UserId
+		        public string ProfileId { get; set; } = null!; // should match userid
 
 		[BsonElement("max_wpm")]
 		public double MaxWPM { get; set; } = 0;
@@ -29,14 +29,14 @@ namespace server.Entities
 		[BsonElement("avg_error_rate")]
 		public double AvgErrorRate { get; set; } = 0;
 
-		// date => list of drill IDs
+		        // date => list of drill ids
 		[BsonElement("activity")]
 		public Dictionary<string, List<string>> Activity { get; set; } = new();
 
 		[BsonElement("user_points")]
 		public int UserPoints { get; set; } = 0;
 
-		// Competitive stats
+		        // competitive stats
 
 		[BsonElement("competitive_drills")]
 		public int CompetitiveDrills { get; set; } = 0;
@@ -78,6 +78,9 @@ namespace server.Entities
 
 		[BsonElement("ai_insights")]
 		public AiInsight AiInsightDetails { get; set; } = null!;
+
+		[BsonElement("book_progress")]
+		public List<BookProgress> BookProgress { get; set; } = new();
 	}
 
 	public class AiInsight
@@ -90,5 +93,21 @@ namespace server.Entities
 		
 		[BsonElement("ai_insights_generated_today")]
 		public int AiInsightsGeneratedToday { get; set; } = 0;
+	}
+
+	public class BookProgress
+	{
+		[BsonElement("book_id")]
+		[BsonRepresentation(BsonType.ObjectId)]
+		public string BookId { get; set; } = null!;
+
+		[BsonElement("total_words")]
+		public int TotalWords { get; set; } = 0;
+
+		[BsonElement("completed_words")]
+		public int CompletedWords { get; set; } = 0;
+
+		[BsonElement("is_completed")]
+		public bool IsCompleted { get; set; } = false;
 	}
 }

@@ -12,14 +12,9 @@ export interface Book {
 
 export interface BookProgress {
     bookId: string;
-    userId: string;
-    typedWordCount: number;
-    totalWordCount: number;
-    isStarted: boolean;
+    completedWords: number;
+    totalWords: number;
     isCompleted: boolean;
-    lastAccessed: Date;
-    startedAt?: Date;
-    completedAt?: Date;
 }
 
 export interface BookWithProgress extends Book {

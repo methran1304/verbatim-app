@@ -29,7 +29,7 @@ builder.Services.AddCors(options =>
 	);
 });
 
-// Add signalR
+        // add signalR
 builder.Services.AddSignalR();
 
 builder.Services.Configure<MongoDbSettings>(
@@ -54,9 +54,10 @@ builder.Services.AddHttpClient<IFuzzySearchService, FuzzySearchService>(client =
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddScoped<IAdaptiveService, AdaptiveService>();
+builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<server.Utils.WordPoolManager>();
 
-// Competitive Drill Services
+        // competitive drill services
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<ICompetitiveDrillService, CompetitiveDrillService>();
 builder.Services.AddScoped<IAFKDetectionService, AFKDetectionService>();

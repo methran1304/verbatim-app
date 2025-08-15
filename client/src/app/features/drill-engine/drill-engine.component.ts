@@ -39,6 +39,7 @@ import { SignalRService } from '../../services/signalr.service';
 import { CompetitiveDrillService, RoomState } from '../../services/competitive-drill.service';
 import { JwtDecoderUtil } from '../../core/utils/jwt-decoder.util';
 import { BookService } from '../../services/book.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
     selector: 'app-drill-engine',
@@ -135,7 +136,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     private afkPlayers: Set<string> = new Set<string>();
     private subscriptions: Subscription[] = [];
     
-    // Book progress tracking for classics
+    // book progress tracking for classics
     private currentBookId: string | null = null;
     private progressSaveInterval: any;
     private readonly PROGRESS_SAVE_INTERVAL = 30000; // Save every 30 seconds
@@ -221,7 +222,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
                 localStorage.setItem('drillPreference', JSON.stringify(this.drillPreferences));
 
-                // Handle classics source - just set drill type to Marathon, onNewDrill will handle the rest
+                // handle classics source - just set drill type to Marathon, onNewDrill will handle the rest
                 if (source === 'classics' && bookId) {
                     this.drillPreferences.drillType = DrillType.Marathon;
                     this.currentDrillType = DrillType.Marathon;
@@ -240,13 +241,58 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             this.isDarkMode = isDark;
         });
 
-        // Listen for route changes to save progress when navigating away
+        // listen for route changes to save progress when navigating away
         this.router.events.subscribe(event => {
             if (event.type === 1) { // NavigationStart
-                // Save progress when navigating away from classics
-                if (this.currentBookId) {
-                    this.saveBookProgress(this.sourceText.length);
-                    this.stopProgressSaving();
+                // save progress when navigating away from classics
+                if (this.currentBookId && this.sourceText.length > 0) {
+                    const totalWordCount = this.sourceText.length;
+                    const typedWordCount = this.currentWordIndex;
+                    const isCompleted = typedWordCount >= totalWordCount;
+                    
+                    this.bookService.saveBookProgress(
+                        this.currentBookId,
+                        typedWordCount,
+                        totalWordCount,
+                        isCompleted
+                    ).subscribe({
+                        next: (progress) => {
+                            console.log('Book progress saved on navigation:', progress);
+                            // trigger progress refresh for classics component
+                            this.bookService.triggerProgressRefresh();
+                        },
+                        error: (error) => {
+                            console.error('Failed to save book progress on navigation:', error);
+                        }
+                    });
+                }
+            }
+        });
+
+        // listen for window beforeunload to save progress when closing browser tab
+        window.addEventListener('beforeunload', () => {
+            if (this.currentBookId && this.sourceText.length > 0) {
+                const totalWordCount = this.sourceText.length;
+                const typedWordCount = this.currentWordIndex;
+                const isCompleted = typedWordCount >= totalWordCount;
+                
+                // use synchronous XMLHttpRequest for beforeunload
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `${environment.apiBaseUrl}/profile/update-book-progress`, false); // synchronous
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('Authorization', `Bearer ${localStorage.getItem('token')}`);
+                
+                const progressData = {
+                    bookId: this.currentBookId,
+                    completedWords: typedWordCount,
+                    isCompleted: isCompleted
+                };
+                
+                try {
+                    xhr.send(JSON.stringify(progressData));
+                    console.log('Book progress saved on page close');
+                } catch (error) {
+                    console.error('Failed to save book progress on page close:', error);
                 }
             }
         });
@@ -303,7 +349,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     }
 
                     
-                    // SIMPLE LOGIC: If this player hasn't continued and we have drill results, preserve the drill data
+                    // simple logic: if this player hasn't continued and we have drill results, preserve the drill data
                     if (!this.continuedPlayers.has(player.userId) && this.drillResultsData[player.userId]) {
                         const drillData = this.drillResultsData[player.userId];
                         return {
@@ -318,7 +364,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     return basePlayer;
                 });
                 
-                // Update players array with the merged data
+                // update players array with the merged data
                 this.players = updatedPlayers;
                 
                 // update current user ready state
@@ -340,7 +386,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     }
                 });
                 
-                // Only update players if there are actual changes to avoid excessive ngOnChanges calls
+                // only update players if there are actual changes to avoid excessive ngOnChanges calls
                 let hasChanges = false;
                 const updatedPlayers = this.players.map(p => {
                     const stat = statsByUser.get(p.userId);
@@ -350,7 +396,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     const wpm = (stat.wpm ?? stat.WPM) as number | undefined;
                     const accuracy = (stat.accuracy ?? stat.Accuracy) as number | undefined;
                     
-                    // Check if any values actually changed
+                    // check if any values actually changed
                     if (p.progress !== completion || p.wpm !== wpm || p.accuracy !== accuracy) {
                         hasChanges = true;
                         return {
@@ -363,7 +409,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     return p;
                 });
                 
-                // Only update the players array if there were actual changes
+                // only update the players array if there were actual changes
                 if (hasChanges) {
                     this.players = updatedPlayers;
                 }
@@ -378,33 +424,33 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             // subscribe to AFK warning events
             this.signalRService.onAFKWarning$.subscribe(({ roomId, playerId, timeoutSeconds }) => {
                 // console.log(`DRILL ENGINE: AFK warning for player ${playerId}, timeout: ${timeoutSeconds}s`);
-                // Show AFK warning overlay for the current user if they are the one being warned
+                // show AFK warning overlay for the current user if they are the one being warned
                 if (playerId === this.currentUserId) {
                     this.afkReason = `You will be marked as AFK in ${timeoutSeconds} seconds if you don't start typing`;
-                    // You could show a notification or overlay here
+                    // you could show a notification or overlay here
                 }
             });
 
             // subscribe to waiting for other players events
             this.signalRService.onWaitingForOtherPlayers$.subscribe(({ finishedCount, totalCount }) => {
                 // console.log(`DRILL ENGINE: Waiting for other players - finished: ${finishedCount}, total: ${totalCount}`);
-                // Update UI to show waiting state
+                // update UI to show waiting state
                 this.winnerMessage = `Waiting for ${totalCount - finishedCount} more player(s) to finish...`;
             });
 
             // subscribe to all players completed events
             this.signalRService.onAllPlayersCompleted$.subscribe(({ roomId }) => {
                 // console.log(`DRILL ENGINE: All players completed drill in room ${roomId}`);
-                // This event indicates all players have finished the drill
-                // The EndDrill event will follow shortly
+                // this event indicates all players have finished the drill
+                // the EndDrill event will follow shortly
             });
 
             // subscribe to player kicked events
             this.signalRService.onPlayerKicked$.subscribe(({ roomCode, reason }) => {
                 // console.log(`DRILL ENGINE: Player kicked from room ${roomCode}, reason: ${reason}`);
-                // If the current user is kicked, handle accordingly
+                // if the current user is kicked, handle accordingly
                 if (roomCode === this.roomState.roomCode) {
-                    // Show notification and redirect
+                                          // show notification and redirect
                     this.notificationService.createNotification('error', 'Kicked from Room', reason);
                     this.onLeaveRoom();
                 }
@@ -614,6 +660,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                 // Advance to next word
                 this.drillInputComponent.clearDrillInput();
                 this.drillStateManagementService.updateIndices(this.currentWordIndex + 1, 0);
+                
+                // Check if we need to load the next chunk
+                this.drillStateManagementService.loadNextChunkIfNeeded(this.currentWordIndex + 1);
                 return;
             }
         }
@@ -682,6 +731,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
             this.drillInputComponent.clearDrillInput();
             this.drillStateManagementService.updateIndices(this.currentWordIndex + 1, 0);
+
+            // Check if we need to load the next chunk for book content
+            this.drillStateManagementService.loadNextChunkIfNeeded(this.currentWordIndex + 1);
 
             if (this.currentWordIndex >= this.sourceText.length) {
                 // Send final stats with 100% completion before stopping drill
@@ -919,6 +971,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
     private loadClassicsBook(): void {
         const bookId = this.route.snapshot.queryParams['bookId'];
+        const restart = this.route.snapshot.queryParams['restart'];
+        
         if (!bookId) {
             console.error('No book ID provided for classics');
             this.startDrill();
@@ -935,6 +989,29 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                 next: (book) => {
                     if (book) {
                         this.drillStateManagementService.setInputFocusState(true);
+                        
+                        // Handle restart - reset book progress
+                        if (restart === 'true') {
+                            bookService.resetBook(bookId).subscribe({
+                                next: (success) => {
+                                    console.log('Book progress reset:', success);
+                                },
+                                error: (error) => {
+                                    console.error('Failed to reset book progress:', error);
+                                }
+                            });
+                        } else {
+                            // Start book progress tracking (creates entry if doesn't exist)
+                            bookService.startBook(bookId, book.totalWordCount).subscribe({
+                                next: (success) => {
+                                    console.log('Book progress started:', success);
+                                },
+                                error: (error) => {
+                                    console.error('Failed to start book progress:', error);
+                                }
+                            });
+                        }
+                        
                         // Start drill with book content
                         this.startDrill([], book.content);
                         this.focusInput();
@@ -961,20 +1038,15 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     private startProgressSaving(totalWordCount: number): void {
         if (!this.currentBookId) return;
         
-        // Save progress immediately
+        // Save progress immediately when starting
         this.saveBookProgress(totalWordCount);
         
-        // Set up periodic saving
-        this.progressSaveInterval = setInterval(() => {
-            this.saveBookProgress(totalWordCount);
-        }, this.PROGRESS_SAVE_INTERVAL);
+        // No longer set up periodic saving - will save on navigation/exit
     }
 
     private stopProgressSaving(): void {
-        if (this.progressSaveInterval) {
-            clearInterval(this.progressSaveInterval);
-            this.progressSaveInterval = null;
-        }
+        // No interval to clear anymore
+        // Final save will be called in ngOnDestroy
     }
 
     private saveBookProgress(totalWordCount: number): void {
@@ -991,6 +1063,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         ).subscribe({
             next: (progress) => {
                 console.log('Book progress saved:', progress);
+                // Trigger progress refresh for classics component
+                this.bookService.triggerProgressRefresh();
             },
             error: (error) => {
                 console.error('Failed to save book progress:', error);
@@ -1389,6 +1463,29 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void {
         try {
             // console.log('DRILL ENGINE: Cleaning up component');
+            
+            // Save final book progress if in classics mode
+            if (this.currentBookId && this.sourceText.length > 0) {
+                const totalWordCount = this.sourceText.length;
+                const typedWordCount = this.currentWordIndex;
+                const isCompleted = typedWordCount >= totalWordCount;
+                
+                this.bookService.saveBookProgress(
+                    this.currentBookId,
+                    typedWordCount,
+                    totalWordCount,
+                    isCompleted
+                ).subscribe({
+                    next: (progress) => {
+                        console.log('Final book progress saved on exit:', progress);
+                        // Trigger progress refresh for classics component
+                        this.bookService.triggerProgressRefresh();
+                    },
+                    error: (error) => {
+                        console.error('Failed to save final book progress:', error);
+                    }
+                });
+            }
             
             // Stop progress saving
             this.stopProgressSaving();
