@@ -58,12 +58,6 @@ export class TopNavComponent implements OnInit {
       tooltip: 'No timer. Just type through a fixed number of words at your own pace.'
     },
     {
-      key: DrillType.Memory,
-      label: 'Memory',
-      icon: 'eye',
-      tooltip: 'Words appear briefly and vanish. Rely on your memory to type them correctly.'
-    },
-    {
       key: DrillType.Adaptive,
       label: 'Adaptive',
       icon: 'bulb',

@@ -9,7 +9,6 @@ namespace server.Constants
 
         // type multipliers
         public const double AdaptiveMultiplier = 1.2;
-        public const double MemoryModeMultiplier = 1.4;
         public const double DefaultTypeMultiplier = 1.0;
 
         // competitive mode

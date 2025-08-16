@@ -17,7 +17,6 @@ namespace server.Utils
 
             var typeMultiplier = type switch
             {
-                DrillType.MemoryMode => DrillConstants.MemoryModeMultiplier,
                 DrillType.Adaptive => DrillConstants.AdaptiveMultiplier,
                 DrillType.Competitive => DrillConstants.CompetitiveMultiplier,
                 _ => DrillConstants.DefaultTypeMultiplier

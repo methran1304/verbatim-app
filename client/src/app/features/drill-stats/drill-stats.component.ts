@@ -295,7 +295,6 @@ export class DrillStatsComponent implements OnInit, OnDestroy {
     switch (this.drillPreferences.drillType) {
       case DrillType.Timed: return 'Timed';
       case DrillType.Marathon: return 'Marathon';
-      case DrillType.Memory: return 'Memory';
       case DrillType.Adaptive: return 'Adaptive';
       default: return this.drillPreferences.drillType;
     }

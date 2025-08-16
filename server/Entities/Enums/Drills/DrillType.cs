@@ -4,7 +4,6 @@ namespace server.Entities.Enums
 	{
 		Timed,
 		Adaptive,
-		MemoryMode,
 		Classics,
 		Competitive,
 		Marathon

@@ -31,8 +31,6 @@ export class NavigationService {
         return 'Timed';
       case DrillType.Marathon:
         return 'Marathon';
-      case DrillType.Memory:
-        return 'Memory';
       case DrillType.Adaptive:
         return 'Adaptive';
       default:
