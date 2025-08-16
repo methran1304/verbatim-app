@@ -70,8 +70,13 @@ export class DrillInputComponent implements AfterViewInit, OnDestroy {
             this.keyTyped.emit('ESCAPE');
         }
 
-        // alphanumeric keys, space, and enter key
-        else if (/^[a-zA-Z0-9 ]$/.test(key) || key === SpecialKeys.Backspace || key === 'Enter') {
+        // alphanumeric keys, space, enter key, and all punctuation
+        else if (
+            /^[a-zA-Z0-9 ]$/.test(key) || 
+            key === SpecialKeys.Backspace || 
+            key === 'Enter' ||
+            /^[!@#$%^&*()_+\-=\[\]{}|\\:;"'<>,.?/~`]$/.test(key) // All common punctuation
+        ) {
             this.keyTyped.emit(key);
         }
 

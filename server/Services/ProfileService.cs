@@ -226,5 +226,48 @@ namespace server.Services
 
 			return result;
 		}
+		
+		// admin methods for clearing all data across all users
+		public async Task<bool> ClearAllBookProgress()
+		{
+			try
+			{
+				// update all profiles to clear book progress
+				var updateDefinition = Builders<Profile>.Update.Set(p => p.BookProgress, new List<BookProgress>());
+				var result = await _profiles.UpdateManyAsync(
+					Builders<Profile>.Filter.Empty, // empty filter means all documents
+					updateDefinition
+				);
+				
+				return result.IsAcknowledged;
+			}
+			catch (Exception ex)
+			{
+				// log the exception (you might want to add proper logging here)
+				Console.WriteLine($"Error clearing all book progress: {ex.Message}");
+				return false;
+			}
+		}
+		
+		public async Task<bool> ClearAllAiFeedback()
+		{
+			try
+			{
+				// update all profiles to clear AI insights
+				var updateDefinition = Builders<Profile>.Update.Set(p => p.AiInsightDetails, new AiInsight());
+				var result = await _profiles.UpdateManyAsync(
+					Builders<Profile>.Filter.Empty, // empty filter means all documents
+					updateDefinition
+				);
+				
+				return result.IsAcknowledged;
+			}
+			catch (Exception ex)
+			{
+				// log the exception (you might want to add proper logging here)
+				Console.WriteLine($"Error clearing all AI feedback: {ex.Message}");
+				return false;
+			}
+		}
 	}
 }

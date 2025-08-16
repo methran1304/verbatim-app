@@ -14,11 +14,17 @@
       [showAdaptiveDrillOverlay]="showAdaptiveDrillOverlay"
       [currentDrillType]="drillPreferences.drillType"
       [isCompetitive]="isCompetitive"
+      [isClassicsMode]="isClassicsMode"
+      [bookTitle]="currentBookTitle"
+      [bookAuthor]="currentBookAuthor"
+      [hasProgressBeenSaved]="hasProgressBeenSaved"
       (restart)="onRestart()"
       (newDrill)="onNewDrill()"
       (viewErrorWords)="onViewErrorWords()"
       (drillPreferenceChange)="onDrillPreferenceChange($event)"
       (changePreference)="onChangePreference()"
+      (saveProgress)="onSaveClassicsProgress()"
+      (backToMenu)="onBackToClassicsMenu()"
     ></app-drill-toolbar>
   }
 

@@ -6,6 +6,7 @@ using server.Entities;
 using MongoDB.Driver;
 using MongoDB.Bson;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace BookSeederTool
 {
@@ -88,15 +89,12 @@ namespace BookSeederTool
                 var epubBook = await Task.Run(() => EpubReader.ReadBook(epubFilePath));
                 
                 // extract book info from filename
-                var fileName = Path.GetFileNameWithoutExtension(epubFilePath);
-                var bookInfo = ParseBookInfoFromFileName(fileName);
-                
-                if (bookInfo == null)
+                var bookInfo = new BookInfo
                 {
-                    Console.WriteLine($"Could not parse book info from filename: {fileName}");
-                    return null;
-                }
-
+                    Title = epubBook.Title,
+                    Author = epubBook.Author
+                };
+                
                 // process content by chapters
                 var content = ProcessBookByChapters(epubBook);
                 
@@ -127,40 +125,6 @@ namespace BookSeederTool
                 return null;
             }
         }
-
-        private static BookInfo? ParseBookInfoFromFileName(string fileName)
-        {
-            // Remove common suffixes and clean up the filename
-            var cleanFileName = fileName
-                .Replace("_", " ")
-                .Replace("-", " ")
-                .Replace(".epub", "")
-                .Trim();
-
-            // Try to extract author and title
-            // Common pattern: "Author - Title" or "Title by Author"
-            var parts = cleanFileName.Split(new[] { " by ", " - " }, StringSplitOptions.RemoveEmptyEntries);
-            
-            if (parts.Length >= 2)
-            {
-                var author = parts[1].Trim();
-                var title = parts[0].Trim();
-                
-                return new BookInfo
-                {
-                    Title = title,
-                    Author = author
-                };
-            }
-            
-            // If we can't parse it, just use the filename as title
-            return new BookInfo
-            {
-                Title = cleanFileName,
-                Author = "Unknown Author"
-            };
-        }
-
         private static string DetermineGenre(string author, string title)
         {
             // Simple genre determination based on author and title keywords
@@ -215,14 +179,48 @@ namespace BookSeederTool
         {
             // Apply the same cleaning logic as the frontend drill-state-management.service.ts
             
-            // 1. Normalize all newline characters to '↵'
-            string normalizedContent = content
-                .Replace("\r\n", "↵")  // Windows line endings
-                .Replace("\r", "↵")    // Mac line endings (old)
-                .Replace("\n", "↵")    // Unix line endings
-                .Replace("↵↵", "↵");   // Normalize multiple consecutive line breaks to single
+            // replace special characters with standard ASCII equivalents
+            string normalizedSpecialChars = content
+                // smart quotes
+                .Replace("“", "\"")  // left double quotation mark → standard quote
+                .Replace("”", "\"")  // right double quotation mark → standard quote
+                .Replace("‘", "'")   // left single quotation mark → standard apostrophe
+                .Replace("’", "'")   // right single quotation mark → standard apostrophe
+                // em dashes and en dashes
+                .Replace("—", "-")   // em dash → hyphen
+                .Replace("–", "-")   // en dash → hyphen
+                // other common special characters
+                .Replace("…", "...") // ellipsis → three dots
+                .Replace("•", "*")   // bullet point → asterisk
+                .Replace("°", " degrees") // degree symbol → " degrees"
+                .Replace("×", "x")   // multiplication sign → lowercase x
+                .Replace("÷", "/")   // division sign → forward slash
+                .Replace("±", "+/-") // plus-minus sign → "+/-"
+                .Replace("≤", "<=")  // less than or equal → "<="
+                .Replace("≥", ">=")  // greater than or equal → ">="
+                .Replace("≠", "!=")  // not equal → "!="
+                .Replace("≈", "~")   // approximately equal → tilde
+                .Replace("∞", "infinity") // infinity symbol → "infinity"
+                .Replace("√", "sqrt") // square root → "sqrt"
+                .Replace("²", "^2")  // superscript 2 → "^2"
+                .Replace("³", "^3"); // superscript 3 → "^3"
             
-            // 2. Split by line breaks and process each line
+            // replace sentence endings with punctuation + newline for better paragraph breaks
+            // only add line breaks after words that END with punctuation, don't break words
+            string contentWithParagraphBreaks = normalizedSpecialChars
+                .Replace(". ", ".\n")  // Replace ". " with ".\n" (remove space after period)
+                .Replace("! ", "!\n")  // Replace "! " with "!\n" (remove space after exclamation)
+                .Replace("? ", "?\n")  // Replace "? " with "?\n" (remove space after question)
+                .Replace("; ", ";\n"); // Replace "; " with ";\n" (remove space after semicolon)
+            
+            // normalize all newline characters to '↵'
+            string normalizedContent = contentWithParagraphBreaks
+                .Replace("\r\n", "↵")  // windows line endings
+                .Replace("\r", "↵")    // mac line endings (old)
+                .Replace("\n", "↵")    // unix line endings
+                .Replace("↵↵", "↵");   // normalize multiple consecutive line breaks to single
+            
+            // split by line breaks and process each line
             var lines = normalizedContent.Split('↵');
             var processedLines = new List<string>();
             
@@ -230,34 +228,31 @@ namespace BookSeederTool
             {
                 if (string.IsNullOrWhiteSpace(line))
                 {
-                    // Skip empty lines
+                    // skip empty lines
                     continue;
                 }
                 
-                // 3. Split line into words and clean each word
+                // split line into words and clean each word
                 var words = line.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 var cleanedWords = new List<string>();
                 
                 foreach (var word in words)
                 {
-                    // Filter out punctuation and keep only alphanumeric characters
-                    var cleanWord = System.Text.RegularExpressions.Regex.Replace(word, @"[^a-zA-Z0-9]", "");
-                    
-                    // Skip empty words after cleaning
-                    if (!string.IsNullOrEmpty(cleanWord))
+                    // keep words as-is without removing punctuation
+                    if (!string.IsNullOrEmpty(word))
                     {
-                        cleanedWords.Add(cleanWord);
+                        cleanedWords.Add(word);
                     }
                 }
                 
-                // 4. Join cleaned words back together
+                // join cleaned words back together
                 if (cleanedWords.Count > 0)
                 {
                     processedLines.Add(string.Join(" ", cleanedWords));
                 }
             }
             
-            // 5. Join lines back together with '↵' separators
+            // join lines back together with '↵' separators
             return string.Join("↵", processedLines);
         }
 
@@ -265,7 +260,7 @@ namespace BookSeederTool
         {
             var fileName = textContentFile.FilePath.ToLower();
             
-            // Skip non-content files
+            // skip non-content files
             if (fileName.Contains("imprint") || 
                 fileName.Contains("colophon") || 
                 fileName.Contains("conclusion") ||
@@ -273,7 +268,8 @@ namespace BookSeederTool
                 fileName.Contains("title") ||
                 fileName.Contains("cover") ||
                 fileName.Contains("toc") ||
-                fileName.Contains("contents"))
+                fileName.Contains("contents") ||
+                fileName.Contains("preface"))
             {
                 return false;
             }
@@ -287,7 +283,7 @@ namespace BookSeederTool
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(htmlContent);
             
-            // Remove script and style elements
+            // remove script and style elements
             var scriptElements = htmlDoc.DocumentNode.SelectNodes("//script");
             if (scriptElements != null)
             {
@@ -306,7 +302,7 @@ namespace BookSeederTool
                 }
             }
             
-            // Remove header elements (h1-h6) and elements with title/chapter classes
+            // remove header elements (h1-h6) and elements with title/chapter classes
             var headerElements = htmlDoc.DocumentNode.SelectNodes("//h1|//h2|//h3|//h4|//h5|//h6");
             if (headerElements != null)
             {
@@ -328,7 +324,11 @@ namespace BookSeederTool
             // Extract text content
             var textContent = htmlDoc.DocumentNode.InnerText;
             
-            // Clean up whitespace
+            // remove preface text if it appears in the content
+            textContent = System.Text.RegularExpressions.Regex.Replace(textContent, @"^PREFACE\s*", "", RegexOptions.IgnoreCase);
+            textContent = System.Text.RegularExpressions.Regex.Replace(textContent, @"^Preface\s*", "");
+            
+            // clean up whitespace
             textContent = System.Text.RegularExpressions.Regex.Replace(textContent, @"\s+", " ");
             
             return textContent.Trim();
@@ -348,7 +348,7 @@ namespace BookSeederTool
             if (string.IsNullOrEmpty(description))
                 return null;
             
-            // Look for year patterns like (1900) or 1900 or published in 1900
+            // look for year patterns like (1900) or 1900 or published in 1900
             var yearMatch = System.Text.RegularExpressions.Regex.Match(description, @"\b(19|20)\d{2}\b");
             if (yearMatch.Success && int.TryParse(yearMatch.Value, out int year))
             {
@@ -383,7 +383,7 @@ namespace BookSeederTool
             if (imageData.Length < 4)
                 return "image/jpeg";
             
-            // Check file signatures
+            // check file signatures
             if (imageData[0] == 0xFF && imageData[1] == 0xD8 && imageData[2] == 0xFF)
                 return "image/jpeg";
             if (imageData[0] == 0x89 && imageData[1] == 0x50 && imageData[2] == 0x4E && imageData[3] == 0x47)
@@ -393,7 +393,7 @@ namespace BookSeederTool
             if (imageData[0] == 0x42 && imageData[1] == 0x4D)
                 return "image/bmp";
             
-            return "image/jpeg"; // Default fallback
+            return "image/jpeg"; // default fallback
         }
 
         public class BookInfo

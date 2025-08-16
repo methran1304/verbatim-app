@@ -20,5 +20,9 @@ namespace server.Services.Interfaces
 		Task<bool> UpdateBookProgress(string userId, string bookId, int completedWords, bool isCompleted = false);
 		Task<bool> ResetBookProgress(string userId, string bookId);
 		Task<List<BookProgress>> GetAllBookProgress(string userId);
+		
+		// admin methods for clearing all data
+		Task<bool> ClearAllBookProgress();
+		Task<bool> ClearAllAiFeedback();
 	}
 }

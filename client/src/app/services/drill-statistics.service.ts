@@ -10,17 +10,34 @@ export class DrillStatisticsService {
   constructor() { }
 
   // updates WPM and accuracy based on typed text and elapsed time
-  updateWPMAndAccuracy(typedText: (KeyStroke | undefined)[][], startTime: number): { wpm: number; accuracy: number } {
-    // only count actual typed characters
+  updateWPMAndAccuracy(typedText: (KeyStroke | undefined)[][], startTime: number, resumedWordCount: number = 0): { wpm: number; accuracy: number } {
+    // only count actual typed characters, excluding resumed words
     const flattened = typedText.flat();
     const typedChars = flattened.filter((k) => k !== undefined);
-    const correctChars = typedChars.filter((k) => k?.correct).length;
+    
+    // exclude characters from resumed words for WPM calculation
+    let newTypedChars = typedChars;
+    if (resumedWordCount > 0) {
+      // count characters in resumed words
+      let resumedCharCount = 0;
+      for (let i = 0; i < resumedWordCount && i < typedText.length; i++) {
+        const word = typedText[i];
+        if (word) {
+          resumedCharCount += word.filter(k => k !== undefined).length;
+        }
+      }
+      
+      // remove resumed characters from the count
+      newTypedChars = typedChars.slice(resumedCharCount);
+    }
+    
+    const correctChars = newTypedChars.filter((k) => k?.correct).length;
 
     const elapsedMinutes = (Date.now() - startTime) / 60000;
 
     const wpm = Math.floor(correctChars / 5 / elapsedMinutes);
 
-    const totalKeystrokes = typedChars.length;
+    const totalKeystrokes = newTypedChars.length;
     const accuracy = totalKeystrokes
       ? Math.floor((correctChars / totalKeystrokes) * 100)
       : 100;

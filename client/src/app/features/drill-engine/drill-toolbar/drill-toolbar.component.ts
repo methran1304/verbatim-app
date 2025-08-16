@@ -9,6 +9,7 @@ import { FormsModule } from '@angular/forms';
 import { DrillDifficulty } from '../../../models/enums/drill-difficulty.enum';
 import { DrillLength, DrillLengthWordCount } from '../../../models/enums/drill-length.enum';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { DrillPreference } from '../../../models/interfaces/drill-preference.interface';
 
 @Component({
@@ -22,7 +23,8 @@ import { DrillPreference } from '../../../models/interfaces/drill-preference.int
     NzDividerModule,
     NzIconModule,
     FormsModule,
-    NzToolTipModule
+    NzToolTipModule,
+    NzPopconfirmModule
   ],
   templateUrl: './drill-toolbar.component.html',
   styleUrl: './drill-toolbar.component.scss',
@@ -40,11 +42,22 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
   @Input() showAdaptiveDrillOverlay: boolean = false;
   @Input() currentDrillType: string = '';
   @Input() isCompetitive: boolean = false;
+  
+  // classics mode inputs
+  @Input() isClassicsMode: boolean = false;
+  @Input() bookTitle: string = '';
+  @Input() bookAuthor: string = '';
+  @Input() hasProgressBeenSaved: boolean = false;
+  
   @Output() restart = new EventEmitter<void>();
   @Output() newDrill = new EventEmitter<void>();
   @Output() viewErrorWords = new EventEmitter<void>();
   @Output() drillPreferenceChange = new EventEmitter<DrillPreference>();
   @Output() changePreference = new EventEmitter<void>();
+  
+  // classics mode outputs
+  @Output() saveProgress = new EventEmitter<void>();
+  @Output() backToMenu = new EventEmitter<void>();
 
   selectedDuration: number = 30;
   selectedLength: DrillLength = DrillLength.Medium;
@@ -181,5 +194,14 @@ export class DrillToolbarComponent implements OnChanges, OnInit {
 
   onChangePreference(): void {
     this.changePreference.emit();
+  }
+
+  // classics mode methods
+  onSaveProgress(): void {
+    this.saveProgress.emit();
+  }
+
+  onBackToMenu(): void {
+    this.backToMenu.emit();
   }
 } 

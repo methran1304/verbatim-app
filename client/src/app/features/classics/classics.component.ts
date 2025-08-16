@@ -7,22 +7,24 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { forkJoin, of, Subscription } from 'rxjs';
 import { catchError, filter } from 'rxjs/operators';
 import { BookService } from '../../services/book.service';
 import { BookWithProgress } from '../../models/interfaces/book.interface';
 
 @Component({
-    selector: 'app-classics',
-    standalone: true,
-    imports: [
+  selector: 'app-classics',
+  standalone: true,
+  imports: [
         CommonModule,
         NzCardModule,
         NzButtonModule,
         NzIconModule,
         NzProgressModule,
         NzTagModule,
-        NzToolTipModule
+        NzToolTipModule,
+        NzPaginationModule
     ],
     templateUrl: './classics.component.html',
     styleUrl: './classics.component.scss'
@@ -31,7 +33,7 @@ export class ClassicsComponent implements OnInit, OnDestroy {
     books: BookWithProgress[] = [];
     totalBooks = 0;
     currentPage = 1;
-    pageSize = 10;
+    pageSize = 12;
     loading = false;
     private progressSubscription: Subscription | undefined;
 
@@ -113,10 +115,10 @@ export class ClassicsComponent implements OnInit, OnDestroy {
         });
     }
 
-    // onPageChange(page: number): void {
-    //     this.currentPage = page;
-    //     this.loadBooks();
-    // }
+    onPageChange(page: number): void {
+        this.currentPage = page;
+        this.loadBooks();
+    }
 
     startBook(book: BookWithProgress): void {
         // navigate to drill engine with book content and marathon type

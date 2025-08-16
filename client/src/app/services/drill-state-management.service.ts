@@ -22,6 +22,7 @@ export interface DrillState {
     showPostDrillOverlay: boolean;
     isSubmitting: boolean;
     submitError: string;
+    resumedWordCount: number; // track how many words were resumed
 }
 
 @Injectable({
@@ -41,7 +42,8 @@ export class DrillStateManagementService {
         currentInput: '',
         isTyping: false,
         isSubmitting: false,
-        submitError: ''
+        submitError: '',
+        resumedWordCount: 0
     });
 
     private drillStatisticSubject = new BehaviorSubject<DrillStatistic>({} as DrillStatistic);
@@ -147,6 +149,98 @@ export class DrillStateManagementService {
         });
     }
 
+
+    startDrillWithBookContent(bookContent: string, resumeFromWordIndex: number = 0): void {
+        this.updateDrillState({
+            showPostDrillOverlay: false,
+            isDrillActive: true
+        });
+
+        // store full book content for chunked loading
+        this.fullBookContent = bookContent;
+        
+        // process book content and get all words
+        const allWords = this.processBookContentInChunks(bookContent);
+        
+        // if resuming, we need to load chunks up to the resume point
+        let sourceText: string[][] = [];
+        let typedText: (any | undefined)[][] = [];
+        let wordLocked: boolean[] = [];
+        
+        if (resumeFromWordIndex > 0) {
+            // load chunks up to the resume point
+            let currentWordCount = 0;
+            let chunkIndex = 0;
+            
+            while (currentWordCount < resumeFromWordIndex && chunkIndex < Math.ceil(bookContent.length / this.CHUNK_SIZE)) {
+                const chunk = this.loadNextChunk(bookContent, currentWordCount);
+                sourceText.push(...chunk);
+                typedText.push(...chunk.map(word => new Array(word.length).fill(undefined)));
+                wordLocked.push(...chunk.map(() => false));
+                currentWordCount += chunk.length;
+                chunkIndex++;
+            }
+            
+            // ensure we have enough words to resume from
+            if (sourceText.length <= resumeFromWordIndex) {
+                // fallback to normal processing if we don't have enough words
+                sourceText = allWords;
+                typedText = allWords.map(word => new Array(word.length).fill(undefined));
+                wordLocked = allWords.map(() => false);
+            }
+            
+            // mark completed words as typed and locked
+            for (let i = 0; i < resumeFromWordIndex && i < sourceText.length; i++) {
+                const word = sourceText[i];
+                typedText[i] = word.map(char => ({
+                    key: char,
+                    correct: true
+                }));
+                wordLocked[i] = true;
+            }
+        } else {
+            // normal processing for new books
+            sourceText = allWords;
+            typedText = allWords.map(word => new Array(word.length).fill(undefined));
+            wordLocked = allWords.map(() => false);
+        }
+
+        this.updateDrillState({
+            sourceText,
+            typedText,
+            wordLocked,
+            currentWordIndex: resumeFromWordIndex,
+            currentCharIndex: 0,
+            resumedWordCount: resumeFromWordIndex
+        });
+
+        // if resuming, update drill statistics to account for completed words
+        if (resumeFromWordIndex > 0) {
+            const currentState = this.getCurrentDrillState();
+            const updatedStats = { ...currentState.drillStatistic };
+            
+            // count completed words and characters
+            let totalCompletedWords = 0;
+            let totalCompletedChars = 0;
+            
+            for (let i = 0; i < resumeFromWordIndex && i < sourceText.length; i++) {
+                const word = sourceText[i];
+                totalCompletedWords++;
+                totalCompletedChars += word.length;
+            }
+            
+            // update statistics
+            updatedStats.correctWords = totalCompletedWords;
+            updatedStats.correctLetters = totalCompletedChars;
+            updatedStats.wordsCount = sourceText.length;
+            updatedStats.lettersCount = sourceText.reduce((total, word) => total + word.length, 0);
+            
+            this.updateDrillState({
+                drillStatistic: updatedStats
+            });
+        }
+    }
+
     private processBookContentInChunks(bookContent: string): string[][] {
         const MAX_WORDS_PER_CHUNK = this.CHUNK_SIZE; // Adjust based on performance
         const sourceText: string[][] = [];
@@ -177,19 +271,16 @@ export class DrillStateManagementService {
                     return;
                 }
                 
-                // filter out punctuation and keep only alphanumeric characters
-                const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '');
-                
-                // skip empty words after cleaning
-                if (cleanWord.length === 0) {
-                    return;
-                }
-                
-                const chars = cleanWord.split('');
-                chars.push(' ');
+                if (word.length > 0) {
+                    const chars = word.split('');
+                    
+                    if (!/[.!?;]$/.test(word)) {
+                        chars.push(' ');
+                    }
 
-                sourceText.push(chars);
-                wordCount++;
+                    sourceText.push(chars);
+                    wordCount++;
+                }
             });
 
             // add line break after each line (except the last line)
@@ -231,11 +322,13 @@ export class DrillStateManagementService {
             const words = line.trim().split(' ');
             words.forEach((word, wordIndex) => {
                 if (processedWords >= currentWordIndex && wordCount < MAX_WORDS_PER_CHUNK) {
-                    const cleanWord = word.replace(/[^a-zA-Z0-9]/g, '');
-                    
-                    if (cleanWord.length > 0) {
-                        const chars = cleanWord.split('');
-                        chars.push(' ');
+                    if (word.length > 0) {
+                        const chars = word.split('');
+                        
+                        if (!/[.!?;]$/.test(word)) {
+                            chars.push(' ');
+                        }
+                        
                         sourceText.push(chars);
                         wordCount++;
                     }
@@ -263,7 +356,10 @@ export class DrillStateManagementService {
 
         const sourceText = words.map((word, i) => {
             const chars = word.split('');
-            return i < words.length - 1 ? [...chars, ' '] : chars;
+            if (i < words.length - 1 && !/[.!?;]$/.test(word)) {
+                return [...chars, ' '];
+            }
+            return chars;
         });
 
         const typedText = sourceText.map((word) => new Array(word.length).fill(undefined));
@@ -322,7 +418,10 @@ export class DrillStateManagementService {
 
         const sourceText = words.map((word, i) => {
             const chars = word.split('');
-            return i < words.length - 1 ? [...chars, ' '] : chars;
+            if (i < words.length - 1 && !/[.!?;]$/.test(word)) {
+                return [...chars, ' '];
+            }
+            return chars;
         });
 
         const typedText = sourceText.map((word) =>

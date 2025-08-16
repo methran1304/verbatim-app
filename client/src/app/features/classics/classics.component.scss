@@ -2,11 +2,15 @@
     padding: 2rem;
     max-width: 1200px;
     margin: 0 auto;
+    height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .classics-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
 
     h1 {
         font-size: 2.5rem;
@@ -23,7 +27,22 @@
 }
 
 .books-grid-container {
-    min-height: 400px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.books-grid {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    margin: -1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    align-content: start;
 }
 
 .loading-container {
@@ -77,6 +96,7 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
+    margin-top: 0;
 }
 
 .book-card {
@@ -123,9 +143,14 @@
         color: var(--color-text);
         margin: 0 0 0.5rem 0;
         line-height: 1.3;
+        display: -webkit-box;
+        display: box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        max-height: 3.12rem;
     }
 
     .book-author {
@@ -235,8 +260,21 @@
 .pagination-container {
     display: flex;
     justify-content: center;
-    margin-top: 2rem;
+    padding: 1rem 0;
     color: var(--color-text);
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-border);
+    flex-shrink: 0;
+
+    // comprehensive pagination styling to match AI insights component
+    ::ng-deep .ant-pagination {
+        .ant-pagination-item {
+            a {
+                background: var(--color-bg-card);
+                color: var(--color-text);
+            }
+        }
+    }
 }
 
 // Responsive design
