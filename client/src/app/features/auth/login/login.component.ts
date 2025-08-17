@@ -5,10 +5,6 @@ import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzFormModule } from 'ng-zorro-antd/form';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzButtonModule } from 'ng-zorro-antd/button';
 import { ZorroNotificationServiceTsService } from '../../../shared/zorro-notification.service.ts.service';
 import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
 
@@ -17,11 +13,7 @@ import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule,
-    NzCardModule,
-    NzFormModule,
-    NzInputModule,
-    NzButtonModule
+    ReactiveFormsModule
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
@@ -44,6 +36,7 @@ export class LoginComponent {
     this.loginForm = this.fb.group({
       emailAddressOrUsername: ['', [Validators.required]],
       password: ['', [Validators.required]],
+      rememberMe: [false]
     });
     this.themeService.getDarkMode().subscribe(isDark => {
       this.isDarkMode = isDark;
@@ -81,6 +74,11 @@ export class LoginComponent {
 
   onSignUp(): void {
     this.router.navigate(['/auth/register']);
+  }
+
+  onGoogleSignIn(): void {
+    // TODO: Implement Google OAuth
+    this.notificationService.createNotification('info', 'Coming Soon', 'Google sign-in will be available soon!');
   }
 
   get emailAddressOrUsername() { return this.loginForm.get('emailAddressOrUsername'); }

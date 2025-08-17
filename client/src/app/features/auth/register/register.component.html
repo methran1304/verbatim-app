@@ -1,58 +1,78 @@
 <div class="register-viewport">
-  <div class="register-card">
-    <div class="register-title">verbatim</div>
-    <form
-      nz-form
-      [formGroup]="registerForm"
-      (ngSubmit)="onSubmit()"
-      class="register-form"
-    >
-      <input
-        nz-input
-        formControlName="username"
-        placeholder="Username"
-        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
-        [nzStatus]="username?.invalid && (username?.dirty || username?.touched || submitted) ? 'error' : ''"
-      />
-      <input
-        nz-input
-        formControlName="emailAddress"
-        placeholder="Email"
-        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
-        [nzStatus]="email?.invalid && (email?.dirty || email?.touched || submitted) ? 'error' : ''"
-      />
-      <input
-        nz-input
-        type="password"
-        formControlName="password"
-        placeholder="Password"
-        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
-        [nzStatus]="password?.invalid && (password?.dirty || password?.touched || submitted) ? 'error' : ''"
-      />
-      <input
-        nz-input
-        type="password"
-        formControlName="confirmPassword"
-        placeholder="Confirm Password"
-        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
-        [nzStatus]="(confirmPassword?.invalid && (confirmPassword?.dirty || confirmPassword?.touched || submitted)) || (registerForm.errors?.['passwordsDontMatch'] && (confirmPassword?.dirty || confirmPassword?.touched || submitted)) ? 'error' : ''"
-      />
-      <div class="register-links-row">
-        <span class="login-link" (click)="onLogin()" [class.disabled-link]="loading" [attr.tabindex]="loading ? -1 : 0">Already a member?</span>
+  <div class="register-box">
+    <div class="register-header">
+      <header>Create Account</header>
+      <p>Join us and start your typing journey!</p>
+    </div>
+    
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      <div class="input-box">
+        <input 
+          type="text" 
+          class="input-field" 
+          id="username" 
+          formControlName="username"
+          autocomplete="off" 
+          required
+          [ngClass]="{'error': username?.invalid && (username?.dirty || username?.touched || submitted)}"
+        >
+        <label for="username">Username</label>
       </div>
-      @if (getValidationMessage()) {
-        <div class="validation-message">{{ getValidationMessage() }}</div>
-      }
-      <button
-        nz-button
-        nzType="primary"
-        [disabled]="loading"
-        [nzLoading]="loading"
-        class="register-button"
-        type="submit"
-      >
-        Register
-      </button>
+      
+      <div class="input-box">
+        <input 
+          type="email" 
+          class="input-field" 
+          id="email" 
+          formControlName="emailAddress"
+          autocomplete="off" 
+          required
+          [ngClass]="{'error': email?.invalid && (email?.dirty || email?.touched || submitted)}"
+        >
+        <label for="email">Email</label>
+      </div>
+      
+      <div class="input-box">
+        <input 
+          type="password" 
+          class="input-field" 
+          id="password" 
+          formControlName="password"
+          autocomplete="off" 
+          required
+          [ngClass]="{'error': password?.invalid && (password?.dirty || password?.touched || submitted)}"
+        >
+        <label for="password">Password</label>
+      </div>
+      
+
+      
+      <div class="validation-message" [class.has-error]="getValidationMessage()">{{ getValidationMessage() }}</div>
+      
+      <div class="input-box">
+        <input 
+          type="submit" 
+          class="input-submit" 
+          value="Create Account"
+          [disabled]="loading"
+        >
+      </div>
     </form>
+    
+    <div class="middle-text">
+      <hr>
+      <p class="or-text">Or</p>
+    </div>
+    
+      <div class="social-sign-in">
+        <button type="button" class="input-google" (click)="onGoogleSignIn()">
+          <img src="assets/icons/google.png" alt="Google">
+          <p>Sign Up with Google</p>
+        </button>
+      </div>
+    
+    <div class="sign-in">
+      <p>Already have an account? <a (click)="onLogin()" [class.disabled-link]="loading">Sign in</a></p>
+    </div>
   </div>
 </div> 

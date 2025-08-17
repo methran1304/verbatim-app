@@ -1,76 +1,128 @@
+/* ROBOTO FONT */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+
+/* POPPINS FONT */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap');
+
 .login-viewport {
-  min-height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  min-height: 100vh;
   background: var(--color-bg);
 }
 
-.login-card {
-  width: 462px;
-  max-width: 95vw;
-  min-height: 462px;
+.login-box {
+  position: relative;
+  width: 470px;
+  height: 580px;
+  padding: 10px 30px;
   background: var(--color-bg-card);
-  border-radius: 18px;
-  box-shadow: var(--color-shadow);
   border: 1px solid var(--color-border);
-  padding: 2.75rem 2.475rem 2.2rem 2.475rem;
+  border-radius: 10px;
+  box-shadow: var(--color-shadow);
 }
 
-.login-title {
-  font-size: 2.2rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-text); // Use theme-adaptive text color like navbar
-  text-align: center;
-  margin-bottom: 2.42rem;
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-}
-
-.login-form {
+.login-header {
   display: flex;
   flex-direction: column;
-  gap: 1.375rem;
-  align-items: stretch;
+  text-align: center;
+  margin: 20px 0 50px 0;
 }
 
-input {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  padding: 13.2px 16.5px;
-  width: 100%;
-  border-radius: 6px;
-  font-size: 1.1rem;
+.login-header header {
+  font-family: 'Poppins', sans-serif;
   color: var(--color-text);
+  font-size: 30px;
+  margin-bottom: 5px;
 }
 
-button.login-button {
+.login-header p {
+  color: var(--color-text-secondary);
+}
+
+.input-box {
+  position: relative;
   width: 100%;
-  height: 48.4px;
-  font-weight: 600;
-  font-size: 1.188rem;
-  border-radius: 8px;
-  letter-spacing: 0.01em;
-  margin-top: 0.55rem;
 }
 
-.login-links-row {
+.input-box label {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: var(--color-text-secondary);
+  transition: .15s ease-in-out;
+  pointer-events: none;
+}
+
+.input-box input {
+  width: 100%;
+  height: 50px;
+}
+
+.input-box .input-field {
+  font-size: 1em;
+  color: var(--color-text);
+  padding-left: 15px;
+  margin-bottom: 25px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  outline: none;
+  background: var(--color-bg-card);
+}
+
+.input-box input[type="password"] {
+  margin-bottom: 25px;
+}
+
+.input-box .input-field:focus {
+  border: 2px solid var(--color-primary);
+}
+
+.input-field:focus ~ label, 
+.input-field:valid ~ label {
+  top: -8px;
+  left: 12px;
+  font-size: 12px;
+  color: var(--color-primary);
+  background: var(--color-bg-card);
+  padding: 0 5px;
+}
+
+.input-field:valid ~ label {
+  color: var(--color-text-secondary);
+}
+
+.input-field.error {
+  border-color: var(--color-error);
+}
+
+.forgot {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.55rem;
-  font-size: 1.078rem;
+  margin-bottom: 25px;
 }
 
-.forgot-link, .signup-link {
-  cursor: pointer;
-  color: var(--color-text); // theme-adaptive text color
-  text-decoration: underline;
+section {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+#check {
+  margin-right: 10px;
+}
+
+section .forgot-link {
   font-weight: 500;
-  
-  &:hover {
-    color: var(--color-primary); // primary color on hover for feedback
-  }
+  text-decoration: none;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+section .forgot-link:hover {
+  opacity: 0.8;
 }
 
 .disabled-link {
@@ -81,17 +133,135 @@ button.login-button {
 
 .validation-message {
   color: var(--color-error);
-  font-size: 1.1rem;
+  font-size: 14px;
   text-align: center;
-  margin: 0.55rem 0 0.275rem 0;
+  margin-bottom: 15px;
   font-weight: 500;
+  min-height: 20px;
+  line-height: 20px;
 }
 
-:host ::ng-deep {
-  .ant-input-status-error:not(.ant-input-disabled):not(.ant-input-borderless).ant-input,
-  .ant-input-status-error:not(.ant-input-disabled):not(.ant-input-borderless).ant-input:hover {
-    background: var(--color-bg-secondary) !important;
-    color: var(--color-text) !important;
-    border-color: var(--color-error) !important;
+.validation-message:not(.has-error) {
+  color: transparent;
+}
+
+.input-submit {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  color: #FFF;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  height: 50px;
+}
+
+.input-submit:hover {
+  opacity: 0.9;
+}
+
+.input-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.middle-text {
+  position: relative;
+  width: 100%;
+  margin: 30px 0;
+}
+
+.or-text {
+  font-family: 'Poppins', sans-serif;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  padding: 10px;
+}
+
+hr {
+  border: 1px solid var(--color-border);
+}
+
+.social-sign-in {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+}
+
+.input-google {
+  width: 100%;
+  height: 50px;
+  padding: 0 30px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+}
+
+.input-google img {
+  width: 25px;
+  height: 25px;
+}
+
+.input-google p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  color: var(--color-text);
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.input-google:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--color-primary);
+  transition: all 0.2s ease;
+}
+
+.sign-up {
+  position: absolute;
+  bottom: -50px;
+  right: 0;
+}
+
+.sign-up p {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.sign-up p > a {
+  text-decoration: none;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.sign-up p > a:hover {
+  opacity: 0.8;
+}
+
+@media only screen and (max-width: 510px) {
+  .login-box {
+    padding: 10px 30px;
+    margin: 20px;
+  }
+}
+
+@media only screen and (max-width: 415px) {
+  .login-box {
+    padding: 10px 25px;
+    margin: 15px;
   }
 } 

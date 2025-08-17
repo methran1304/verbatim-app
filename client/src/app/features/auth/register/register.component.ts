@@ -5,10 +5,6 @@ import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzFormModule } from 'ng-zorro-antd/form';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzButtonModule } from 'ng-zorro-antd/button';
 import { ZorroNotificationServiceTsService } from '../../../shared/zorro-notification.service.ts.service';
 import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
 
@@ -17,11 +13,7 @@ import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule,
-    NzCardModule,
-    NzFormModule,
-    NzInputModule,
-    NzButtonModule
+    ReactiveFormsModule
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
@@ -44,8 +36,7 @@ export class RegisterComponent {
       username: ['', [Validators.required, Validators.minLength(4), usernameValidator]],
       emailAddress: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, passwordValidator]],
-      confirmPassword: ['', [Validators.required]],
-    }, { validators: confirmPasswordValidator });
+    });
     this.themeService.getDarkMode().subscribe(isDark => {
       this.isDarkMode = isDark;
     });
@@ -63,7 +54,7 @@ export class RegisterComponent {
     const creds = this.registerForm.value;
     this.authService.register(creds).subscribe({
       next: (result) => {
-        this.notificationService.createNotification('success', 'Account created! ', 'Your account has been created successfully. Let’s get started!');
+        this.notificationService.createNotification('success', 'Account created! ', 'Your account has been created successfully. Let\'s get started!');
         this.router.navigate(['/auth/login']);
         this.loading = false;
       },
@@ -80,10 +71,14 @@ export class RegisterComponent {
     this.router.navigate(['/auth/login']);
   }
 
+  onGoogleSignIn(): void {
+    // TODO: Implement Google OAuth
+    this.notificationService.createNotification('info', 'Coming Soon', 'Google sign-up will be available soon!');
+  }
+
   get username() { return this.registerForm.get('username'); }
   get email() { return this.registerForm.get('emailAddress'); }
   get password() { return this.registerForm.get('password'); }
-  get confirmPassword() { return this.registerForm.get('confirmPassword'); }
 
   getValidationMessage(): string {
     if ((this.username?.invalid && (this.username?.touched || this.submitted))) {
@@ -98,12 +93,6 @@ export class RegisterComponent {
     if ((this.password?.invalid && (this.password?.touched || this.submitted))) {
       if (this.password.errors?.['required']) return 'Password is required.';
       if (this.password.errors?.['passwordInvalid']) return 'Password must be at least 8 characters, include 1 uppercase, 1 lowercase, and 1 number.';
-    }
-    if ((this.confirmPassword?.invalid && (this.confirmPassword?.touched || this.submitted))) {
-      if (this.confirmPassword.errors?.['required']) return 'Please confirm your password.';
-    }
-    if (this.registerForm.errors?.['passwordsDontMatch'] && (this.confirmPassword?.touched || this.submitted)) {
-      return 'Passwords do not match.';
     }
     return '';
   }
@@ -123,8 +112,4 @@ export function passwordValidator(control: AbstractControl): ValidationErrors | 
   return valid ? null : { passwordInvalid: true };
 }
 
-export function confirmPasswordValidator(group: AbstractControl): ValidationErrors | null {
-  const password = group.get('password')?.value;
-  const confirm = group.get('confirmPassword')?.value;
-  return password === confirm ? null : { passwordsDontMatch: true };
-} 
+ 

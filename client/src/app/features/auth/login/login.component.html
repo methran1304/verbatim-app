@@ -1,44 +1,73 @@
 <div class="login-viewport">
-  <div class="login-card">
-    <div class="login-title">verbatim</div>
-    <form
-      nz-form
-      [formGroup]="loginForm"
-      (ngSubmit)="onSubmit()"
-      class="login-form"
-    >
-      <input
-        nz-input
-        formControlName="emailAddressOrUsername"
-        placeholder="Email or Username"
-        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
-        [nzStatus]="emailAddressOrUsername?.invalid && (emailAddressOrUsername?.dirty || emailAddressOrUsername?.touched || submitted) ? 'error' : ''"
-      />
-      <input
-        nz-input
-        type="password"
-        formControlName="password"
-        placeholder="Password"
-        [ngStyle]="{ color: isDarkMode ? '#F4F0F0' : '#282640' }"
-        [nzStatus]="password?.invalid && (password?.dirty || password?.touched || submitted) ? 'error' : ''"
-      />
-      <div class="login-links-row">
-        <span class="forgot-link" (click)="onForgotPassword()" [class.disabled-link]="loading" [attr.tabindex]="loading ? -1 : 0">Forgot password?</span>
-        <span class="signup-link" (click)="onSignUp()" [class.disabled-link]="loading" [attr.tabindex]="loading ? -1 : 0">Sign Up?</span>
+  <div class="login-box">
+    <div class="login-header">
+      <header>Welcome</header>
+      <p>Continue your typing journey!</p>
+    </div>
+    
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div class="input-box">
+        <input 
+          type="text" 
+          class="input-field" 
+          id="email" 
+          formControlName="emailAddressOrUsername"
+          autocomplete="off" 
+          required
+          [ngClass]="{'error': emailAddressOrUsername?.invalid && (emailAddressOrUsername?.dirty || emailAddressOrUsername?.touched || submitted)}"
+        >
+        <label for="email">Email or Username</label>
       </div>
-      @if (getValidationMessage()) {
-        <div class="validation-message">{{ getValidationMessage() }}</div>
-      }
-      <button
-        nz-button
-        nzType="primary"
-        [disabled]="loading"
-        [nzLoading]="loading"
-        class="login-button"
-        type="submit"
-      >
-        Login
-      </button>
+      
+      <div class="input-box">
+        <input 
+          type="password" 
+          class="input-field" 
+          id="password" 
+          formControlName="password"
+          autocomplete="off" 
+          required
+          [ngClass]="{'error': password?.invalid && (password?.dirty || password?.touched || submitted)}"
+        >
+        <label for="password">Password</label>
+      </div>
+      
+      <div class="forgot">
+        <section>
+          <input type="checkbox" id="check" formControlName="rememberMe">
+          <label for="check">Remember me</label>
+        </section>
+        <section>
+          <a href="#" class="forgot-link" (click)="onForgotPassword()" [class.disabled-link]="loading">Forgot password?</a>
+        </section>
+      </div>
+      
+      <div class="validation-message" [class.has-error]="getValidationMessage()">{{ getValidationMessage() }}</div>
+      
+      <div class="input-box">
+        <input 
+          type="submit" 
+          class="input-submit" 
+          value="Sign In"
+          [disabled]="loading"
+        >
+      </div>
     </form>
+    
+    <div class="middle-text">
+      <hr>
+      <p class="or-text">Or</p>
+    </div>
+    
+          <div class="social-sign-in">
+        <button type="button" class="input-google" (click)="onGoogleSignIn()">
+          <img src="assets/icons/google.png" alt="Google">
+          <p>Sign In with Google</p>
+        </button>
+      </div>
+    
+    <div class="sign-up">
+      <p>Don't have account <a (click)="onSignUp()" [class.disabled-link]="loading">Sign up</a></p>
+    </div>
   </div>
 </div> 
