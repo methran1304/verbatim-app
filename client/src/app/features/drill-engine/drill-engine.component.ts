@@ -231,6 +231,10 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                 this.currentBookAuthor = '';
                 this.currentBookId = null;
                 this.hasProgressBeenSaved = true;
+                
+                // Clear book content and chunk processing state when leaving classics mode
+                this.drillStateManagementService.clearBookContent();
+                
                 console.log('Classics mode reset - source:', source);
             }
 
@@ -934,6 +938,10 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             this.currentBookAuthor = '';
             this.currentBookId = null;
             this.hasProgressBeenSaved = true;
+            
+            // Clear book content and chunk processing state when leaving classics mode
+            this.drillStateManagementService.clearBookContent();
+            
             console.log('onNewDrill: Classics mode reset - source:', this.route.snapshot.queryParams['source']);
         }
 
@@ -1527,6 +1535,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             if (this.isCompetitive) {
                 this.competitiveDrillService.cleanup();
             }
+            
+            // Clear book content and chunk processing state to prevent continued processing
+            this.drillStateManagementService.clearBookContent();
             
             // console.log('DRILL ENGINE: Component cleanup completed');
         } catch (error) {

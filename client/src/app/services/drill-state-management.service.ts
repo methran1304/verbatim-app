@@ -398,13 +398,32 @@ export class DrillStateManagementService {
             drillStatistic: this.drillStatisticsService.resetDrillStats(),
             currentWordIndex: 0,
             currentCharIndex: 0,
-            currentInput: '',
+            sourceText: [],
+            typedText: [],
+            wordLocked: [],
             isDrillActive: false,
-            showPostDrillOverlay: false
+            showPostDrillOverlay: false,
+            resumedWordCount: 0
         });
-
         this.timerManagementService.resetTimer(drillPreferences);
         this.adaptiveService.resetAdaptiveState();
+    }
+
+    /**
+     * Clear book content and chunk processing state
+     * Call this when leaving classics mode or switching drill types
+     */
+    clearBookContent(): void {
+        this.fullBookContent = '';
+        // Reset to empty state to prevent chunk processing from continuing
+        this.updateDrillState({
+            sourceText: [],
+            typedText: [],
+            wordLocked: [],
+            currentWordIndex: 0,
+            currentCharIndex: 0,
+            resumedWordCount: 0
+        });
     }
 
     /**
@@ -537,6 +556,10 @@ export class DrillStateManagementService {
         if (!this.fullBookContent) return false;
         
         const currentState = this.getCurrentDrillState();
+        
+        // Don't load chunks if drill is not active (prevents processing after leaving classics)
+        if (!currentState.isDrillActive) return false;
+        
         const remainingWords = currentState.sourceText.length - currentWordIndex;
         
         // load next chunk when user is within 50 words of the end
