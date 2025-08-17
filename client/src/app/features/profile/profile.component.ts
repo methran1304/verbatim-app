@@ -409,6 +409,17 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const total = this.profileStats.wins + this.profileStats.losses;
     return total > 0 ? Math.round((this.profileStats.wins / total) * 100) : 0;
   }
+  
+  getLossRate(): number {
+    if (!this.profileStats) return 0;
+    const total = this.profileStats.wins + this.profileStats.losses;
+    return total > 0 ? Math.round((this.profileStats.losses / total) * 100) : 0;
+  }
+  
+  getTotalCompetitiveGames(): number {
+    if (!this.profileStats) return 0;
+    return this.profileStats.wins + this.profileStats.losses;
+  }
 
   getErrorRate(): number {
     if (!this.profileStats) return 0;

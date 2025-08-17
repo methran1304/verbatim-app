@@ -107,51 +107,44 @@
             </div>
           </div>
 
-          <!-- competitive stats -->
-          <div class="metric-section">
-            <h3>Competitive Performance</h3>
-            <div class="competitive-stats">
-              <div class="competitive-card">
-                <div class="competitive-header">
-                  <span>Win Rate</span>
-                </div>
-                <div class="competitive-value">{{ getWinRate() }}%</div>
-                <div class="competitive-details">
-                  {{ profileStats?.wins || 0 }} wins / {{ profileStats?.losses || 0 }} losses
-                </div>
-              </div>
-              
-              <div class="competitive-card">
-                <div class="competitive-header">
-                  <span>Competitive Drills</span>
-                </div>
-                <div class="competitive-value">{{ profileStats?.competitiveDrills || 0 }}</div>
-                <div class="competitive-details">Total participated</div>
-              </div>
-            </div>
-          </div>
+
 
           <!-- activity summary -->
           <div class="metric-section">
             <h3>Activity Summary</h3>
-            <div class="activity-summary">
-              <div class="activity-item">
-                <span class="activity-label">Total Words:</span>
-                <span class="activity-value">{{ profileStats?.totalWords?.toLocaleString() || 0 }}</span>
+                          <div class="activity-metrics">
+                <div class="activity-metric-card">
+                  <div class="metric-header">
+                    <span class="metric-title">Total Words</span>
+                  </div>
+                  <div class="metric-value">{{ profileStats?.totalWords?.toLocaleString() || 0 }}</div>
+                  <div class="metric-subtitle">Words Typed</div>
+                </div>
+                
+                <div class="activity-metric-card">
+                  <div class="metric-header">
+                    <span class="metric-title">Total Letters</span>
+                  </div>
+                  <div class="metric-value">{{ profileStats?.totalLetters?.toLocaleString() || 0 }}</div>
+                  <div class="metric-subtitle">Letters Typed</div>
+                </div>
+                
+                <div class="activity-metric-card">
+                  <div class="metric-header">
+                    <span class="metric-title">Total Drills</span>
+                  </div>
+                  <div class="metric-value">{{ profileStats?.totalDrillsParticipated || 0 }}</div>
+                  <div class="metric-subtitle">Drills Completed</div>
+                </div>
+                
+                <div class="activity-metric-card">
+                  <div class="metric-header">
+                    <span class="metric-title">Practice Time</span>
+                  </div>
+                  <div class="metric-value">{{ getTotalTimeFormatted() }}</div>
+                  <div class="metric-subtitle">Time Spent</div>
+                </div>
               </div>
-              <div class="activity-item">
-                <span class="activity-label">Total Letters:</span>
-                <span class="activity-value">{{ profileStats?.totalLetters?.toLocaleString() || 0 }}</span>
-              </div>
-              <div class="activity-item">
-                <span class="activity-label">Total Drills:</span>
-                <span class="activity-value">{{ profileStats?.totalDrillsParticipated || 0 }}</span>
-              </div>
-              <div class="activity-item">
-                <span class="activity-label">Practice Time:</span>
-                <span class="activity-value">{{ getTotalTimeFormatted() }}</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -236,6 +229,29 @@
                   [yAxisLabel]="'Count'">
                 </ngx-charts-bar-vertical>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- competitive performance -->
+        <div class="competitive-performance-section">
+          <div class="chart-card">
+            <div class="chart-title">Competitive Performance</div>
+            <div class="wins-losses-progress">
+              <div class="progress-header">
+                <span class="wins-label">Wins</span>
+                <span class="losses-label">Losses</span>
+              </div>
+              <div class="progress-bar-container">
+                <div class="wins-bar" [style.width.%]="getWinRate()"></div>
+                <div class="losses-bar" [style.width.%]="getLossRate()"></div>
+                <div class="progress-divider"></div>
+              </div>
+                              <div class="progress-stats">
+                  <span class="wins-count">{{ profileStats?.wins || 0 }}</span>
+                  <span class="total-count">Total: {{ profileStats?.competitiveDrills || 0 }}</span>
+                  <span class="losses-count">{{ profileStats?.losses || 0 }}</span>
+                </div>
             </div>
           </div>
         </div>

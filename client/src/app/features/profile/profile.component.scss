@@ -283,8 +283,10 @@
         .metric-header {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 0.75rem;
           margin-bottom: 1rem;
+          text-align: center;
           
           .metric-title {
             font-weight: 600;
@@ -297,12 +299,14 @@
           font-size: 2.5rem;
           font-weight: 700;
           margin-bottom: 0.5rem;
+          text-align: center;
         }
         
         .metric-subtitle {
           color: var(--color-text);
           opacity: 0.7;
           font-size: 0.9rem;
+          text-align: center;
         }
       }
     }
@@ -512,7 +516,20 @@
     }
   }
   
-  // activity heatmap
+  // competitive performance section in performance tab
+  .competitive-performance-section {
+    margin-top: 2rem;
+    
+    .wins-losses-progress {
+      margin-top: 0; // remove top margin since it's now in a card
+      padding: 0; // remove padding since it's now in a card
+      background: transparent; // remove background since it's now in a card
+      border-radius: 0; // remove border radius since it's now in a card
+      box-shadow: none; // remove shadow since it's now in a card
+      border: none; // remove border since it's now in a card
+    }
+  }
+  
   .activity-heatmap-section {
     margin-top: 2rem;
   }
@@ -856,6 +873,146 @@
           color: white;
           border-color: var(--color-primary);
         }
+      }
+    }
+  }
+
+// double-sided progress bar for Wins vs Losses
+.wins-losses-progress {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--color-bg-card);
+  border-radius: 12px;
+  box-shadow: var(--color-shadow);
+  border: 1px solid var(--color-border);
+  
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    
+    .wins-label {
+      color: var(--color-success);
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .losses-label {
+      color: var(--color-error);
+      font-weight: 600;
+      font-size: 1rem;
+    }
+  }
+  
+  .progress-bar-container {
+    position: relative;
+    height: 24px;
+    background: var(--color-bg-secondary);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    
+    .wins-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: var(--color-success);
+      transition: width 0.5s ease;
+      border-radius: 12px 0 0 12px;
+    }
+    
+    .losses-bar {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      background: var(--color-error);
+      transition: width 0.5s ease;
+      border-radius: 0 12px 12px 0;
+    }
+    
+    .progress-divider {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background: var(--color-border);
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+  }
+  
+  .progress-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--color-text);
+    
+    .wins-count {
+      color: var(--color-success);
+      font-weight: 600;
+    }
+    
+    .total-count {
+      opacity: 0.7;
+      font-size: 0.8rem;
+    }
+    
+    .losses-count {
+      color: var(--color-error);
+      font-weight: 600;
+    }
+  }
+}
+
+  // activity metrics cards
+  .activity-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+    
+    .activity-metric-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-color: var(--color-primary);
+      }
+      
+      .metric-header {
+        margin-bottom: 0.5rem;
+        
+        .metric-title {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: var(--color-text-secondary);
+          letter-spacing: 0.5px;
+        }
+      }
+      
+              .metric-value {
+          font-size: 1.8rem;
+          font-weight: 700;
+          color: var(--color-warning);
+          margin-bottom: 0.5rem;
+        }
+      
+      .metric-subtitle {
+        font-size: 0.8rem;
+        opacity: 0.8;
+        letter-spacing: 0.5px;
+        color: var(--color-text);
       }
     }
   }
