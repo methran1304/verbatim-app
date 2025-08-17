@@ -565,13 +565,19 @@ Provide detailed, actionable insights for improving typing accuracy and speed. B
 
     public async Task IncrementAiInsightsCounterAsync(string userId)
     {
-      // increment the daily counter and update last generated timestamp on the profile
+      // fetch the profile using the filter
       var filter = Builders<Profile>.Filter.Eq(p => p.ProfileId, userId);
+      var profile = await _profiles.Find(filter).FirstOrDefaultAsync();
+      
+      if (profile == null)
+        throw new InvalidOperationException($"Profile not found for user {userId}");
+
+      // increment the daily counter and update last generated timestamp on the profile
       var update = Builders<Profile>.Update
         .Inc(p => p.AiInsightDetails.AiInsightsGeneratedToday, 1)
         .Set(p => p.AiInsightDetails.LastGeneratedAt, DateTime.UtcNow);
 
-      await _profiles.UpdateOneAsync(filter, update);
+      var result = await _profiles.UpdateOneAsync(filter, update);
     }
   }
 }

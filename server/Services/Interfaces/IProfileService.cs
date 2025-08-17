@@ -21,6 +21,20 @@ namespace server.Services.Interfaces
 		Task<bool> ResetBookProgress(string userId, string bookId);
 		Task<List<BookProgress>> GetAllBookProgress(string userId);
 		
+		// performance data methods
+		Task<Dictionary<string, Dictionary<string, int>>> GetActivity(string userId);
+		Task<Dictionary<string, Dictionary<string, double>>> GetMetricOverTime(string userId, string timePeriod);
+		Task<Dictionary<string, Dictionary<string, int>>> GetDrillDistribution(string userId, string timePeriod);
+		
+		// profile statistics method
+		Task<object> GetProfileStats(string userId);
+		
+		// AI insight method
+		Task<object> GetAIInsight(string userId);
+		
+		// test data population method
+		Task<bool> PopulateDrillsWithTestData();
+		
 		// admin methods for clearing all data
 		Task<bool> ClearAllBookProgress();
 		Task<bool> ClearAllAiFeedback();

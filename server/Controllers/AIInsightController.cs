@@ -47,9 +47,6 @@ namespace server.Controllers
 
             var result = await _aiInsightService.GetAIInsightsAsync(userId);
 
-            // Increment the counter after successful generation
-            await _aiInsightService.IncrementAiInsightsCounterAsync(userId);
-
             return Ok(result);
         }
 

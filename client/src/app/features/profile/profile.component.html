@@ -1,1 +1,328 @@
-<p>profile works!</p>
+<div class="profile-container">
+  <!-- profile content -->
+  <div class="profile-content">
+    
+    <!-- header section -->
+    <div class="profile-header">
+      <div class="profile-avatar">
+        <div class="avatar-placeholder">
+          {{ getAvatarInitial() }}
+        </div>
+      </div>
+      
+      <div class="profile-info">
+        <h1 class="username">{{ profileStats?.username || 'User' }}</h1>
+        <p class="email">{{ profileStats?.emailAddress || 'user@example.com' }}</p>
+        <p class="member-since">Member since {{ getMemberSinceFormatted() }}</p>
+      </div>
+      
+      <div class="profile-stats-summary">
+        <div class="stat-card">
+          <div class="stat-value">{{ profileStats?.userPoints || 0 }}</div>
+          <div class="stat-label">Points</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ profileStats?.totalDrillsParticipated || 0 }}</div>
+          <div class="stat-label">Drills</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ getTotalTimeFormatted() }}</div>
+          <div class="stat-label">Time</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- navigation tabs -->
+    <div class="profile-tabs">
+      <button 
+        *ngFor="let tab of ['overview', 'performance', 'insights']"
+        [class.active]="activeTab === tab"
+        (click)="setActiveTab(tab)"
+        class="tab-button"
+      >
+        {{ tab.charAt(0).toUpperCase() + tab.slice(1) }}
+      </button>
+    </div>
+
+    <!-- tab content -->
+    <div class="tab-content">
+      
+      <!-- overview tab -->
+      <div *ngIf="activeTab === 'overview'" class="overview-tab">
+        <div class="overview-grid">
+          
+          <!-- key performance metrics -->
+          <div class="metric-section">
+            <h3>Performance Highlights</h3>
+            <div class="metrics-grid">
+              <div class="metric-card primary">
+                <div class="metric-header">
+                  <span class="metric-title">Max WPM</span>
+                </div>
+                <div class="metric-value" [style.color]="getWPMColor()">
+                  {{ getRoundedMaxWPM() }}
+                </div>
+                <div class="metric-subtitle">Personal Best</div>
+              </div>
+                            
+              <div class="metric-card primary">
+                <div class="metric-header">
+                  <span class="metric-title">Avg WPM</span>
+                </div>
+                <div class="metric-value" [style.color]="getWPMColor()">
+                  {{ getRoundedAvgWPM() }}
+                </div>
+                <div class="metric-subtitle">Average Performance</div>
+              </div>
+
+              <div class="metric-card success">
+                <div class="metric-header">
+                  <span class="metric-title">Max Accuracy</span>
+                </div>
+                <div class="metric-value" [style.color]="getAccuracyColor()">
+                  {{ getRoundedMaxAccuracy() }}%
+                </div>
+                <div class="metric-subtitle">Personal Best</div>
+              </div>
+              
+              <div class="metric-card success">
+                <div class="metric-header">
+                  <span class="metric-title">Avg Accuracy</span>
+                </div>
+                <div class="metric-value" [style.color]="getAccuracyColor()">
+                  {{ getRoundedAvgAccuracy() }}%
+                </div>
+                <div class="metric-subtitle">Average Performance</div>
+              </div>
+              
+              <div class="metric-card error">
+                <div class="metric-header">
+                  <span class="metric-title">Error Rate</span>
+                </div>
+                <div class="metric-value" style="color: #ff4d4f;">
+                  {{ getErrorRate() }}%
+                </div>
+                <div class="metric-subtitle">Typing Errors</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- competitive stats -->
+          <div class="metric-section">
+            <h3>Competitive Performance</h3>
+            <div class="competitive-stats">
+              <div class="competitive-card">
+                <div class="competitive-header">
+                  <span>Win Rate</span>
+                </div>
+                <div class="competitive-value">{{ getWinRate() }}%</div>
+                <div class="competitive-details">
+                  {{ profileStats?.wins || 0 }} wins / {{ profileStats?.losses || 0 }} losses
+                </div>
+              </div>
+              
+              <div class="competitive-card">
+                <div class="competitive-header">
+                  <span>Competitive Drills</span>
+                </div>
+                <div class="competitive-value">{{ profileStats?.competitiveDrills || 0 }}</div>
+                <div class="competitive-details">Total participated</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- activity summary -->
+          <div class="metric-section">
+            <h3>Activity Summary</h3>
+            <div class="activity-summary">
+              <div class="activity-item">
+                <span class="activity-label">Total Words:</span>
+                <span class="activity-value">{{ profileStats?.totalWords?.toLocaleString() || 0 }}</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-label">Total Letters:</span>
+                <span class="activity-value">{{ profileStats?.totalLetters?.toLocaleString() || 0 }}</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-label">Total Drills:</span>
+                <span class="activity-value">{{ profileStats?.totalDrillsParticipated || 0 }}</span>
+              </div>
+              <div class="activity-item">
+                <span class="activity-label">Practice Time:</span>
+                <span class="activity-value">{{ getTotalTimeFormatted() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- performance tab -->
+      <div *ngIf="activeTab === 'performance'" class="performance-tab">
+        <!-- time range selector -->
+        <div class="performance-header">
+          <h3>Performance Trends</h3>
+          <div class="time-range-selector">
+            <button 
+              *ngFor="let range of timeRangeOptions"
+              [class.active]="selectedTimeRange === range"
+              (click)="onTimeRangeChange(range)"
+              class="range-button"
+            >
+              {{ range.charAt(0).toUpperCase() + range.slice(1) }}
+            </button>
+          </div>
+        </div>
+
+        <!-- metrics over time line chart -->
+        <div class="metrics-line-chart-section">
+          <div class="chart-card">
+            <div class="chart-title">Performance Over Time</div>
+            <div class="chart-container">
+              <ngx-charts-line-chart
+                [results]="metricsLineChartData"
+                [scheme]="lineChartColorScheme"
+                [xAxis]="true"
+                [yAxis]="true"
+                [legend]="true"
+                [showXAxisLabel]="true"
+                [showYAxisLabel]="true"
+                [xAxisLabel]="'Date'"
+                [yAxisLabel]="'WPM / Accuracy (%)'"
+                [timeline]="false"
+                [autoScale]="true"
+                [curve]="curve"
+                [animations]="true"
+                [rangeFillOpacity]="0.1"
+                [gradient]="false">
+              </ngx-charts-line-chart>
+            </div>
+          </div>
+        </div>
+
+        <!-- drill distribution charts -->
+        <div class="charts-container">
+          <div class="chart-item">
+            <div class="chart-card">
+              <div class="chart-title">Drill Types</div>
+              <div class="chart-container">
+                <ngx-charts-bar-vertical
+                  [results]="drillTypeChartData"
+                  [scheme]="drillTypeColorScheme"
+                  [xAxis]="true"
+                  [yAxis]="true"
+                  [gradient]="false"
+                  [showXAxisLabel]="true"
+                  [showYAxisLabel]="true"
+                  [xAxisLabel]="'Drill Type'"
+                  [yAxisLabel]="'Count'">
+                </ngx-charts-bar-vertical>
+              </div>
+            </div>
+          </div>
+          
+          <div class="chart-item">
+            <div class="chart-card">
+              <div class="chart-title">Difficulty Levels</div>
+              <div class="chart-container">
+                <ngx-charts-bar-vertical
+                  [results]="difficultyChartData"
+                  [scheme]="difficultyColorScheme"
+                  [xAxis]="true"
+                  [yAxis]="true"
+                  [gradient]="false"
+                  [showXAxisLabel]="true"
+                  [showYAxisLabel]="true"
+                  [xAxisLabel]="'Difficulty'"
+                  [yAxisLabel]="'Count'">
+                </ngx-charts-bar-vertical>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- activity heatmap -->
+        <div class="activity-heatmap-section">
+          <div class="chart-card">
+            <div class="chart-title">Daily Activity</div>
+            
+            <!-- month carousel -->
+            <div class="month-carousel">
+              <button class="carousel-btn prev" (click)="previousMonth()" title="Previous Month">
+                <span>&lt;</span>
+              </button>
+              
+              <div class="month-selector">
+                <button 
+                  *ngFor="let month of availableMonths"
+                  [class.active]="selectedMonth === month"
+                  (click)="selectMonth(month)"
+                  class="month-btn"
+                >
+                  {{ month }}
+                </button>
+              </div>
+              
+              <button class="carousel-btn next" (click)="nextMonth()" title="Next Month">
+                <span>&gt;</span>
+              </button>
+            </div>
+            
+            <div class="chart-container">
+              @if (activityHeatmapData.length > 0) {
+                <ngx-charts-heat-map
+                  [results]="activityHeatmapData"
+                  [scheme]="heatmapColorScheme"
+                  [xAxis]="true"
+                  [legend]="true"
+                  [yAxis]="true"
+                  [gradient]="false"
+                  class="heatmap-chart">
+                </ngx-charts-heat-map>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ai insights tab -->
+      <div *ngIf="activeTab === 'insights'" class="insights-tab">
+        <div class="insights-header">
+          <h3>AI Performance Insights</h3>
+          <div class="insights-usage">
+            <span class="usage-text">
+              {{ aiInsight?.aiInsightsGeneratedToday || 0 }} / 3 insights used today
+            </span>
+            <div class="usage-bar">
+              <div 
+                class="usage-fill"
+                [style.width.%]="(aiInsight?.aiInsightsGeneratedToday || 0) / 3 * 100"
+              ></div>
+            </div>
+          </div>
+        </div>
+        
+        <div *ngIf="aiInsight?.insight" class="insight-card">
+          <div class="insight-header">
+            <h4>{{ aiInsight?.insight?.title }}</h4>
+            <span class="insight-date">
+              {{ aiInsight?.lastGeneratedAt | date:'MMM dd, yyyy' }}
+            </span>
+          </div>
+          
+          <p class="insight-description">{{ aiInsight?.insight?.description }}</p>
+          
+          <div *ngIf="aiInsight?.insight?.recommendations?.length" class="insight-recommendations">
+            <h5>Recommendations:</h5>
+            <ul class="recommendations-list">
+              <li *ngFor="let rec of aiInsight?.insight?.recommendations">{{ rec }}</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div *ngIf="!aiInsight?.insight" class="no-insight">
+          <p>No AI insights generated yet. Complete some drills to get personalized recommendations!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

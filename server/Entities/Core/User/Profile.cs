@@ -9,7 +9,7 @@ namespace server.Entities
 	{
 		[BsonId]
 		[BsonRepresentation(BsonType.ObjectId)]
-		        public string ProfileId { get; set; } = null!; // should match userid
+		public string ProfileId { get; set; } = null!; // should match userid
 
 		[BsonElement("max_wpm")]
 		public double MaxWPM { get; set; } = 0;

@@ -66,6 +66,57 @@ namespace server.Controllers
 
             return Ok(new { message = "Book progress reset successfully" });
         }
+
+        [HttpGet("activity")]
+        public async Task<IActionResult> GetActivity()
+        {
+            var userId = UserIdRequired;
+            var activityData = await _profileService.GetActivity(userId);
+            return Ok(activityData);
+        }
+
+        [HttpGet("metrics-over-time")]
+        public async Task<IActionResult> GetMetricOverTime([FromQuery] string timePeriod = "week")
+        {
+            var userId = UserIdRequired;
+            var metricsData = await _profileService.GetMetricOverTime(userId, timePeriod);
+            return Ok(metricsData);
+        }
+
+        [HttpGet("drill-distribution")]
+        public async Task<IActionResult> GetDrillDistribution([FromQuery] string timePeriod = "week")
+        {
+            var userId = UserIdRequired;
+            var distributionData = await _profileService.GetDrillDistribution(userId, timePeriod);
+            return Ok(distributionData);
+        }
+        
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetProfileStats()
+        {
+            var userId = UserIdRequired;
+            var profileStats = await _profileService.GetProfileStats(userId);
+            return Ok(profileStats);
+        }
+        
+        [HttpGet("ai-insight")]
+        public async Task<IActionResult> GetAIInsight()
+        {
+            var userId = UserIdRequired;
+            var aiInsight = await _profileService.GetAIInsight(userId);
+            return Ok(aiInsight);
+        }
+        
+        [HttpPost("populate-test-data")]
+        public async Task<IActionResult> PopulateTestData()
+        {
+            var success = await _profileService.PopulateDrillsWithTestData();
+            if (success)
+            {
+                return Ok(new { message = "Test data populated successfully" });
+            }
+            return BadRequest(new { message = "Failed to populate test data" });
+        }
     }
 
     public class StartBookRequest
