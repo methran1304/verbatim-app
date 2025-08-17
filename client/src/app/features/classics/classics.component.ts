@@ -77,9 +77,17 @@ export class ClassicsComponent implements OnInit, OnDestroy {
                 // merge books with their progress data
                 this.books = result.books.items.map((book: any) => {
                     const bookProgress = result.progress.find((p: any) => p.bookId === book.id);
+                    
+                    const defaultProgress = {
+                        bookId: book.id,
+                        totalWords: book.totalWordCount,
+                        isCompleted: false,
+                        completedWords: 0
+                    };
+                    
                     return {
                         ...book,
-                        progress: bookProgress || undefined
+                        progress: bookProgress || defaultProgress
                     };
                 });
                 

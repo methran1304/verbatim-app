@@ -29,6 +29,15 @@ namespace server.Services
 			return await _books.Find(filter).FirstOrDefaultAsync();
 		}
 
+		public async Task<List<Book>> GetBooksByIdsAsync(List<string> bookIds)
+		{
+			if (bookIds == null || !bookIds.Any())
+				return new List<Book>();
+
+			var filter = Builders<Book>.Filter.In(b => b.Id, bookIds);
+			return await _books.Find(filter).ToListAsync();
+		}
+
 		public async Task<int> GetTotalBooksCountAsync()
 		{
 			return (int)await _books.CountDocumentsAsync(_ => true);

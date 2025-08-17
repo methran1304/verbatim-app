@@ -6,6 +6,7 @@ namespace server.Services.Interfaces
 	{
 		Task<List<Book>> GetAllBooksAsync(int page = 1, int pageSize = 10);
 		Task<Book?> GetBookByIdAsync(string bookId);
+		Task<List<Book>> GetBooksByIdsAsync(List<string> bookIds);
 		Task<int> GetTotalBooksCountAsync();
 		Task<Book> CreateBookAsync(Book book);
 	}

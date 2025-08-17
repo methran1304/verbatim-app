@@ -214,29 +214,27 @@ namespace server.Services
 		{
 			var profile = await _profiles.Find(p => p.ProfileId == userId).FirstOrDefaultAsync();
 
-			if (profile is null)
+			if (profile is null || profile.BookProgress == null || !profile.BookProgress.Any())
 				return new List<BookProgress>();
 
-			            // get all books to get their total word counts
-            var allBooks = await _bookService.GetAllBooksAsync(1, 1000); // get all books
-			if (allBooks == null || !allBooks.Any())
+			// only fetch books that the user has progress for - much more efficient
+			var bookIds = profile.BookProgress.Select(bp => bp.BookId).ToList();
+			if (!bookIds.Any())
 				return new List<BookProgress>();
 
+			// fetch only the books that have progress using the new efficient method
+			var relevantBooks = await _bookService.GetBooksByIdsAsync(bookIds);
+			
 			var result = new List<BookProgress>();
 
-			foreach (var book in allBooks)
+			foreach (var bookProgress in profile.BookProgress)
 			{
-				var existingProgress = profile.BookProgress?.FirstOrDefault(bp => bp.BookId == book.Id);
-
-				if (existingProgress != null)
+				var book = relevantBooks?.FirstOrDefault(b => b.Id == bookProgress.BookId);
+				if (book != null)
 				{
-					                // only include books that have actually been started (have progress)
-                // update with actual book data and keep progress
-					existingProgress.TotalWords = book.TotalWordCount;
-					result.Add(existingProgress);
+					bookProgress.TotalWords = book.TotalWordCount;
+					result.Add(bookProgress);
 				}
-				                // don't create default progress for books not started
-                // this way, books without progress will show "Start" button
 			}
 
 			return result;
