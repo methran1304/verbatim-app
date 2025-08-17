@@ -32,9 +32,6 @@ namespace server.Services.Interfaces
 		// AI insight method
 		Task<object> GetAIInsight(string userId);
 		
-		// test data population method
-		Task<bool> PopulateDrillsWithTestData();
-		
 		// admin methods for clearing all data
 		Task<bool> ClearAllBookProgress();
 		Task<bool> ClearAllAiFeedback();

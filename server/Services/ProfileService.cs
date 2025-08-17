@@ -355,13 +355,15 @@ namespace server.Services
 						{
 							{ "drill_count", 0 },
 							{ "total_wpm", 0 },
-							{ "total_accuracy", 0 }
+							{ "total_accuracy", 0 },
+							{ "total_error_rate", 0 }
 						};
 					}
 					
 					metricsData[dateKey]["drill_count"]++;
 					metricsData[dateKey]["total_wpm"] += drill.Statistics.WPM;
 					metricsData[dateKey]["total_accuracy"] += drill.Statistics.Accuracy;
+					metricsData[dateKey]["total_error_rate"] += drill.Statistics.ErrorRate;
 				}
 				
 				// calculate averages
@@ -372,7 +374,8 @@ namespace server.Services
 					result[kvp.Key] = new Dictionary<string, double>
 					{
 						{ "avg_wpm", drillCount > 0 ? kvp.Value["total_wpm"] / drillCount : 0 },
-						{ "avg_acc", drillCount > 0 ? kvp.Value["total_accuracy"] / drillCount : 0 }
+						{ "avg_acc", drillCount > 0 ? kvp.Value["total_accuracy"] / drillCount : 0 },
+						{ "avg_error_rate", drillCount > 0 ? kvp.Value["total_error_rate"] / drillCount : 0 }
 					};
 				}
 				
@@ -469,92 +472,6 @@ namespace server.Services
 			};
 		}
 
-		// Method to populate drills collection with test data
-		public async Task<bool> PopulateDrillsWithTestData()
-		{
-			try
-			{
-				const string userId = "688d50268b237373e8404abb";
-				
-				// first, clear all existing drills for this user
-				var deleteFilter = Builders<Drill>.Filter.Eq(d => d.UserId, userId);
-				var deleteResult = await context.Drills.DeleteManyAsync(deleteFilter);
-				Console.WriteLine($"Cleared {deleteResult.DeletedCount} existing drills for user {userId}");
-				
-				var random = new Random();
-				var drills = new List<Drill>();
-				
-				// generate data from January 1, 2025 to November 30, 2025
-				var startDate = new DateTime(2024, 10, 1);
-				var endDate = new DateTime(2025, 9, 30);
-				var currentDate = startDate;
-				
-				while (currentDate <= endDate)
-				{
-					// skip some days to create gaps (no drills on some days)
-					if (random.Next(1, 101) <= 15) // 15% chance of no drills
-					{
-						currentDate = currentDate.AddDays(1);
-						continue;
-					}
-					
-					// generate 1 to 100+ drills per day
-					var drillsPerDay = random.Next(1, 101);
-					
-					for (int i = 0; i < drillsPerDay; i++)
-					{
-						var drill = new Drill
-						{
-							UserId = userId,
-							CreatedAt = currentDate.AddHours(random.Next(0, 24)).AddMinutes(random.Next(0, 60)),
-							DrillType = GetRandomDrillType(random),
-							DrillDifficulty = GetRandomDrillDifficulty(random),
-							SourceTextId = $"source_{Guid.NewGuid().ToString("N")[..8]}",
-							DrillInputId = $"input_{Guid.NewGuid().ToString("N")[..8]}",
-							PointsGained = random.Next(10, 100),
-							Statistics = new DrillStatistic
-							{
-								WPM = random.Next(30, 120),
-								Accuracy = random.Next(70, 100),
-								AvgWPM = random.Next(30, 120),
-								AvgAccuracy = random.Next(70, 100),
-								MaxWPM = random.Next(80, 150),
-								MaxAccuracy = random.Next(85, 100),
-								ErrorRate = random.Next(0, 30),
-								Corrections = random.Next(0, 20),
-								WordsCount = random.Next(50, 500),
-								LettersCount = random.Next(200, 2000),
-								CorrectWords = random.Next(40, 480),
-								CorrectLetters = random.Next(180, 1900),
-								IncorrectWords = random.Next(0, 50),
-								IncorrectLetters = random.Next(0, 200),
-								Duration = random.Next(60, 1800) // 1 minute to 30 minutes
-							}
-						};
-						
-						drills.Add(drill);
-					}
-					
-					currentDate = currentDate.AddDays(1);
-				}
-				
-				// insert all drills in batches
-				if (drills.Any())
-				{
-					await context.Drills.InsertManyAsync(drills);
-					Console.WriteLine($"Successfully inserted {drills.Count} test drills for user {userId}");
-					return true;
-				}
-				
-				return false;
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"Error populating drills with test data: {ex.Message}");
-				return false;
-			}
-		}
-		
 		private DrillType GetRandomDrillType(Random random)
 		{
 			var types = new[] { DrillType.Timed, DrillType.Marathon, DrillType.Adaptive };

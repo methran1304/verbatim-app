@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 import { Subject, takeUntil } from 'rxjs';
-import { ProfileService, BookProgress, AIInsight } from '../../services/profile.service';
+import { ProfileService, BookProgress } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { DrillType } from '../../models/enums/drill-type.enum';
 import { DrillDifficulty } from '../../models/enums/drill-difficulty.enum';
@@ -45,7 +45,6 @@ interface ProfileStats {
 })
 export class ProfileComponent implements OnInit, OnDestroy {
   @Input() profileStats: ProfileStats | null = null;
-  @Input() aiInsight: AIInsight | null = null;
   
   private destroy$ = new Subject<void>();
   
@@ -63,7 +62,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   
   // color schemes
   lineChartColorScheme: any = {
-    domain: ['#52c41a', '#1890ff'] // green for WPM, blue for Accuracy (same as performance chart)
+    domain: ['#52c41a', '#1890ff', '#ff4d4f'] // green for WPM, blue for Accuracy, red for Error Rate
   };
   difficultyColorScheme: any = {
     domain: ['#10b981', '#f59e0b', '#ef4444']
@@ -82,9 +81,10 @@ export class ProfileComponent implements OnInit, OnDestroy {
     ]
   };
   
-  // y-axis configuration for line chart
-  yAxisTicks: number[] = [0, 20, 40, 60, 80, 100];
-  yAxisTickFormatter = (value: number) => `${value}%`;
+  // custom y-axis configuration for mixed data types
+  yAxis = true;
+  showYAxisLabel = true;
+  yAxisLabel = 'Value';
   
   // available months for carousel
   availableMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -109,7 +109,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadProfileStats();
-    this.loadAIInsight();
     this.loadPerformanceData();
     this.prepareMetricsLineChartData();
   }
@@ -138,14 +137,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadAIInsight(): void {
-    // for now, use mock data
-    this.aiInsight = {
-      lastGeneratedAt: new Date(),
-      insight: 'Your typing speed has improved by 15% this month!',
-      aiInsightsGeneratedToday: 3
-    };
-  }
+
 
   loadPerformanceData(): void {
     this.loadActivityData();
@@ -355,12 +347,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
     }
   }
 
-  prepareMetricsLineChartData(metricsData?: Record<string, { avg_wpm: number; avg_acc: number }>): void {
+  prepareMetricsLineChartData(metricsData?: Record<string, { avg_wpm: number; avg_acc: number; avg_error_rate: number }>): void {
     // clear existing data first
     this.metricsLineChartData = [];
 
     if (metricsData && Object.keys(metricsData).length > 0) {
-      // Use real metrics data
+      // use real metrics data
       const sortedDates = Object.keys(metricsData).sort();
 
       this.metricsLineChartData = [
@@ -377,6 +369,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
             name: date,
             value: metricsData[date].avg_acc
           }))
+        },
+        {
+          name: 'Average Error Rate',
+          series: sortedDates.map(date => ({
+            name: date,
+            value: metricsData[date].avg_error_rate
+          }))
         }
       ];
 
@@ -385,11 +384,11 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   getAccuracyColor(): string {
-    return 'var(--color-success)';
+    return 'var(--color-primary)';
   }
 
   getWPMColor(): string {
-    return 'var(--color-primary)';
+    return 'var(--color-success)';
   }
 
   getDrillTypePercentage(drillType: string): number {

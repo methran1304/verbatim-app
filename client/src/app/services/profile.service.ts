@@ -47,8 +47,8 @@ export class ProfileService {
     return this.http.get<Record<string, Record<string, number>>>(`${this.apiUrl}/activity`);
   }
 
-  getMetricOverTime(timePeriod: string): Observable<Record<string, { avg_wpm: number; avg_acc: number }>> {
-    return this.http.get<Record<string, { avg_wpm: number; avg_acc: number }>>(`${this.apiUrl}/metrics-over-time?timePeriod=${timePeriod}`);
+  getMetricOverTime(timePeriod: string): Observable<Record<string, { avg_wpm: number; avg_acc: number; avg_error_rate: number }>> {
+    return this.http.get<Record<string, { avg_wpm: number; avg_acc: number; avg_error_rate: number }>>(`${this.apiUrl}/metrics-over-time?timePeriod=${timePeriod}`);
   }
 
   getDrillDistribution(timePeriod: string): Observable<{

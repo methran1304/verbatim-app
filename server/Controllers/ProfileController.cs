@@ -106,17 +106,6 @@ namespace server.Controllers
             var aiInsight = await _profileService.GetAIInsight(userId);
             return Ok(aiInsight);
         }
-        
-        [HttpPost("populate-test-data")]
-        public async Task<IActionResult> PopulateTestData()
-        {
-            var success = await _profileService.PopulateDrillsWithTestData();
-            if (success)
-            {
-                return Ok(new { message = "Test data populated successfully" });
-            }
-            return BadRequest(new { message = "Failed to populate test data" });
-        }
     }
 
     public class StartBookRequest

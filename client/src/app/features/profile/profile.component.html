@@ -35,7 +35,7 @@
     <!-- navigation tabs -->
     <div class="profile-tabs">
       <button 
-        *ngFor="let tab of ['overview', 'performance', 'insights']"
+        *ngFor="let tab of ['overview', 'performance']"
         [class.active]="activeTab === tab"
         (click)="setActiveTab(tab)"
         class="tab-button"
@@ -55,7 +55,7 @@
           <div class="metric-section">
             <h3>Performance Highlights</h3>
             <div class="metrics-grid">
-              <div class="metric-card primary">
+              <div class="metric-card success">
                 <div class="metric-header">
                   <span class="metric-title">Max WPM</span>
                 </div>
@@ -65,7 +65,7 @@
                 <div class="metric-subtitle">Personal Best</div>
               </div>
                             
-              <div class="metric-card primary">
+              <div class="metric-card success">
                 <div class="metric-header">
                   <span class="metric-title">Avg WPM</span>
                 </div>
@@ -75,7 +75,7 @@
                 <div class="metric-subtitle">Average Performance</div>
               </div>
 
-              <div class="metric-card success">
+              <div class="metric-card primary">
                 <div class="metric-header">
                   <span class="metric-title">Max Accuracy</span>
                 </div>
@@ -85,7 +85,7 @@
                 <div class="metric-subtitle">Personal Best</div>
               </div>
               
-              <div class="metric-card success">
+              <div class="metric-card primary">
                 <div class="metric-header">
                   <span class="metric-title">Avg Accuracy</span>
                 </div>
@@ -187,7 +187,7 @@
                 [showXAxisLabel]="true"
                 [showYAxisLabel]="true"
                 [xAxisLabel]="'Date'"
-                [yAxisLabel]="'WPM / Accuracy (%)'"
+                [yAxisLabel]="'Value'"
                 [timeline]="false"
                 [autoScale]="true"
                 [curve]="curve"
@@ -284,45 +284,7 @@
         </div>
       </div>
 
-      <!-- ai insights tab -->
-      <div *ngIf="activeTab === 'insights'" class="insights-tab">
-        <div class="insights-header">
-          <h3>AI Performance Insights</h3>
-          <div class="insights-usage">
-            <span class="usage-text">
-              {{ aiInsight?.aiInsightsGeneratedToday || 0 }} / 3 insights used today
-            </span>
-            <div class="usage-bar">
-              <div 
-                class="usage-fill"
-                [style.width.%]="(aiInsight?.aiInsightsGeneratedToday || 0) / 3 * 100"
-              ></div>
-            </div>
-          </div>
-        </div>
-        
-        <div *ngIf="aiInsight?.insight" class="insight-card">
-          <div class="insight-header">
-            <h4>{{ aiInsight?.insight?.title }}</h4>
-            <span class="insight-date">
-              {{ aiInsight?.lastGeneratedAt | date:'MMM dd, yyyy' }}
-            </span>
-          </div>
-          
-          <p class="insight-description">{{ aiInsight?.insight?.description }}</p>
-          
-          <div *ngIf="aiInsight?.insight?.recommendations?.length" class="insight-recommendations">
-            <h5>Recommendations:</h5>
-            <ul class="recommendations-list">
-              <li *ngFor="let rec of aiInsight?.insight?.recommendations">{{ rec }}</li>
-            </ul>
-          </div>
-        </div>
-        
-        <div *ngIf="!aiInsight?.insight" class="no-insight">
-          <p>No AI insights generated yet. Complete some drills to get personalized recommendations!</p>
-        </div>
-      </div>
+
     </div>
   </div>
 </div>
