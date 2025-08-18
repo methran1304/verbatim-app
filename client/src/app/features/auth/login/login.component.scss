@@ -184,51 +184,6 @@ hr {
   border: 1px solid var(--color-border);
 }
 
-.social-sign-in {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 5px;
-  cursor: pointer;
-  border: none;
-}
-
-.input-google {
-  width: 100%;
-  height: 50px;
-  padding: 0 30px;
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-}
-
-.input-google img {
-  width: 25px;
-  height: 25px;
-}
-
-.input-google p {
-  font-family: var(--font-family-auth);
-  font-size: 15px;
-  color: var(--color-text);
-  margin: 0;
-  flex: 1;
-  text-align: center;
-}
-
-.input-google:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-color: var(--color-primary);
-  transition: all 0.2s ease;
-}
-
 .sign-up {
   position: absolute;
   bottom: -50px;

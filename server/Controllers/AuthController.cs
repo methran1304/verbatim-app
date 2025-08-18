@@ -78,23 +78,15 @@ namespace server.Controllers
 			return Ok();
 		}
 
-		[HttpPost("google")]
-		public async Task<ActionResult<TokenResponseDTO>> GoogleAuth([FromBody] GoogleAuthRequestDTO request)
+		[HttpPost("google-signin")]
+		public async Task<ActionResult<TokenResponseDTO>> GoogleSignIn([FromBody] GoogleAuthRequestDTO request)
 		{
-			try
-			{
-				var result = await _authService.AuthenticateWithGoogleAsync(request.IdToken);
+			var result = await _authService.GoogleSignInAsync(request.IdToken);
 
-				if (result is null)
-					return Unauthorized("Invalid Google token or authentication failed.");
+			if (result is null)
+				return Unauthorized("Invalid Google ID token.");
 
-				return Ok(result);
-			}
-			catch (Exception ex)
-			{
-				// Log the exception here if you have logging configured
-				return BadRequest($"Google authentication failed: {ex.Message}");
-			}
+			return Ok(result);
 		}
 	}
 }

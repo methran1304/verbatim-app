@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Bson;
@@ -102,6 +103,92 @@ namespace server.Services.Interfaces
             return response;
         }
 
+        public async Task<TokenResponseDTO?> GoogleSignInAsync(string idToken)
+        {
+            try
+            {
+                // verify the Google ID token
+                var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+                
+                // extract user information from the token
+                var googleUserId = payload.Subject; // Google's unique user ID
+                var email = payload.Email;
+                var name = payload.Name;
+                var pictureUrl = payload.Picture;
+
+                // check if user already exists by Google ID or email
+                var existingUser = await _userService.GetByEmailAsync(email);
+                
+                if (existingUser != null)
+                {
+                    // user exists - sign them in
+                    var tokenResponse = CreateTokenResponse(existingUser);
+                    await _userService.RotateRefreshToken(existingUser.UserId, tokenResponse.RefreshToken);
+                    return tokenResponse;
+                }
+
+                // user doesn't exist - create new user
+                string generatedUserId = ObjectId.GenerateNewId().ToString();
+                
+                User newUser = new()
+                {
+                    UserId = generatedUserId,
+                    EmailAddress = email,
+                    Username = GenerateUsernameFromEmail(email), // generate unique username
+                    IsAdmin = false,
+                    AuthProvider = AuthenticationProviders.Google,
+                    ProfilePictureUrl = pictureUrl ?? string.Empty,
+                    RefreshToken = GenerateRefreshToken(),
+                    RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7),
+                    // no password hash for Google users
+                    PasswordHash = string.Empty
+                };
+
+                await _userService.CreateAsync(newUser);
+
+                // create user profile
+                Profile userProfile = new()
+                {
+                    ProfileId = generatedUserId
+                };
+
+                await _profileService.CreateProfileAsync(userProfile);
+
+                // return token response for the new user
+                var response = CreateTokenResponse(newUser);
+                await _userService.RotateRefreshToken(newUser.UserId, response.RefreshToken);
+                return response;
+            }
+            catch (InvalidJwtException ex)
+            {
+                // token verification failed
+                Console.WriteLine($"Google ID token verification failed: {ex.Message}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                // other errors
+                Console.WriteLine($"Google Sign-In error: {ex.Message}");
+                return null;
+            }
+        }
+
+        private string GenerateUsernameFromEmail(string email)
+        {
+            var baseUsername = email.Split('@')[0];
+            var username = baseUsername;
+            var counter = 1;
+            
+            // keep checking until we find a unique username
+            while (_userService.GetByUsernameAsync(username).Result != null)
+            {
+                username = $"{baseUsername}{counter}";
+                counter++;
+            }
+            
+            return username;
+        }
+
         private TokenResponseDTO CreateTokenResponse(User user)
         {
             return new TokenResponseDTO
@@ -154,28 +241,6 @@ namespace server.Services.Interfaces
             );
 
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
-        }
-
-        public async Task<TokenResponseDTO?> AuthenticateWithGoogleAsync(string idToken)
-        {
-            try
-            {
-                // TODO: Implement Google ID token verification
-                // For now, this is a placeholder implementation
-                // You'll need to:
-                // 1. Verify the Google ID token with Google's servers
-                // 2. Extract user information from the token
-                // 3. Create or update user in your database
-                // 4. Return JWT tokens
-
-                // Placeholder - replace with actual Google token verification
-                throw new NotImplementedException("Google authentication not yet implemented. Need to verify ID token with Google and handle user creation/authentication.");
-            }
-            catch (Exception ex)
-            {
-                // Log the exception here
-                throw;
-            }
         }
     }
 }

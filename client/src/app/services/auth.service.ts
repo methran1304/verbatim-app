@@ -41,6 +41,18 @@ export class AuthService {
         );
     }
 
+    googleSignIn(idToken: string): Observable<TokenResponseDTO> {
+        return this.http.post<TokenResponseDTO>(
+            `${this.baseUrl}/google-signin`,
+            { idToken },
+        ).pipe(
+            map((response: TokenResponseDTO) => {
+                this.setTokens(response);
+                return response;
+            })
+        );
+    }
+
     refreshToken(
         payload: RefreshTokenRequestDTO,
     ): Observable<TokenResponseDTO> {

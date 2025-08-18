@@ -13,6 +13,6 @@ namespace server.Services.Interfaces
         Task<User?> RegisterAsync(RegisterRequestDTO request);
         Task<TokenResponseDTO?> LoginAsync(LoginRequestDTO request);
         Task<TokenResponseDTO?> RefreshTokensAsync(RefreshTokenRequestDTO request);
-        Task<TokenResponseDTO?> AuthenticateWithGoogleAsync(string idToken);
+        Task<TokenResponseDTO?> GoogleSignInAsync(string idToken);
     }
 }

@@ -93,21 +93,19 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   private handleGoogleCredentialResponse(response: GoogleCredentialResponse): void {
     console.log("Encoded JWT ID token: " + response.credential);
     
-    // TODO: Implement Google OAuth authentication
-    // You would typically send this credential to your backend
-    // this.authService.googleSignIn(response.credential).subscribe({
-    //   next: (result) => {
-    //     this.notificationService.createNotification('success', 'Welcome!', 'Successfully signed in with Google.');
-    //     this.router.navigate(['/drill']);
-    //   },
-    //   error: (error) => {
-    //     const errorMessage = ErrorHandlerUtil.handleError(error, 'auth');
-    //     this.notificationService.createNotification('error', 'Google Sign-In Failed', errorMessage);
-    //   }
-    // });
-
-    // temporary notification until backend integration is complete
-    this.notificationService.createNotification('info', 'Google Sign-In', 'Google authentication received. Backend integration pending.');
+    this.loading = true;
+    this.authService.googleSignIn(response.credential).subscribe({
+      next: (result) => {
+        this.notificationService.createNotification('success', 'Welcome!', 'Successfully signed in with Google.');
+        this.router.navigate(['/drill']);
+        this.loading = false;
+      },
+      error: (error) => {
+        const errorMessage = ErrorHandlerUtil.handleError(error, 'auth');
+        this.notificationService.createNotification('error', 'Google Sign-In Failed', errorMessage);
+        this.loading = false;
+      }
+    });
   }
 
   onSubmit(): void {

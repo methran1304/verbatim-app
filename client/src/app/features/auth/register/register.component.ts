@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
@@ -8,6 +8,8 @@ import { CommonModule } from '@angular/common';
 import { ZorroNotificationServiceTsService } from '../../../shared/zorro-notification.service.ts.service';
 import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
 import { AuthFooterComponent } from '../../../shared/auth-footer/auth-footer.component';
+import { GoogleAuthService } from '../../../services/google-auth.service';
+import { GoogleCredentialResponse } from '../../../models/interfaces/google-auth.interface';
 
 @Component({
   selector: 'app-register',
@@ -20,19 +22,21 @@ import { AuthFooterComponent } from '../../../shared/auth-footer/auth-footer.com
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
-export class RegisterComponent {
+export class RegisterComponent implements AfterViewInit, OnDestroy {
   registerForm!: FormGroup;
   loading = false;
   errorMessage = '';
   isDarkMode = false;
   submitted = false;
+  private googleCredentialSubscription: any;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
     private themeService: ThemeService,
-    private notificationService: ZorroNotificationServiceTsService
+    private notificationService: ZorroNotificationServiceTsService,
+    private googleAuthService: GoogleAuthService
   ) {
     this.registerForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(4), usernameValidator]],
@@ -41,6 +45,65 @@ export class RegisterComponent {
     });
     this.themeService.getDarkMode().subscribe(isDark => {
       this.isDarkMode = isDark;
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.initializeGoogleSignIn();
+  }
+
+  ngOnDestroy(): void {
+    if (this.googleCredentialSubscription) {
+      this.googleCredentialSubscription.unsubscribe();
+    }
+    this.googleAuthService.destroy();
+  }
+
+  private async initializeGoogleSignIn(): Promise<void> {
+    try {
+      // initialize Google Sign-In
+      await this.googleAuthService.initializeGoogleSignIn();
+      
+      // render the button
+      const success = this.googleAuthService.renderButton('buttonDiv', {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'center',
+        width: '400px'
+      });
+      
+      if (!success) {
+        this.notificationService.createNotification('error', 'Google Sign-In Error', 'Failed to render Google Sign-In button.');
+        return;
+      }
+
+      // subscribe to credential responses
+      this.googleCredentialSubscription = this.googleAuthService.getCredentialResponse()
+        .subscribe(this.handleGoogleCredentialResponse.bind(this));
+
+    } catch (error) {
+      console.error('Error initializing Google Sign-In:', error);
+      this.notificationService.createNotification('error', 'Google Sign-In Error', 'Failed to initialize Google Sign-In.');
+    }
+  }
+
+  private handleGoogleCredentialResponse(response: GoogleCredentialResponse): void {
+    console.log("Encoded JWT ID token: " + response.credential);
+    
+    this.loading = true;
+    this.authService.googleSignIn(response.credential).subscribe({
+      next: (result) => {
+        this.notificationService.createNotification('success', 'Welcome!', 'Successfully signed up with Google.');
+        this.router.navigate(['/drill']);
+        this.loading = false;
+      },
+      error: (error) => {
+        const errorMessage = ErrorHandlerUtil.handleError(error, 'auth');
+        this.notificationService.createNotification('error', 'Google Sign-Up Failed', errorMessage);
+        this.loading = false;
+      }
     });
   }
 
@@ -73,10 +136,7 @@ export class RegisterComponent {
     this.router.navigate(['/auth/login']);
   }
 
-  onGoogleSignIn(): void {
-    // TODO: Implement Google OAuth
-    this.notificationService.createNotification('info', 'Coming Soon', 'Google sign-up will be available soon!');
-  }
+
 
   get username() { return this.registerForm.get('username'); }
   get email() { return this.registerForm.get('emailAddress'); }
