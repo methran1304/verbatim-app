@@ -10,5 +10,6 @@ namespace server.Services.Interfaces
 		Task CreateAsync(User user);
 		Task<bool> UserExists(string username, string emailId);
 		Task RotateRefreshToken(string userId, string refreshToken);
+		Task<User?> ValidateAndRotateRefreshTokenAsync(string userId, string refreshToken);
 	}
 }

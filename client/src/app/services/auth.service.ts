@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import {
     LoginRequestDTO,
     RefreshTokenRequestDTO,
@@ -17,12 +18,13 @@ export class AuthService {
     private baseUrl = `${environment.apiBaseUrl}/auth`;
     private isAuthenticatedSubject: BehaviorSubject<boolean>;
     private payloadSubject: BehaviorSubject<JwtPayload | null>;
+    private refreshInProgress = false;
 
-    constructor(private http: HttpClient) {
-        const tokenPresent = !!localStorage.getItem('accessToken');
+    constructor(private http: HttpClient, private router: Router) {
+        const tokenPresent = !!this.getAccessToken();
         this.isAuthenticatedSubject = new BehaviorSubject<boolean>(tokenPresent);
         this.payloadSubject = new BehaviorSubject<JwtPayload | null>(null);
-        this.payloadSubject.next(JwtDecoderUtil.decode(localStorage.getItem('accessToken') ?? ''));
+        this.payloadSubject.next(JwtDecoderUtil.decode(this.getAccessToken() ?? ''));
     }
 
     register(payload: RegisterRequestDTO): Observable<any> {
@@ -35,19 +37,19 @@ export class AuthService {
             payload,
         ).pipe(
             map((response: TokenResponseDTO) => {
-                this.setTokens(response);
+                this.setTokens(response, payload.rememberMe);
                 return response;
             })
         );
     }
 
-    googleSignIn(idToken: string): Observable<TokenResponseDTO> {
+    googleSignIn(idToken: string, rememberMe?: boolean): Observable<TokenResponseDTO> {
         return this.http.post<TokenResponseDTO>(
             `${this.baseUrl}/google-signin`,
             { idToken },
         ).pipe(
             map((response: TokenResponseDTO) => {
-                this.setTokens(response);
+                this.setTokens(response, rememberMe);
                 return response;
             })
         );
@@ -56,34 +58,76 @@ export class AuthService {
     refreshToken(
         payload: RefreshTokenRequestDTO,
     ): Observable<TokenResponseDTO> {
+        // prevent multiple simultaneous refresh attempts
+        if (this.refreshInProgress) {
+            return new Observable<TokenResponseDTO>(subscriber => {
+                subscriber.error(new Error('Refresh already in progress'));
+            });
+        }
+
+        this.refreshInProgress = true;
+        
+        console.log("Refreshing token");
+        
         return this.http.post<TokenResponseDTO>(
             `${this.baseUrl}/refresh-token`,
             payload,
         ).pipe(
             tap((response: TokenResponseDTO) => {
                 this.setTokens(response);
+                this.refreshInProgress = false;
+            }),
+            catchError((error) => {
+                this.refreshInProgress = false;
+                throw error;
             })
         );
     }
 
     logout(): void {
+        // clear both localStorage and sessionStorage
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('rememberMe');
+
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('rememberMe');
+
         localStorage.removeItem('userPreference');
         localStorage.removeItem('drillPreference');
+        
         this.isAuthenticatedSubject.next(false);
         this.payloadSubject.next(null);
+        this.router.navigate(['/logout']);
     }
 
-    private setTokens(response: TokenResponseDTO): void {
-        localStorage.setItem('accessToken', response.accessToken);
-        localStorage.setItem('refreshToken', response.refreshToken);
+    private setTokens(response: TokenResponseDTO, rememberMe: boolean = false): void {
+        const storage = rememberMe ? localStorage : sessionStorage;
+
+        storage.setItem('accessToken', response.accessToken);
+        storage.setItem('refreshToken', response.refreshToken);
+        storage.setItem('rememberMe', rememberMe.toString());
+
         this.setAuthenticated(true);
     }
 
     setAuthenticated(authenticated: boolean): void {
         this.isAuthenticatedSubject.next(authenticated);
-        this.payloadSubject.next(JwtDecoderUtil.decode(localStorage.getItem('accessToken') ?? ''));
+        this.payloadSubject.next(JwtDecoderUtil.decode(this.getAccessToken() ?? ''));
+    }
+
+    getAccessToken(): string | null {
+        return sessionStorage.getItem('accessToken') || localStorage.getItem('accessToken');
+    }
+
+    getRefreshToken(): string | null {
+        return sessionStorage.getItem('refreshToken') || localStorage.getItem('refreshToken');
+    }
+
+    isRememberMeEnabled(): boolean {
+        const rememberMe = sessionStorage.getItem('rememberMe') || localStorage.getItem('rememberMe');
+        return rememberMe === 'true';
     }
 
     getAuthenticated(): Observable<boolean> {
@@ -101,13 +145,13 @@ export class AuthService {
     }
 
     isTokenExpired(): boolean {
-        const token = localStorage.getItem('accessToken');
+        const token = this.getAccessToken();
         if (!token) return true;
         return JwtDecoderUtil.isExpired(token) || false;
     }
 
     isTokenExpiringSoon(minutes: number = 5): boolean {
-        const token = localStorage.getItem('accessToken');
+        const token = this.getAccessToken();
         if (!token) return true;
         
         const timeUntilExpiration = JwtDecoderUtil.getTimeUntilExpiration(token);
@@ -117,8 +161,8 @@ export class AuthService {
     }
 
     refreshTokenIfNeeded(): Observable<boolean> {
-        const token = localStorage.getItem('accessToken');
-        const refreshToken = localStorage.getItem('refreshToken');
+        const token = this.getAccessToken();
+        const refreshToken = this.getRefreshToken();
         
         if (!token || !refreshToken) {
             return new Observable<boolean>(subscriber => {

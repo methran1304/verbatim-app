@@ -93,13 +93,12 @@ namespace server.Services.Interfaces
 
         public async Task<TokenResponseDTO?> RefreshTokensAsync(RefreshTokenRequestDTO request)
         {
-            var user = await ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
+            var user = await _userService.ValidateAndRotateRefreshTokenAsync(request.UserId, request.RefreshToken);
 
             if (user is null)
                 return null;
 
             var response = CreateTokenResponse(user);
-            await _userService.RotateRefreshToken(user.UserId, response.RefreshToken);
             return response;
         }
 
@@ -194,7 +193,7 @@ namespace server.Services.Interfaces
             return new TokenResponseDTO
             {
                 AccessToken = CreateToken(user),
-                RefreshToken = GenerateRefreshToken()
+                RefreshToken = user.RefreshToken // Use the refresh token that was already generated
             };
         }
 
@@ -236,7 +235,7 @@ namespace server.Services.Interfaces
                 issuer: _configuration.GetValue<string>("AppSettings:Issuer"),
                 audience: _configuration.GetValue<string>("AppSettings:Audience"),
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(1),
+                expires: DateTime.UtcNow.AddSeconds(5),
                 signingCredentials: creds
             );
 

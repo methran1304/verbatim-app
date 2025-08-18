@@ -94,7 +94,8 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
     console.log("Encoded JWT ID token: " + response.credential);
     
     this.loading = true;
-    this.authService.googleSignIn(response.credential).subscribe({
+    const rememberMe = this.loginForm.get('rememberMe')?.value || false;
+    this.authService.googleSignIn(response.credential, rememberMe).subscribe({
       next: (result) => {
         this.notificationService.createNotification('success', 'Welcome!', 'Successfully signed in with Google.');
         this.router.navigate(['/drill']);

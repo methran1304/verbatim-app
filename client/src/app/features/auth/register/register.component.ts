@@ -93,7 +93,7 @@ export class RegisterComponent implements AfterViewInit, OnDestroy {
     console.log("Encoded JWT ID token: " + response.credential);
     
     this.loading = true;
-    this.authService.googleSignIn(response.credential).subscribe({
+    this.authService.googleSignIn(response.credential, true).subscribe({
       next: (result) => {
         this.notificationService.createNotification('success', 'Welcome!', 'Successfully signed up with Google.');
         this.router.navigate(['/drill']);

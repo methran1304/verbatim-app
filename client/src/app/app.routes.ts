@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { AuthComponent } from './features/auth/auth.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
+import { LogoutComponent } from './features/auth/logout/logout.component';
 import { DrillEngineComponent } from './features/drill-engine/drill-engine.component';
 import { DrillStatsComponent } from './features/drill-stats/drill-stats.component';
 import { ProfileComponent } from './features/profile/profile.component';
@@ -20,6 +21,10 @@ export const routes: Routes = [
             { path: 'register', component: RegisterComponent },
             { path: '', redirectTo: 'login', pathMatch: 'full' },
         ],
+    },
+    {
+        path: 'logout',
+        component: LogoutComponent,
     },
     {
         path: 'drill',

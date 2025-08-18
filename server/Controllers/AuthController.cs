@@ -53,6 +53,11 @@ namespace server.Controllers
 		[HttpPost("refresh-token")]
 		public async Task<ActionResult<TokenResponseDTO>> RefreshToken([FromBody] RefreshTokenRequestDTO request)
 		{
+			if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.RefreshToken))
+			{
+				return BadRequest("UserId and RefreshToken are required.");
+			}
+
 			var result = await _authService.RefreshTokensAsync(request);
 
 			if (result is null || result.AccessToken is null || result.RefreshToken is null)

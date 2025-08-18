@@ -1,6 +1,7 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { JwtDecoderUtil } from '../utils/jwt-decoder.util';
 import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service.ts.service';
@@ -8,13 +9,14 @@ import { ZorroNotificationServiceTsService } from '../../shared/zorro-notificati
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     const authService = inject(AuthService);
     const notificationService = inject(ZorroNotificationServiceTsService);
+    const router = inject(Router);
 
     // skip token refresh for auth endpoints to avoid infinite loops
     if (req.url.includes('/auth/refresh-token')) {
         return next(req);
     }
 
-    const token = localStorage.getItem('accessToken');
+    const token = authService.getAccessToken();
     
     if (token) {
         // check if token is expiring soon and refresh proactively
@@ -65,9 +67,9 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req).pipe(
         catchError((error: HttpErrorResponse) => {
             // if we get a 401 and we have a refresh token, try to refresh
-            if (error.status === 401 && localStorage.getItem('refreshToken')) {
+            if (error.status === 401 && authService.getRefreshToken()) {
                 // console.log('Received 401, attempting token refresh...');
-                const refreshToken = localStorage.getItem('refreshToken');
+                const refreshToken = authService.getRefreshToken();
                 const userId = JwtDecoderUtil.getUserId(token || '');
                 
                 if (refreshToken && userId) {
@@ -77,9 +79,11 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
                     }).pipe(
                         switchMap((response) => {
                             // console.log('token refresh successful, send original request');
-                            // store the new tokens
-                            localStorage.setItem('accessToken', response.accessToken);
-                            localStorage.setItem('refreshToken', response.refreshToken);
+                            // store the new tokens with the same remember me setting
+                            const rememberMe = authService.isRememberMeEnabled();
+                            const storage = rememberMe ? localStorage : sessionStorage;
+                            storage.setItem('accessToken', response.accessToken);
+                            storage.setItem('refreshToken', response.refreshToken);
                             
                             // update authentication state
                             authService.setAuthenticated(true);
@@ -94,10 +98,10 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
                             return next(newReq);
                         }),
                         catchError((refreshError) => {
-                            // if refresh fails, logout the user
-                            // console.error('token refresh failed:', refreshError);
-                            notificationService.createNotification('error', 'Session expired', 'Please login again');
+                            // if refresh fails, logout the user and redirect to logout page
+                            console.error('token refresh failed:', refreshError);
                             authService.logout();
+                            router.navigate(['/logout']);
                             return throwError(() => refreshError);
                         })
                     );

@@ -6,6 +6,7 @@ export interface RegisterRequestDTO {
 export interface LoginRequestDTO {
     emailAddress: string;
     password: string;
+    rememberMe?: boolean;
 }
 
 export interface TokenResponseDTO {
