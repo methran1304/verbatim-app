@@ -1,16 +1,33 @@
 <div class="ai-insights-container">
-  <nz-card class="ai-insights-card">
+  <div class="ai-insights-content">
+    
+    <!-- header section -->
+    <div class="ai-insights-header">
+      <div class="ai-insights-avatar">
+        <div class="avatar-placeholder">
+          <span nz-icon nzType="bulb" nzTheme="outline"></span>
+        </div>
+      </div>
+      
+      <div class="ai-insights-info">
+        <h1 class="title">AI Insights</h1>
+        <p class="subtitle">Get personalized feedback on your typing performance</p>
+        <p class="description">AI-powered analysis of your typing patterns, performance trends, and improvement recommendations</p>
+      </div>
+      
+      <div class="ai-insights-stats-summary">
+        <div class="stat-card">
+          <div class="stat-value">{{ aiFeedback?.performanceSummary?.overallLevel || 'N/A' }}</div>
+          <div class="stat-label">Level</div>
+        </div>
+      </div>
+    </div>
+
     <!-- initial state - no insights generated yet -->
     @if (!aiFeedback) {
       <div class="initial-state">
         <div class="initial-content">
-          <!-- header -->
-          <div class="initial-header">
-            <h1 class="title">AI Insights</h1>
-            <p class="subtitle">Get personalized feedback on your typing performance</p>
-          </div>
-
-                      <!-- benefits section -->
+          <!-- benefits section -->
           <div class="benefits-section">
             <h2>What you'll discover:</h2>
             <div class="benefits-grid">
@@ -56,7 +73,7 @@
             </div>
           </div>
 
-                      <!-- generate button -->
+          <!-- generate button -->
           <div class="generate-section">
             <button 
               nz-button 
@@ -86,111 +103,99 @@
     <!-- ai insights tabs view -->
     @if (aiFeedback && !isGenerating) {
       <div class="insights-tabs">
-        <div class="title-section">
-          <div class="title-content">
-            <h1 class="insights-title">AI Insights Analysis</h1>
-          </div>
-          <p class="insights-subtitle">
-            Personalized analysis of your typing patterns, performance trends, and improvement recommendations
-          </p>
-          @if (lastGeneratedAt) {
-            <p class="insights-timestamp">
-              Generated at {{ lastGeneratedAt | date:'medium' }}
-            </p>
-          }
-        </div>
         @if (isRegenerating) {
           <div class="skeleton-loader">
             <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }"></nz-skeleton>
           </div>
         } @else {
-          <nz-tabs nzCentered>
-            <nz-tab nzTitle="Overview">
-            <div class="tab-content">
-              <h2>
-                Performance Summary
-                <span nz-icon nzType="info-circle" nzTheme="outline" 
-                      nz-tooltip nzTooltipTitle="Your overall typing performance metrics including level, speed, and accuracy"></span>
-              </h2>
-              <div class="performance-grid">
-                <div class="performance-card">
-                  <nz-statistic
-                    nzTitle="Overall Level"
-                    [nzValue]="aiFeedback.performanceSummary.overallLevel"
-                    [nzValueStyle]="{ color: getLevelColor(aiFeedback.performanceSummary.overallLevel) }">
-                  </nz-statistic>
-                </div>
-                <div class="performance-card">
-                  <nz-statistic
-                    nzTitle="Average WPM"
-                    [nzValue]="aiFeedback.performanceSummary.currentWPM"
-                    [nzValueStyle]="{ color: getWPMColor(aiFeedback.performanceSummary.currentWPM) }">
-                  </nz-statistic>
-                </div>
-                <div class="performance-card">
-                  <nz-statistic
-                    nzTitle="Accuracy"
-                    [nzValue]="aiFeedback.performanceSummary.currentAccuracy"
-                    nzSuffix="%"
-                    [nzValueStyle]="{ color: getAccuracyColor(aiFeedback.performanceSummary.currentAccuracy) }">
-                  </nz-statistic>
-                </div>
+          <!-- navigation tabs -->
+          <div class="profile-tabs">
+          <button 
+            *ngFor="let tab of ['overview', 'word-issues', 'character-issues', 'trends']"
+            [class.active]="activeTab === tab"
+            (click)="setActiveTab(tab)"
+            class="tab-button"
+          >
+            {{ getTabDisplayName(tab) }}
+          </button>
+        </div>
+
+        <!-- tab content -->
+        <div class="tab-content">
+          
+          <!-- overview tab -->
+          <div *ngIf="activeTab === 'overview'" class="overview-tab">
+            <div class="overview-grid">
+              <div class="section-header">
+                <h3>
+                  Immediate Actions
+                  <span nz-icon nzType="info-circle" nzTheme="outline" 
+                        nz-tooltip nzTooltipTitle="Critical issues that need immediate attention and quick fixes you can implement right away"></span>
+                </h3>
               </div>
-              
-              <h3>
-                Immediate Actions
-                <span nz-icon nzType="info-circle" nzTheme="outline" 
-                      nz-tooltip nzTooltipTitle="Critical issues that need immediate attention and quick fixes you can implement right away"></span>
-              </h3>
-              <div class="actions-list">
-                @for (action of aiFeedback.immediateActions.criticalIssues; track action) {
-                  <div class="action-item">
-                    <span nz-icon nzType="warning" nzTheme="outline" class="action-icon"></span>
-                    <span [innerHTML]="formatBoldText(action)"></span>
-                  </div>
-                }
-                @for (action of aiFeedback.immediateActions.quickFixes; track action) {
-                  <div class="action-item">
-                    <span nz-icon nzType="check-circle" nzTheme="outline" class="action-icon"></span>
-                    <span [innerHTML]="formatBoldText(action)"></span>
-                  </div>
-                }
+              <div class="immediate-actions-card">
+                <div class="actions-list">
+                  @for (action of aiFeedback.immediateActions.criticalIssues; track action) {
+                    <div class="action-item">
+                      <span nz-icon nzType="warning" nzTheme="outline" class="action-icon"></span>
+                      <span [innerHTML]="formatBoldText(action)"></span>
+                    </div>
+                  }
+                  @for (action of aiFeedback.immediateActions.quickFixes; track action) {
+                    <div class="action-item">
+                      <span nz-icon nzType="check-circle" nzTheme="outline" class="action-icon"></span>
+                      <span [innerHTML]="formatBoldText(action)"></span>
+                    </div>
+                  }
+                </div>
               </div>
 
-              <h3>
-                Improvement Focus
-                <span nz-icon nzType="info-circle" nzTheme="outline" 
-                      nz-tooltip nzTooltipTitle="Specific areas where you should focus your practice efforts to improve your typing skills"></span>
-              </h3>
+              <div class="section-header">
+                <h3>
+                  Next Drill Focus
+                  <span nz-icon nzType="info-circle" nzTheme="outline" 
+                        nz-tooltip nzTooltipTitle="Recommended practice drills and exercises to target your specific weaknesses"></span>
+                </h3>
+              </div>
+              <div class="next-drill-focus-card">
+                <div class="drill-focus-list">
+                  @for (focus of aiFeedback.immediateActions.nextDrillFocus; track focus) {
+                    <div class="focus-item">
+                      <span nz-icon nzType="play-circle" nzTheme="outline" class="focus-icon"></span>
+                      <span [innerHTML]="formatBoldText(focus)"></span>
+                    </div>
+                  }
+                </div>
+              </div>
+
               @if (aiFeedback.performanceSummary.improvementNeeded) {
-                <div class="improvement-focus">
-                  <p [innerHTML]="formatBoldText(aiFeedback.performanceSummary.improvementNeeded)"></p>
+                <div class="section-header">
+                  <h3>
+                    Improvement Focus
+                    <span nz-icon nzType="info-circle" nzTheme="outline" 
+                          nz-tooltip nzTooltipTitle="Specific areas where you should focus your practice efforts to improve your typing skills"></span>
+                  </h3>
+                </div>
+                <div class="improvement-focus-card">
+                  <div class="improvement-focus-list">
+                    <div class="improvement-item">
+                      <span nz-icon nzType="bulb" nzTheme="outline" class="improvement-icon"></span>
+                      <span [innerHTML]="formatBoldText(aiFeedback.performanceSummary.improvementNeeded)"></span>
+                    </div>
+                  </div>
                 </div>
               }
-
-              <h3>
-                Next Drill Focus
-                <span nz-icon nzType="info-circle" nzTheme="outline" 
-                      nz-tooltip nzTooltipTitle="Recommended practice drills and exercises to target your specific weaknesses"></span>
-              </h3>
-              <div class="drill-focus-list">
-                @for (focus of aiFeedback.immediateActions.nextDrillFocus; track focus) {
-                  <div class="focus-item">
-                    <span nz-icon nzType="target" nzTheme="outline" class="focus-icon"></span>
-                    <span [innerHTML]="formatBoldText(focus)"></span>
-                  </div>
-                }
-              </div>
             </div>
-          </nz-tab>
+          </div>
           
-          <nz-tab nzTitle="Word Issues">
-            <div class="tab-content">
-              <h2>
+          <!-- word issues tab -->
+          <div *ngIf="activeTab === 'word-issues'" class="word-issues-tab">
+            <div class="overview-grid">
+              <h3>
                 Word Error Patterns
                 <span nz-icon nzType="info-circle" nzTheme="outline" 
                       nz-tooltip nzTooltipTitle="Words you commonly misspell or mistype, along with the patterns and likely causes of these errors"></span>
-              </h2>
+              </h3>
               <nz-table
                 #wordTable
                 [nzData]="aiFeedback.wordLevelAnalysis.topErrorWords"
@@ -246,15 +251,11 @@
                 }
               </div>
             </div>
-          </nz-tab>
+          </div>
           
-          <nz-tab nzTitle="Character Issues">
-            <div class="tab-content">
-              <h2>
-                Character Error Analysis
-                <span nz-icon nzType="info-circle" nzTheme="outline" 
-                      nz-tooltip nzTooltipTitle="Individual characters you struggle with, including keyboard zones and finger positioning issues"></span>
-              </h2>
+          <!-- character issues tab -->
+          <div *ngIf="activeTab === 'character-issues'" class="character-issues-tab">
+            <div class="overview-grid">
               <div class="character-analysis">
                 <div class="top-errors">
                   <h3>
@@ -358,10 +359,11 @@
                 </div>
               </div>
             </div>
-          </nz-tab>
+          </div>
           
-          <nz-tab nzTitle="Trends">
-            <div class="tab-content">
+          <!-- trends tab -->
+          <div *ngIf="activeTab === 'trends'" class="trends-tab">
+            <div class="overview-grid">
               <h2>
                 Recent Trends
                 <span nz-icon nzType="info-circle" nzTheme="outline" 
@@ -428,14 +430,14 @@
               </h3>
               <div class="pattern-trends">
                 @for (pattern of aiFeedback.recentTrends.errorPatterns; track pattern) {
-                  <div class="pattern-trend">
+                  <div class="pattern-trend error-pattern">
                     <span class="pattern-name" [innerHTML]="formatBoldText(pattern)"></span>
                   </div>
                 }
               </div>
             </div>
-          </nz-tab>
-        </nz-tabs>
+          </div>
+          </div>
         }
         
         <!-- regenerate button section -->
@@ -448,16 +450,16 @@
             <button 
               nz-button 
               nzType="primary" 
-              nzSize="default"
+              nzSize="small"
               [disabled]="isGenerating || isRegenerating"
               (click)="generateNewInsights()"
               class="regenerate-button">
               <span nz-icon nzType="reload" nzTheme="outline"></span>
-              {{ isRegenerating ? 'Regenerating...' : 'Regenerate AI Insights' }}
+              {{ isRegenerating ? 'Regenerating...' : 'Regenerate' }}
             </button>
           </div>
         </div>
       </div>
     }
-  </nz-card>
+  </div>
 </div>

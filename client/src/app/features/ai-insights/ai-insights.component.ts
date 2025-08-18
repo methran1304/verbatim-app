@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NzTabsModule } from 'ng-zorro-antd/tabs';
+
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
@@ -31,7 +31,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   imports: [
     CommonModule,
     FormsModule,
-    NzTabsModule,
     NzCardModule,
     NzButtonModule,
     NzProgressModule,
@@ -51,7 +50,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 })
 export class AIInsightsComponent implements OnInit, OnDestroy {
   // tab management
-  activeTabIndex = 0;
+  activeTab = 'overview';
   readonly tabTitles = ['Overview', 'Word Error Pattern', 'Character Error Pattern', 'Trends'];
 
   // data states
@@ -103,10 +102,7 @@ export class AIInsightsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // tab management
-  onTabChange(index: number): void {
-    this.activeTabIndex = index;
-  }
+
 
   // check for existing insights
   async checkExistingInsights(): Promise<void> {
@@ -207,6 +203,21 @@ export class AIInsightsComponent implements OnInit, OnDestroy {
   // error handling
   clearError(): void {
     this.errorMessage = null;
+  }
+
+  // tab management methods
+  setActiveTab(tab: string): void {
+    this.activeTab = tab;
+  }
+
+  getTabDisplayName(tab: string): string {
+    const tabNames: { [key: string]: string } = {
+      'overview': 'Overview',
+      'word-issues': 'Word Issues',
+      'character-issues': 'Character Issues',
+      'trends': 'Trends'
+    };
+    return tabNames[tab] || tab;
   }
 
   // utility methods
