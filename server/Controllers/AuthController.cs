@@ -12,6 +12,7 @@ using MongoDB.Driver;
 using server.Entities;
 using server.Entities.Enums;
 using server.Entities.Models;
+using server.Entities.Models.DTOs;
 using server.Services.Interfaces;
 
 namespace server.Controllers
@@ -75,6 +76,25 @@ namespace server.Controllers
 		{
 			await Task.FromResult(false);
 			return Ok();
+		}
+
+		[HttpPost("google")]
+		public async Task<ActionResult<TokenResponseDTO>> GoogleAuth([FromBody] GoogleAuthRequestDTO request)
+		{
+			try
+			{
+				var result = await _authService.AuthenticateWithGoogleAsync(request.IdToken);
+
+				if (result is null)
+					return Unauthorized("Invalid Google token or authentication failed.");
+
+				return Ok(result);
+			}
+			catch (Exception ex)
+			{
+				// Log the exception here if you have logging configured
+				return BadRequest($"Google authentication failed: {ex.Message}");
+			}
 		}
 	}
 }

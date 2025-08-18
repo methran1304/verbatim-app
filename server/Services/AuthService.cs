@@ -155,5 +155,27 @@ namespace server.Services.Interfaces
 
             return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
         }
+
+        public async Task<TokenResponseDTO?> AuthenticateWithGoogleAsync(string idToken)
+        {
+            try
+            {
+                // TODO: Implement Google ID token verification
+                // For now, this is a placeholder implementation
+                // You'll need to:
+                // 1. Verify the Google ID token with Google's servers
+                // 2. Extract user information from the token
+                // 3. Create or update user in your database
+                // 4. Return JWT tokens
+
+                // Placeholder - replace with actual Google token verification
+                throw new NotImplementedException("Google authentication not yet implemented. Need to verify ID token with Google and handle user creation/authentication.");
+            }
+            catch (Exception ex)
+            {
+                // Log the exception here
+                throw;
+            }
+        }
     }
 }

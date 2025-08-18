@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+
+import { Component, AfterViewInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
@@ -8,6 +9,8 @@ import { CommonModule } from '@angular/common';
 import { ZorroNotificationServiceTsService } from '../../../shared/zorro-notification.service.ts.service';
 import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
 import { AuthFooterComponent } from '../../../shared/auth-footer/auth-footer.component';
+import { GoogleAuthService } from '../../../services/google-auth.service';
+import { GoogleCredentialResponse } from '../../../models/interfaces/google-auth.interface';
 
 @Component({
   selector: 'app-login',
@@ -20,20 +23,22 @@ import { AuthFooterComponent } from '../../../shared/auth-footer/auth-footer.com
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit, OnDestroy {
   loginForm!: FormGroup;
   loading = false;
   errorMessage = '';
   isDarkMode = false;
   submitted = false;
   canSubmit = false;
+  private googleCredentialSubscription: any;
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
     private themeService: ThemeService,
-    private notificationService: ZorroNotificationServiceTsService
+    private notificationService: ZorroNotificationServiceTsService,
+    private googleAuthService: GoogleAuthService
   ) {
     this.loginForm = this.fb.group({
       emailAddressOrUsername: ['', [Validators.required]],
@@ -43,6 +48,66 @@ export class LoginComponent {
     this.themeService.getDarkMode().subscribe(isDark => {
       this.isDarkMode = isDark;
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.initializeGoogleSignIn();
+  }
+
+  ngOnDestroy(): void {
+    if (this.googleCredentialSubscription) {
+      this.googleCredentialSubscription.unsubscribe();
+    }
+    this.googleAuthService.destroy();
+  }
+
+  private async initializeGoogleSignIn(): Promise<void> {
+    try {
+      // initialize Google Sign-In
+      await this.googleAuthService.initializeGoogleSignIn();
+      
+      // render the button
+      const success = this.googleAuthService.renderButton('buttonDiv', {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        logo_alignment: 'center',
+        width: '400px'
+      });
+      if (!success) {
+        this.notificationService.createNotification('error', 'Google Sign-In Error', 'Failed to render Google Sign-In button.');
+        return;
+      }
+
+      // subscribe to credential responses
+      this.googleCredentialSubscription = this.googleAuthService.getCredentialResponse()
+        .subscribe(this.handleGoogleCredentialResponse.bind(this));
+
+    } catch (error) {
+      console.error('Error initializing Google Sign-In:', error);
+      this.notificationService.createNotification('error', 'Google Sign-In Error', 'Failed to initialize Google Sign-In.');
+    }
+  }
+
+  private handleGoogleCredentialResponse(response: GoogleCredentialResponse): void {
+    console.log("Encoded JWT ID token: " + response.credential);
+    
+    // TODO: Implement Google OAuth authentication
+    // You would typically send this credential to your backend
+    // this.authService.googleSignIn(response.credential).subscribe({
+    //   next: (result) => {
+    //     this.notificationService.createNotification('success', 'Welcome!', 'Successfully signed in with Google.');
+    //     this.router.navigate(['/drill']);
+    //   },
+    //   error: (error) => {
+    //     const errorMessage = ErrorHandlerUtil.handleError(error, 'auth');
+    //     this.notificationService.createNotification('error', 'Google Sign-In Failed', errorMessage);
+    //   }
+    // });
+
+    // temporary notification until backend integration is complete
+    this.notificationService.createNotification('info', 'Google Sign-In', 'Google authentication received. Backend integration pending.');
   }
 
   onSubmit(): void {
@@ -78,10 +143,6 @@ export class LoginComponent {
     this.router.navigate(['/auth/register']);
   }
 
-  onGoogleSignIn(): void {
-    // TODO: Implement Google OAuth
-    this.notificationService.createNotification('info', 'Coming Soon', 'Google sign-in will be available soon!');
-  }
 
   get emailAddressOrUsername() { return this.loginForm.get('emailAddressOrUsername'); }
   get password() { return this.loginForm.get('password'); }

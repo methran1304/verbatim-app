@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using server.Entities;
 using server.Entities.Models;
+using server.Entities.Models.DTOs;
 
 namespace server.Services.Interfaces
 {
@@ -12,5 +13,6 @@ namespace server.Services.Interfaces
         Task<User?> RegisterAsync(RegisterRequestDTO request);
         Task<TokenResponseDTO?> LoginAsync(LoginRequestDTO request);
         Task<TokenResponseDTO?> RefreshTokensAsync(RefreshTokenRequestDTO request);
+        Task<TokenResponseDTO?> AuthenticateWithGoogleAsync(string idToken);
     }
 }
