@@ -1112,6 +1112,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     }
 
     onLeaveRoom(): void {
+        // Reset drill state to prevent post drill overlay from appearing in other drill types
+        this.resetDrillStats();
         this.competitiveDrillService.leaveRoom();
     }
 
@@ -1211,7 +1213,6 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         
         // Ensure room overlays are hidden when leaving room
         this.competitiveDrillService.hideRoomOverlays();
-        
         this.onLeaveRoom();
     }
 
@@ -1538,6 +1539,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             
             // Clear book content and chunk processing state to prevent continued processing
             this.drillStateManagementService.clearBookContent();
+            
+            // Reset drill state to ensure clean state when component is destroyed
+            this.resetDrillStats();
             
             // console.log('DRILL ENGINE: Component cleanup completed');
         } catch (error) {

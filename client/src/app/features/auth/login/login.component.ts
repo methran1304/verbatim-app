@@ -7,13 +7,15 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ZorroNotificationServiceTsService } from '../../../shared/zorro-notification.service.ts.service';
 import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
+import { AuthFooterComponent } from '../../../shared/auth-footer/auth-footer.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
     CommonModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    AuthFooterComponent
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',

@@ -32,6 +32,12 @@ $blue-dk: #5B6D66;
 $pink-dk: #835D67;
 $space-bar-dk: #854B44;
 
+// duotone theme (dk)
+$key-bg-dk: #404040;
+$key-text-dk: #9F9999;
+$key-bg-dk: #333;
+
+
 
 // dark theme
 $bg-dk: #404040;
@@ -105,40 +111,6 @@ $text-lg: #282640;
     }
   }
 }
-
-// add responsive scaling only for smaller screens to ensure proper fit
-// @media (max-height: 880px) {
-//   .verbatim-kb {
-//     margin-top: 10px !important;
-//     padding: 11px !important;
-//     min-width: 550px !important;
-//     max-width: 82vw !important;
-//     transform: scale(0.9) !important; // scale down slightly
-//     transform-origin: center top !important;
-    
-//     .hg-button {
-//       font-size: 1.25em !important; // keep original font size
-//     }
-    
-//     .hg-button.alphabet {
-//       width: 40px !important; // keep original proportions
-//       min-width: 40px !important;
-//       max-width: 40px !important;
-//     }
-    
-//     .hg-button.tab, .hg-button.backtick {
-//       width: 66px !important; // keep original proportions
-//       min-width: 66px !important;
-//       max-width: 66px !important;
-//     }
-    
-//     .hg-button.backtick {
-//       width: 100% !important;
-//       min-width: 40px !important;
-//       max-width: none !important;
-//     }
-//   }
-// }
 
 @media (max-height: 850px) {
   .verbatim-kb {

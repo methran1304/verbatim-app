@@ -1,8 +1,4 @@
-/* ROBOTO FONT */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
 
-/* POPPINS FONT */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap');
 
 .register-viewport {
   display: flex;
@@ -10,6 +6,7 @@
   align-items: center;
   min-height: 100vh;
   background: var(--color-bg);
+  font-family: var(--font-family-auth);
 }
 
 .register-box {
@@ -21,6 +18,7 @@
   border: 1px solid var(--color-border);
   border-radius: 10px;
   box-shadow: var(--color-shadow);
+  font-family: var(--font-family-auth);
 }
 
 .register-header {
@@ -31,7 +29,7 @@
 }
 
 .register-header header {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-family-auth);
   color: var(--color-text);
   font-size: 30px;
   margin-bottom: 5px;
@@ -112,7 +110,7 @@
 }
 
 .input-submit {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-family-auth);
   font-size: 15px;
   color: #FFF;
   background: var(--color-primary);
@@ -139,7 +137,7 @@
 }
 
 .or-text {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-family-auth);
   position: absolute;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -181,7 +179,7 @@ button {
 }
 
 .input-google p {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-family-auth);
   font-size: 15px;
   color: var(--color-text);
   margin: 0;

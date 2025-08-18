@@ -1,8 +1,8 @@
 <div class="register-viewport">
   <div class="register-box">
     <div class="register-header">
-      <header>Create Account</header>
-      <p>Join us and start your typing journey!</p>
+      <header>Sign Up</header>
+      <p>Join verbatim and start your typing journey!</p>
     </div>
     
     <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
@@ -53,7 +53,7 @@
         <input 
           type="submit" 
           class="input-submit" 
-          value="Create Account"
+          value="Sign Up"
           [disabled]="loading"
         >
       </div>
@@ -75,4 +75,6 @@
       <p>Already have an account? <a (click)="onLogin()" [class.disabled-link]="loading">Sign in</a></p>
     </div>
   </div>
+  
+  <app-auth-footer></app-auth-footer>
 </div> 
