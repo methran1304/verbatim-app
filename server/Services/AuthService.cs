@@ -235,7 +235,7 @@ namespace server.Services.Interfaces
                 issuer: _configuration.GetValue<string>("AppSettings:Issuer"),
                 audience: _configuration.GetValue<string>("AppSettings:Audience"),
                 claims: claims,
-                expires: DateTime.UtcNow.AddSeconds(5),
+                expires: DateTime.UtcNow.AddDays(3),
                 signingCredentials: creds
             );
 
