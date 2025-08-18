@@ -42,4 +42,6 @@ testem.log
 Thumbs.db
 
 # Secrets
+verbatim-client-google.json
 env_variables.txt
+.env
