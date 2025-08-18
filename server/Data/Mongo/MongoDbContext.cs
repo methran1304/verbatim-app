@@ -23,8 +23,6 @@ namespace server.Data.Mongo
 		// Core
 		public IMongoCollection<Profile> Profiles => _mongoDatabase.GetCollection<Profile>("profiles");
 		public IMongoCollection<Drill> Drills => _mongoDatabase.GetCollection<Drill>("drills");
-		public IMongoCollection<DrillSourceText> DrillSourceTexts => _mongoDatabase.GetCollection<DrillSourceText>("drillSourceTexts");
-		public IMongoCollection<DrillInput> DrillInputs => _mongoDatabase.GetCollection<DrillInput>("drillInputs");
 		public IMongoCollection<WordPool> WordPools => _mongoDatabase.GetCollection<WordPool>("wordPools");
 
 		// Competitive

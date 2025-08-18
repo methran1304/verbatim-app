@@ -1304,17 +1304,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     onPostDrillSubmit(): void {
         this.drillStateManagementService.setSubmissionState(false, '');
 
-        const sourceTextArray = this.sourceText.map(word => word.join('').trim());
-
-        const typedWordsArray = this.typedText.map(word => {
-            return word.map(char => char?.key?.trim() || '').join('');
-        });
-
         const drillSubmission: DrillSubmissionRequest = {
             drillDifficulty: this.drillPreferences.drillDifficulty,
             drillType: this.drillPreferences.drillType,
-            sourceText: sourceTextArray,
-            typedWords: typedWordsArray,
             drillStatistic: this.drillStatistic
         };
 

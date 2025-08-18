@@ -37,12 +37,20 @@ builder.Services.Configure<MongoDbSettings>(
 
 builder.Services.AddSingleton<MongoDbContext>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<IDrillService, DrillService>();
-builder.Services.AddScoped<IDrillInputService, DrillInputService>();
-builder.Services.AddScoped<IDrillSourceTextService, DrillSourceTextService>();
+builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<ICompetitiveDrillService, CompetitiveDrillService>();
+builder.Services.AddScoped<ICompetitiveDrillOrchestrator, CompetitiveDrillOrchestrator>();
 builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IAIInsightService, AIInsightService>();
+builder.Services.AddScoped<IAdaptiveService, AdaptiveService>();
+builder.Services.AddScoped<IFuzzySearchService, FuzzySearchService>();
+builder.Services.AddScoped<AFKDetectionService>();
+
+
 builder.Services.AddHttpClient<IAIInsightService, AIInsightService>(client =>
 {
 	client.Timeout = TimeSpan.FromSeconds(120);

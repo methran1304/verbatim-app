@@ -27,12 +27,6 @@ namespace server.Entities
 		[BsonRepresentation(BsonType.String)]
 		public DrillDifficulty? DrillDifficulty { get; set; }
 
-		[BsonElement("source_text_id")]
-		public string SourceTextId { get; set; } = null!;
-
-		[BsonElement("drill_input_id")]
-		public string DrillInputId { get; set; } = null!;
-
 		[BsonElement("statistics")]
 		public DrillStatistic Statistics { get; set; } = new();
 	}

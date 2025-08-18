@@ -5,8 +5,6 @@ import { DrillStatistic } from "./drill-stats.interface";
 export interface DrillSubmissionRequest {
     drillDifficulty: DrillDifficulty;
     drillType: DrillType;
-    sourceText: string[];
-    typedWords: string[];
     drillStatistic: DrillStatistic;
 }
 
