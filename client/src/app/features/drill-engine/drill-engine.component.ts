@@ -557,6 +557,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     this.drillResultsData = {};
                     this.showCompetitivePostDrillResults = false;
                     this.currentUserCompetitiveResults = { wpm: 0, accuracy: 0, pointsChange: 0 };
+                    this.showConfetti = false; // reset confetti state
                 }
             });
             this.subscriptions.push(startDrillSubscription);
@@ -569,6 +570,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                         this.showCompetitivePostDrillResults = false;
                         this.drillResultsData = {};
                         this.currentUserCompetitiveResults = { wpm: 0, accuracy: 0, pointsChange: 0 };
+                        this.showConfetti = false; // reset confetti state
                     }
                 }
             });
@@ -1310,6 +1312,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         this.isCurrentUserReady = false;
         this.playerWordsCompleted = {};
         this.afkPlayers.clear();
+        this.showConfetti = false; // reset confetti state
         
         // Reset countdown state
         this.showCountdown = false;

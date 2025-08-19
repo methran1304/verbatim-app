@@ -170,7 +170,7 @@
       }
     }
 
-    &:hover:not(.disabled) {
+    &:hover:not(.disabled):not(.ready) {
       background: var(--color-bg-hover);
       border-color: var(--color-primary);
     }
@@ -190,7 +190,7 @@
       gap: 0.25rem !important;
       transition: all 0.2s ease !important;
 
-      &:hover {
+      &:hover:not(.ready) {
         background: var(--color-bg-hover) !important;
         border-color: var(--color-primary) !important;
         color: var(--color-text) !important;
