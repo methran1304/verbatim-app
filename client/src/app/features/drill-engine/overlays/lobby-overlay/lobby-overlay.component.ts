@@ -9,7 +9,7 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { Subscription } from 'rxjs';
 import { SignalRService, Player } from '../../../../services/signalr.service';
 import { JwtDecoderUtil } from '../../../../core/utils/jwt-decoder.util';
-
+import { AuthService } from '../../../../services/auth.service';
 
 
 @Component({
@@ -43,7 +43,8 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
 
   constructor(
     private signalRService: SignalRService,
-    private notification: NzNotificationService
+    private notification: NzNotificationService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -147,7 +148,7 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   private getCurrentUserId(): string {
-    const token = localStorage.getItem('accessToken') || '';
+    const token = this.authService.getAccessToken() || '';
     return JwtDecoderUtil.getUserId(token) || '';
   }
 }

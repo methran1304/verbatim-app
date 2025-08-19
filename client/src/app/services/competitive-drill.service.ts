@@ -8,6 +8,7 @@ import { DrillType } from '../models/enums/drill-type.enum';
 import { DrillPreference } from '../models/interfaces/drill-preference.interface';
 import { JwtDecoderUtil } from '../core/utils/jwt-decoder.util';
 import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service.ts.service';
+import { AuthService } from './auth.service';
 
 export interface DrillSettings {
     type: DrillType;
@@ -67,7 +68,8 @@ export class CompetitiveDrillService {
     constructor(
         private signalRService: SignalRService,
         private router: Router,
-        private notificationService: ZorroNotificationServiceTsService
+        private notificationService: ZorroNotificationServiceTsService,
+        private authService: AuthService
     ) {
         // console.log('COMPETITIVE SERVICE: Constructor called - new instance created');
         this.initializeSignalRSubscriptions();
@@ -91,7 +93,7 @@ export class CompetitiveDrillService {
             });
 
             // add the room creator as the first player
-            const token = localStorage.getItem('accessToken') || '';
+            const token = this.authService.getAccessToken() || '';
             const currentUserId = JwtDecoderUtil.getUserId(token) || '';
             if (currentUserId) {
                 const creatorPlayer: Player = {
@@ -424,7 +426,7 @@ export class CompetitiveDrillService {
     }
 
     private getCurrentUserId(): string {
-        const token = localStorage.getItem('accessToken') || '';
+        const token = this.authService.getAccessToken() || '';
         return JwtDecoderUtil.getUserId(token) || '';
     }
 

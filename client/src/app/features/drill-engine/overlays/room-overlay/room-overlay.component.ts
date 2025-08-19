@@ -14,6 +14,7 @@ import { DrillLength, DrillLengthWordCount } from '../../../../models/enums/dril
 import { SignalRService, CompetitiveDrillType, DrillDifficulty } from '../../../../services/signalr.service';
 import { CompetitiveDrillService } from '../../../../services/competitive-drill.service';
 import { JwtDecoderUtil } from '../../../../core/utils/jwt-decoder.util';
+import { AuthService } from '../../../../services/auth.service';
 
 @Component({
     selector: 'app-room-overlay',
@@ -73,7 +74,8 @@ export class RoomOverlayComponent implements OnInit, OnDestroy {
     constructor(
         private signalRService: SignalRService,
         private notification: NzNotificationService,
-        private competitiveDrillService: CompetitiveDrillService
+        private competitiveDrillService: CompetitiveDrillService,
+        private authService: AuthService
     ) {}
 
     ngOnInit(): void {
@@ -183,7 +185,7 @@ export class RoomOverlayComponent implements OnInit, OnDestroy {
     }
 
     private getCurrentUserId(): string {
-        const token = localStorage.getItem('accessToken') || '';
+        const token = this.authService.getAccessToken() || '';
         return JwtDecoderUtil.getUserId(token) || '';
     }
 } 

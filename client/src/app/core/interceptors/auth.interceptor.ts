@@ -22,7 +22,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
         // check if token is expiring soon and refresh proactively
         if (authService.isTokenExpiringSoon(5)) {
             // console.log('Token expiring soon, attempting proactive refresh...');
-            const refreshToken = localStorage.getItem('refreshToken');
+            const refreshToken = authService.getRefreshToken();
             const userId = JwtDecoderUtil.getUserId(token);
             
             if (refreshToken && userId) {

@@ -40,6 +40,7 @@ import { CompetitiveDrillService, RoomState } from '../../services/competitive-d
 import { JwtDecoderUtil } from '../../core/utils/jwt-decoder.util';
 import { BookService } from '../../services/book.service';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
     selector: 'app-drill-engine',
@@ -162,7 +163,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         private signalRService: SignalRService,
         private competitiveDrillService: CompetitiveDrillService,
         private http: HttpClient,
-        private bookService: BookService
+        private bookService: BookService,
+        private authService: AuthService
     ) {
         // get drill preference
         let storedPreference: DrillPreference = JSON.parse(localStorage.getItem('drillPreference') ?? '{}');
@@ -539,8 +541,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             });
             this.subscriptions.push(startDrillSubscription);
 
-            // get current user ID from JWT token
-            const token = localStorage.getItem('accessToken') || '';
+            // get current user ID from JWT token using centralized method
+            const token = this.authService.getAccessToken() || '';
             this.currentUserId = JwtDecoderUtil.getUserId(token) || '';
         }
     }

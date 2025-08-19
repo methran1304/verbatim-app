@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export enum ConnectionState {
   Disconnected = 'Disconnected',
@@ -144,7 +145,7 @@ export class SignalRService {
   private roomCreated$ = new Subject<{ roomId: string; roomCode: string }>();
   private playerStateUpdate$ = new Subject<{ roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean }>();
 
-  constructor() {}
+  constructor(private authService: AuthService) {}
 
   // connection management
   async connect(): Promise<void> {
@@ -159,8 +160,8 @@ export class SignalRService {
     this._connectionState$.next(ConnectionState.Connecting);
     // console.log('Connection state set to Connecting');
 
-    // get authentication token
-    const token = localStorage.getItem('accessToken');
+    // get authentication token using centralized method
+    const token = this.authService.getAccessToken();
     // console.log(`Token found: ${token ? 'Yes' : 'No'}`);
     // console.log(`Token value: ${token ? token.substring(0, 20) + '...' : 'None'}`);
     
