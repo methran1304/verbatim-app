@@ -98,19 +98,7 @@ export class CompetitiveDrillService {
                 duration: currentState.duration
             });
 
-            // add the room creator as the first player
-            const token = this.authService.getAccessToken() || '';
-            const currentUserId = JwtDecoderUtil.getUserId(token) || '';
-            if (currentUserId) {
-                const creatorPlayer: Player = {
-                    userId: currentUserId,
-                    username: `User${currentUserId.substring(0, 4)}`, // match server logic
-                    level: 1, // match server logic
-                    state: 'Connected',
-                    statistics: undefined
-                };
-                this.addPlayer(creatorPlayer);
-            }
+            // Room creator will be added via the PlayerJoin event from backend
         });
 
         // subscribe to room join events
@@ -141,8 +129,8 @@ export class CompetitiveDrillService {
         });
 
         // subscribe to player ready events to update player state
-        this.signalRService.onPlayerReady$.subscribe(({ roomId, playerId, isReady }) => {
-            this.updatePlayerReady(playerId, isReady);
+        this.signalRService.onPlayerReady$.subscribe(({ roomId, playerId, isReady, competitiveStats }) => {
+            this.updatePlayerReady(playerId, isReady, competitiveStats);
         });
 
         this.signalRService.onWaitingForPlayersToContinue$.subscribe(({ roomCode, continuedCount, totalCount }) => {
@@ -164,7 +152,8 @@ export class CompetitiveDrillService {
                 state: 'Connected' as const,
                 progress: undefined,
                 wpm: undefined,
-                accuracy: undefined
+                accuracy: undefined,
+                competitiveStats: player.competitiveStats
             }));
             this.playersSubject.next(resetPlayers);
         });
@@ -180,7 +169,8 @@ export class CompetitiveDrillService {
                 state: 'Connected' as const,
                 progress: undefined,
                 wpm: undefined,
-                accuracy: undefined
+                accuracy: undefined,
+                competitiveStats: player.competitiveStats
             }));
             this.playersSubject.next(resetPlayers);
             
@@ -593,7 +583,7 @@ export class CompetitiveDrillService {
                 state: player.state || updatedPlayers[existingPlayerIndex].state,
                 isReady: player.isReady !== undefined ? player.isReady : updatedPlayers[existingPlayerIndex].isReady,
                 isCreator: player.isCreator !== undefined ? player.isCreator : updatedPlayers[existingPlayerIndex].isCreator,
-                joinedAt: player.joinedAt || updatedPlayers[existingPlayerIndex].joinedAt
+                joinedAt: player.joinedAt || updatedPlayers[existingPlayerIndex].joinedAt,
             };
             this.playersSubject.next(updatedPlayers);
         } else {
@@ -610,19 +600,39 @@ export class CompetitiveDrillService {
         this.playersSubject.next(updatedPlayers);
     }
 
-    private updatePlayerReady(playerId: string, isReady: boolean): void {
+    private updatePlayerReady(playerId: string, isReady: boolean, competitiveStats?: any): void {
         const currentPlayers = this.playersSubject.value;
-        const updatedPlayers = currentPlayers.map(player => {
-            if (player.userId === playerId) {
-                return { 
-                    ...player, 
-                    state: isReady ? 'Ready' as const : 'Connected' as const,
-                    isReady: isReady
+        
+        // If competitiveStats is a dictionary of all player stats, update all players
+        if (competitiveStats && typeof competitiveStats === 'object' && !Array.isArray(competitiveStats)) {
+            const allPlayerStats = competitiveStats as Record<string, any>;
+            const updatedPlayers = currentPlayers.map(player => {
+                const playerStats = allPlayerStats[player.userId];
+                const isThisPlayer = player.userId === playerId;
+                
+                return {
+                    ...player,
+                    state: isThisPlayer ? (isReady ? 'Ready' as const : 'Connected' as const) : player.state,
+                    isReady: isThisPlayer ? isReady : player.isReady,
+                    competitiveStats: playerStats || player.competitiveStats
                 };
-            }
-            return player;
-        });
-        this.playersSubject.next(updatedPlayers);
+            });
+            this.playersSubject.next(updatedPlayers);
+        } else {
+            // Fallback to original logic for single player update
+            const updatedPlayers = currentPlayers.map(player => {
+                if (player.userId === playerId) {
+                    return { 
+                        ...player, 
+                        state: isReady ? 'Ready' as const : 'Connected' as const,
+                        isReady: isReady,
+                        competitiveStats: competitiveStats || player.competitiveStats
+                    };
+                }
+                return player;
+            });
+            this.playersSubject.next(updatedPlayers);
+        }
     }
 
     public getCurrentPlayers(): Player[] {
@@ -659,4 +669,6 @@ export class CompetitiveDrillService {
             showRoomModeOverlay: false
         });
     }
+
+
 }

@@ -31,6 +31,30 @@ namespace server.Services
 
 			return await _profiles.Find(filter).FirstOrDefaultAsync();
 		}
+
+		public async Task<bool> UpdateProfilePostCompetitiveDrillAsync(Profile profile)
+		{
+			try
+			{
+				var filter = Builders<Profile>
+					.Filter
+					.Eq(p => p.ProfileId, profile.ProfileId);
+
+				var updateDefinition = Builders<Profile>
+					.Update
+					.Set(p => p.CompetitiveDrills, profile.CompetitiveDrills)
+					.Set(p => p.Wins, profile.Wins)
+					.Set(p => p.Losses, profile.Losses);
+
+				var updateResult = await _profiles.UpdateOneAsync(filter, updateDefinition);
+				return updateResult.IsAcknowledged;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error updating profile competitive statistics: {ex.Message}");
+				return false;
+			}
+		}
 		
 		public async Task<bool> UpdateProfilePostDrill(string userId, Drill completedDrill)
 		{

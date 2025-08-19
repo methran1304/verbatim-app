@@ -311,7 +311,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                             isAFK: this.afkPlayers.has(player.userId),
                             wpm: drillData.wpm,
                             accuracy: drillData.accuracy,
-                            progress: drillData.progress ?? player.statistics?.completionPercentage
+                            progress: drillData.progress ?? player.statistics?.completionPercentage,
+                            competitiveStats: player.competitiveStats // Preserve competitive stats
                         };
                     }
                     else {
@@ -325,7 +326,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                             progress: player.statistics?.completionPercentage ?? this.drillResultsData[player.userId]?.progress,
                             wpm: player.statistics?.wpm,
                             accuracy: player.statistics?.accuracy,
-                            isAFK: this.afkPlayers.has(player.userId)
+                            isAFK: this.afkPlayers.has(player.userId),
+                            competitiveStats: player.competitiveStats // Preserve competitive stats
                         };
                     }
 

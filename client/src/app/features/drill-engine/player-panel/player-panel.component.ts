@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -70,13 +70,18 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
   private readonly avatarColors = ['primary', 'success', 'warning', 'error'];
   private playerColorMap: { [userId: string]: string } = {};
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadCompetitiveStatistics();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    // Load statistics when players are first set (initial load)
+    if (changes['players'] && changes['players'].firstChange && this.players.length > 0 && !this.isActiveDrill) {
+      this.loadCompetitiveStatistics();
+    }
+    
     // Only reload statistics when players array actually changes (not just updates)
     if (changes['players'] && !changes['players'].firstChange) {
       
@@ -88,11 +93,18 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
       const currentPlayerIds = currentPlayers.map((p: Player) => p.userId).sort();
       
       if (JSON.stringify(previousPlayerIds) !== JSON.stringify(currentPlayerIds)) {
-        console.log(this.players);
         this.loadCompetitiveStatistics();
       }
-      else {
-        console.log(this.players);
+    }
+    
+    // Reload competitive statistics when drill state changes from active to inactive
+    if (changes['isActiveDrill'] && !changes['isActiveDrill'].firstChange) {
+      const wasActive = changes['isActiveDrill'].previousValue;
+      const isNowActive = changes['isActiveDrill'].currentValue;
+      
+      // If drill just finished (was active, now inactive), refresh competitive statistics
+      if (wasActive && !isNowActive) {
+        this.refreshCompetitiveStatistics();
       }
     }
     
@@ -102,8 +114,8 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
 
   ngOnDestroy(): void {}
 
-  private async loadCompetitiveStatistics(): Promise<void> {
-    // Only load statistics if we have players and we're not in an active drill
+  private loadCompetitiveStatistics(): void {
+    // Only load statistics if we have players and we're in the lobby (not in an active drill or post-drill overlay)
     if (this.players.length === 0 || this.isActiveDrill) {
       return;
     }
@@ -115,28 +127,47 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
         continue;
       }
 
-      try {
-        const stats = await this.http.get<CompetitiveStatistics>(
-          `${this.baseUrl}/competitive/statistics/${player.userId}`
-        ).toPromise();
-        
-        if (stats) {
-          player.competitiveStats = stats;
+      this.http.get<CompetitiveStatistics>(
+        `${this.baseUrl}/competitive/statistics/${player.userId}`
+      ).subscribe({
+        next: (stats) => {
+          if (stats) {
+            player.competitiveStats = stats;
+            // Force UI update by reassigning the players array
+            this.players = [...this.players];
+            this.cdr.detectChanges();
+          }
+        },
+        error: (error) => {
+          console.warn(`Failed to load competitive stats for player ${player.userId}:`, error);
+          // set default stats if loading fails
+          player.competitiveStats = {
+            totalDrills: 0,
+            wins: 0,
+            losses: 0,
+            winrate: 0
+          };
+          // Force UI update by reassigning the players array
+          this.players = [...this.players];
+          this.cdr.detectChanges();
         }
-
-        console.log('stat success', stats);
-      } catch (error) {
-        console.log(error);
-        console.warn(`Failed to load competitive stats for player ${player.userId}:`, error);
-        // set default stats if loading fails
-        player.competitiveStats = {
-          totalDrills: 0,
-          wins: 0,
-          losses: 0,
-          winrate: 0
-        };
-      }
+      });
     }
+  }
+
+  private refreshCompetitiveStatistics(): void {
+    // Force refresh competitive statistics for all players (clear existing stats first)
+    if (this.players.length === 0 || this.isActiveDrill) {
+      return;
+    }
+
+    // Clear existing stats to force refresh
+    for (const player of this.players) {
+      player.competitiveStats = undefined;
+    }
+
+    // Reload statistics
+    this.loadCompetitiveStatistics();
   }
 
   onKickPlayer(userId: string): void {

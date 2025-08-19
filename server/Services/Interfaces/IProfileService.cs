@@ -12,6 +12,7 @@ namespace server.Services.Interfaces
 		Task CreateProfileAsync(Profile profile);
 		Task<Profile?> GetByUserId(string userId);
 		public Task<bool> UpdateProfilePostDrill(string userId, Drill completedDrill);
+		Task<bool> UpdateProfilePostCompetitiveDrillAsync(Profile profile);
 		Task<AiInsight?> GetLastAiInsight(string userId);
 		Task<bool> SaveAiInsightAsync(string userId, AIFeedbackDTO aiFeedback);
 		

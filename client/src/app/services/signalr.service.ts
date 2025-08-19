@@ -3,6 +3,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
+import { CompetitiveStatistics } from '../features/drill-engine/player-panel/player-panel.component';
 
 export enum ConnectionState {
   Disconnected = 'Disconnected',
@@ -30,6 +31,7 @@ export interface Player {
   isCreator?: boolean;
   isReady?: boolean; // New property from backend RoomPlayer entity
   joinedAt?: Date; // New property from backend RoomPlayer entity
+  competitiveStats?: CompetitiveStatistics; // competitive drill statistics
 }
 
 export interface Room {
@@ -133,7 +135,7 @@ export class SignalRService {
   private roomJoined$ = new Subject<{ roomId: string; roomCode: string }>();
   private playerJoin$ = new Subject<{ roomId: string; player: Player }>();
   private playerLeave$ = new Subject<{ roomId: string; playerId: string }>();
-  private playerReady$ = new Subject<{ roomId: string; playerId: string; isReady: boolean }>();
+  private playerReady$ = new Subject<{ roomId: string; playerId: string; isReady: boolean; competitiveStats?: any }>();
   private playerStatisticsUpdate$ = new Subject<{ roomId: string; statistics: PlayerStatistics[] }>();
   private roomDisbanded$ = new Subject<{ roomId: string; reason: string }>();
   private startDrill$ = new Subject<{ roomId: string; drillText: string[] }>();
@@ -389,14 +391,14 @@ export class SignalRService {
     });
 
     // competitive drill events
-    this.hubConnection.on('PlayerJoin', (roomId: string, userId: string, username: string, level: number, isCreator: boolean = false) => {
-      // console.log(`CLIENT: PlayerJoin event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, level: ${level}, isCreator: ${isCreator}`);
+    this.hubConnection.on('PlayerJoin', (roomId: string, userId: string, username: string, level: number, isCreator: boolean = false, isReady: boolean = false) => {
       const player: Player = {
         userId,
         username,
         level,
-        state: 'Connected',
-        isCreator: isCreator
+        state: isReady ? 'Ready' as const : 'Connected',
+        isCreator: isCreator,
+        isReady: isReady
       };
       this.playerJoin$.next({ roomId, player });
     });
@@ -406,14 +408,8 @@ export class SignalRService {
       this.playerLeave$.next({ roomId, playerId: userId });
     });
 
-    this.hubConnection.on('PlayerReady', (roomId: string, userId: string, isReady: boolean) => {
-      // console.log(`CLIENT: PlayerReady event received - roomId: ${roomId}, userId: ${userId}, isReady: ${isReady}`);
-      
-      // Emit the ready state change
-      this.playerReady$.next({ roomId, playerId: userId, isReady });
-      
-      // Let the competitive drill service handle the player state update
-      // This preserves all existing player data including isCreator flag
+    this.hubConnection.on('PlayerReady', (roomId: string, userId: string, isReady: boolean, competitiveStats?: any) => {
+      this.playerReady$.next({ roomId, playerId: userId, isReady, competitiveStats });
     });
 
     this.hubConnection.on('PlayerStatisticsUpdate', (roomId: string, statistics: PlayerStatistics[]) => {
@@ -506,7 +502,7 @@ export class SignalRService {
     return this.playerLeave$.asObservable();
   }
 
-  get onPlayerReady$(): Observable<{ roomId: string; playerId: string; isReady: boolean }> {
+  get onPlayerReady$(): Observable<{ roomId: string; playerId: string; isReady: boolean; competitiveStats?: any }> {
     return this.playerReady$.asObservable();
   }
 
