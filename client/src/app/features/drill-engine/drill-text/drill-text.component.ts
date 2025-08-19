@@ -51,6 +51,7 @@ export class DrillTextComponent implements AfterViewChecked, OnChanges {
     @Input() isLoadingErrorWords: boolean = false;
     @Input() showRoomOverlay: boolean = false;
     @Input() showLobbyOverlay: boolean = false;
+    @Input() showCompetitivePostDrillOverlay: boolean = false;
     @Input() roomCode: string = '';
     @Input() userRole: 'Creator' | 'Member' = 'Member';
     @Input() roomState: 'Waiting' | 'Ready' | 'InProgress' | 'Finished' = 'Waiting';

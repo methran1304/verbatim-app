@@ -5,6 +5,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { Subscription } from 'rxjs';
 import { SignalRService } from '../../../../services/signalr.service';
 
@@ -17,7 +18,8 @@ import { SignalRService } from '../../../../services/signalr.service';
     NzButtonModule,
     NzIconModule,
     NzSpinModule,
-    NzPopconfirmModule
+    NzPopconfirmModule,
+    NzDividerModule
   ],
   templateUrl: './competitive-post-drill-overlay.component.html',
   styleUrl: './competitive-post-drill-overlay.component.scss'
@@ -25,6 +27,9 @@ import { SignalRService } from '../../../../services/signalr.service';
 export class CompetitivePostDrillOverlayComponent implements OnInit, OnDestroy {
   @Input() show: boolean = false;
   @Input() winnerUsername: string = '';
+  @Input() userWpm: number = 0;
+  @Input() userAccuracy: number = 0;
+  @Input() userPointsChange: number = 0;
   @Input() isSubmitting: boolean = false;
   @Input() submitError: string = '';
   @Input() roomCode: string = '';

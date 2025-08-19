@@ -4,6 +4,7 @@ using server.Entities.Enums;
 using server.Entities.Models;
 using server.Services;
 using server.Services.Interfaces;
+using server.Utils;
 using System.Security.Claims;
 
 namespace server.Hubs
@@ -47,6 +48,7 @@ namespace server.Hubs
         private readonly IAFKDetectionService _afkDetectionService;
         private readonly IDrillTextService _drillTextService;
         private readonly IUserService _userService;
+        private readonly IProfileService _profileService;
         
         // track countdown state to prevent multiple countdowns
         private static readonly Dictionary<string, bool> _countdownInProgress = new();
@@ -64,7 +66,8 @@ namespace server.Hubs
             ICompetitiveDrillService competitiveDrillService,
             IAFKDetectionService afkDetectionService,
             IDrillTextService drillTextService,
-            IUserService userService)
+            IUserService userService,
+            IProfileService profileService)
         {
             _orchestrator = orchestrator;
             _roomService = roomService;
@@ -72,6 +75,7 @@ namespace server.Hubs
             _afkDetectionService = afkDetectionService;
             _drillTextService = drillTextService;
             _userService = userService;
+            _profileService = profileService;
         }
 
         public override async Task OnConnectedAsync()
@@ -287,7 +291,7 @@ namespace server.Hubs
                     return new { success = false, error = "User not authenticated" };
                 }
 
-                // get room info to check if user is creator
+                // Get room info to check if user is creator
                 var room = await _roomService.GetRoomByCodeAsync(roomCode);
                 if (room == null)
                 {
@@ -305,36 +309,36 @@ namespace server.Hubs
 
                 if (isCreator)
                 {
-                    // creator is leaving - disband the room and notify all players
+                    // Creator is leaving - disband the room and notify all players
                     Console.WriteLine($"Room creator {userId} is leaving, disbanding room {roomCode}");
                     
-                    // stop any active timers for this room
+                    // Stop any active timers for this room
                     StopRoomTimers(roomCode);
                     
-                    // clear statistics cache
+                    // Clear statistics cache
                     ClearDrillStatistics(roomCode);
                     
-                    // remove connection from group
+                    // Remove connection from group
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
                     
-                    // notify all players that the room has been disbanded
+                    // Notify all players that the room has been disbanded
                     await Clients.Group(roomCode).RoomDisbanded(room.RoomId, "Room creator has left the room");
                     
-                    // deactivate the room
+                    // Deactivate the room
                     await _roomService.DeactivateRoomAsync(roomCode);
                     
                     Console.WriteLine($"Room {roomCode} disbanded because creator left");
                 }
                 else
                 {
-                    // regular player leaving
+                    // Regular player leaving
                     var success = await _roomService.RemovePlayerFromRoomAsync(roomCode, userId);
                     if (!success)
                     {
                         return new { success = false, error = "Failed to leave room" };
                     }
 
-                    // if the room is empty after removal, delete it
+                    // If the room is empty after removal, delete it
                     var remainingPlayers = await _roomService.GetPlayersInRoomAsync(roomCode);
                     if (remainingPlayers.Count == 0)
                     {
@@ -344,12 +348,12 @@ namespace server.Hubs
                         ClearDrillStatistics(roomCode);
                     }
 
-                    // remove connection from group
+                    // Remove connection from group
                     await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
 
                     Console.WriteLine($"User {userId} left room {roomCode}");
 
-                    // notify all clients in the room
+                    // Notify all clients in the room
                     await Clients.Group(roomCode).PlayerLeave(roomCode, userId);
                 }
 
@@ -1029,6 +1033,9 @@ namespace server.Hubs
 
             var (playerResults, winnerId, totalPlayers) = await BuildPlayerResultsAsync(room.ActiveCompetitiveDrillId!, room.RoomCode, room.DrillSettings!.Type);
             
+            // Update the competitive drill in database with final results
+            await UpdateCompetitiveDrillWithFinalResultsAsync(room.ActiveCompetitiveDrillId!, playerResults, winnerId);
+            
             var summary = new DrillSummary
             {
                 CompetitiveDrillId = room.ActiveCompetitiveDrillId ?? string.Empty,
@@ -1044,7 +1051,7 @@ namespace server.Hubs
             // Send end drill summary to all clients
             await Clients.Group(roomCode).EndDrill(room.RoomId, summary);
 
-            Console.WriteLine($"Drill completed for room {roomCode}. ActiveCompetitiveDrillId cleared and room state reset to Waiting.");
+            Console.WriteLine($"Drill completed for room {roomCode}. Final results updated in database.");
         }
 
         private async Task<(List<PlayerResult> playerResults, string winnerId, int totalPlayers)> BuildPlayerResultsAsync(string competitiveDrillId, string roomCode, CompetitiveDrillType drillType)
@@ -1061,8 +1068,6 @@ namespace server.Hubs
             var currentStats = GetCurrentStatistics(roomCode);
             if (!currentStats.Any()) return (playerResults, winnerId, totalPlayers);
 
-            
-
             totalPlayers = currentStats.Count;
             
             // Determine winner from cached statistics
@@ -1072,16 +1077,24 @@ namespace server.Hubs
                 .FirstOrDefault();
             winnerId = winner?.UserId ?? string.Empty;
             
-            // Build player results from cached statistics + drill player data for position/points
-            var isMarathon = drillType == CompetitiveDrillType.Marathon;
-            foreach (var stat in currentStats)
+            // Sort players by performance to calculate final positions
+            var sortedStats = currentStats
+                .OrderByDescending(p => p.WPM)
+                .ThenByDescending(p => p.Accuracy)
+                .ToList();
+            
+            // Build player results with calculated positions
+            for (int i = 0; i < sortedStats.Count; i++)
             {
+                var stat = sortedStats[i];
                 var username = await GetUsernameAsync(stat.UserId);
+                var position = i + 1; // 1-based position
                 
-                // Get position and points from the competitive drill player
+                // Get additional data from the competitive drill player
                 var drillPlayer = competitiveDrill.Players.FirstOrDefault(p => p.UserId == stat.UserId);
-                var position = drillPlayer?.Position ?? 0;
-                var pointsChange = drillPlayer?.PointsChange ?? 0;
+                
+                // Calculate competitive points based on position and performance
+                var competitivePoints = CalculateCompetitivePoints(position, stat.WPM, stat.Accuracy, sortedStats.Count);
                 
                 playerResults.Add(new PlayerResult
                 {
@@ -1090,7 +1103,7 @@ namespace server.Hubs
                     WPM = stat.WPM,
                     Accuracy = stat.Accuracy,
                     Position = position,
-                    PointsChange = pointsChange,
+                    PointsChange = competitivePoints,
                     FinishedAt = DateTime.UtcNow,
                     IsWinner = stat.UserId == winnerId
                 });
@@ -1107,6 +1120,75 @@ namespace server.Hubs
                 .FirstOrDefault();
              
             return winner?.UserId ?? string.Empty;
+        }
+
+        private async Task UpdateCompetitiveDrillWithFinalResultsAsync(string competitiveDrillId, List<PlayerResult> playerResults, string winnerId)
+        {
+            try
+            {
+                Console.WriteLine($"Updating competitive drill {competitiveDrillId} with final results. Winner: {winnerId}");
+                
+                var competitiveDrill = await _competitiveDrillService.GetCompetitiveDrillAsync(competitiveDrillId);
+                if (competitiveDrill == null)
+                {
+                    Console.WriteLine($"Competitive drill {competitiveDrillId} not found for final results update");
+                    return;
+                }
+
+                // Update winner
+                competitiveDrill.WinnerId = winnerId;
+                competitiveDrill.State = DrillState.Completed;
+
+                // Update each player with final results and calculated points
+                foreach (var playerResult in playerResults)
+                {
+                    var drillPlayer = competitiveDrill.Players.FirstOrDefault(p => p.UserId == playerResult.UserId);
+                    if (drillPlayer != null)
+                    {
+                        // Update final stats
+                        drillPlayer.WPM = playerResult.WPM;
+                        drillPlayer.Accuracy = playerResult.Accuracy;
+                        drillPlayer.Position = playerResult.Position;
+                        drillPlayer.State = PlayerState.Finished;
+                        
+                        // Use the already calculated points from PlayerResult
+                        drillPlayer.PointsChange = playerResult.PointsChange;
+                        
+                        Console.WriteLine($"Player {playerResult.UserId} - Position: {playerResult.Position}, WPM: {playerResult.WPM}, Accuracy: {playerResult.Accuracy}, Points: {playerResult.PointsChange}");
+                    }
+                }
+
+                // Save updated competitive drill to database
+                await _competitiveDrillService.UpdateCompetitiveDrillAsync(competitiveDrill);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating competitive drill {competitiveDrillId} with final results: {ex.Message}");
+            }
+        }
+
+        private int CalculateCompetitivePoints(int position, double wpm, double accuracy, int totalPlayers)
+        {
+            // Base points calculation using existing DrillScorer
+            var basePoints = DrillScorer.CalculateUserPoints(DrillType.Competitive, DrillDifficulty.Intermediate, wpm, accuracy);
+            
+            // Position multiplier (1st place gets full points, others get reduced)
+            var positionMultiplier = position switch
+            {
+                1 => 1.0,    // 1st place: 100% of base points
+                2 => 0.8,    // 2nd place: 80% of base points
+                3 => 0.6,    // 3rd place: 60% of base points
+                _ => 0.4     // 4th+ place: 40% of base points
+            };
+            
+            // Participation bonus for completing the drill
+            var participationBonus = 10;
+            
+            var finalPoints = (int)(basePoints * positionMultiplier) + participationBonus;
+            
+            Console.WriteLine($"Calculated points for position {position}: base={basePoints}, multiplier={positionMultiplier}, final={finalPoints}");
+            
+            return Math.Max(0, finalPoints); // Ensure non-negative points
         }
 
         private async Task HandlePlayerDisconnect(string userId)

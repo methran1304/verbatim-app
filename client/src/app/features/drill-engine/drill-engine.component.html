@@ -55,6 +55,7 @@
     [isLoadingErrorWords]="isLoadingErrorWords"
     [showRoomOverlay]="roomState.showRoomOverlay"
     [showLobbyOverlay]="roomState.showRoomModeOverlay"
+    [showCompetitivePostDrillOverlay]="showCompetitivePostDrillOverlay"
     [roomCode]="roomState.roomCode"
     [userRole]="roomState.userRole"
     [roomState]="roomState.roomState"
@@ -125,6 +126,9 @@
 <app-competitive-post-drill-overlay
   [show]="showCompetitivePostDrillOverlay"
   [winnerUsername]="competitiveWinnerUsername"
+  [userWpm]="currentUserCompetitiveResults.wpm"
+  [userAccuracy]="currentUserCompetitiveResults.accuracy"
+  [userPointsChange]="currentUserCompetitiveResults.pointsChange"
   [isSubmitting]="isSubmitting"
   [submitError]="submitError"
   [roomCode]="roomState.roomCode"

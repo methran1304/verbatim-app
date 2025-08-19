@@ -6,6 +6,23 @@
         <h1 class="winner-text">{{ winnerUsername }} Wins!</h1>
       </div>
 
+      <!-- your result section -->
+      <div class="your-result-section">
+        <h2 class="your-result-text">Your Result</h2>
+        
+        <!-- stats line with separators -->
+        <div class="stats-line">
+          <span class="stat-item wpm">{{ userWpm }} WPM</span>
+          <nz-divider nzType="vertical"></nz-divider>
+          <span class="stat-item accuracy">{{ userAccuracy }}% Accuracy</span>
+          <nz-divider nzType="vertical"></nz-divider>
+          <span class="stat-item points">
+            <span nz-icon nzType="arrow-up" nzTheme="outline"></span>
+            {{ userPointsChange }} Pts.
+          </span>
+        </div>
+      </div>
+
       <!-- action buttons -->
       <div class="action-buttons">
         <button 

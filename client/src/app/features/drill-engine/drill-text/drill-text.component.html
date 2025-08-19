@@ -46,7 +46,7 @@
 </app-post-drill-overlay>
 
 <div class="drill-text-wrapper"
-     [ngClass]="{'blur-background' : !isFocused || showPostDrillOverlay || showAdaptiveDrillOverlay || showRoomOverlay || showLobbyOverlay, 'afk-cursor': delayedAfkOverlay && !showPostDrillOverlay}">
+     [ngClass]="{'blur-background' : !isFocused || showPostDrillOverlay || showAdaptiveDrillOverlay || showRoomOverlay || showLobbyOverlay || showCompetitivePostDrillOverlay, 'afk-cursor': delayedAfkOverlay && !showPostDrillOverlay}">
   <nz-card class="drill-text" #drillText>
     @if (winnerMessage) {
       <div class="winner-banner">{{ winnerMessage }}</div>
