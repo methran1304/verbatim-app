@@ -135,41 +135,46 @@ export class CompetitiveDrillService {
             this.removePlayer(playerId);
         });
 
-        // subscribe to player ready events
-        this.signalRService.onPlayerStateUpdate$.subscribe(({ roomId, userId, username, isReady, isCreator }) => {
-            // console.log(`COMPETITIVE SERVICE: PlayerStateUpdate event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, isReady: ${isReady}, isCreator: ${isCreator}`);
+        this.signalRService.onWaitingForPlayersToContinue$.subscribe(({ roomCode, continuedCount, totalCount }) => {
+        
+        });
+
+        this.signalRService.onAllPlayersContinued$.subscribe(({ roomCode }) => {
+            this.updateRoomState({
+                ...this.roomStateSubject.value,
+                roomState: 'Waiting',
+                showRoomModeOverlay: true,
+                showRoomOverlay: false
+            });
             
-            // Update the specific player's ready state
+            // reset all players to not ready
             const currentPlayers = this.playersSubject.value;
-            const playerIndex = currentPlayers.findIndex(p => p.userId === userId);
-            
-            if (playerIndex >= 0) {
-                // Update existing player
-                const updatedPlayers = [...currentPlayers];
-                updatedPlayers[playerIndex] = {
-                    ...updatedPlayers[playerIndex],
-                    state: isReady ? 'Ready' as const : 'Connected' as const,
-                    isReady: isReady,
-                    isCreator: isCreator
-                };
-                this.playersSubject.next(updatedPlayers);
-            }
+            const resetPlayers = currentPlayers.map(player => ({
+                ...player,
+                state: 'Connected' as const,
+                progress: undefined,
+                wpm: undefined,
+                accuracy: undefined
+            }));
+            this.playersSubject.next(resetPlayers);
         });
 
         // subscribe to start drill events (preload drill text; countdown will follow)
         this.signalRService.onStartDrill$.subscribe(({ roomId, drillText }) => {
-            // console.log(`COMPETITIVE SERVICE: StartDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
             this.pendingDrillText = drillText;
             
-            // Reset all players to not ready when drill starts
+            // reset all players to not ready when drill starts
             const currentPlayers = this.playersSubject.value;
             const resetPlayers = currentPlayers.map(player => ({
                 ...player,
-                state: 'Connected' as const
+                state: 'Connected' as const,
+                progress: undefined,
+                wpm: undefined,
+                accuracy: undefined
             }));
             this.playersSubject.next(resetPlayers);
             
-            // keep lobby hidden now to prepare UI; actual start happens on BeginDrill
+            // keep lobby hidden now to prepare UI; actual start happens on begin drill
             this.updateRoomState({
                 ...this.roomStateSubject.value,
                 showRoomModeOverlay: false
@@ -178,8 +183,6 @@ export class CompetitiveDrillService {
 
         // subscribe to begin drill events (actual drill start after countdown)
         this.signalRService.onBeginDrill$.subscribe(({ roomId, drillText }) => {
-            // console.log(`COMPETITIVE SERVICE: BeginDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
-            // this is when the actual drill starts after countdown
             this.updateRoomState({
                 ...this.roomStateSubject.value,
                 roomState: 'InProgress',
@@ -236,16 +239,10 @@ export class CompetitiveDrillService {
 
         // subscribe to waiting for other players events
         this.signalRService.onWaitingForOtherPlayers$.subscribe(({ finishedCount, totalCount }) => {
-            // console.log(`COMPETITIVE SERVICE: Waiting for other players - finished: ${finishedCount}, total: ${totalCount}`);
-            // This event indicates some players have finished but others are still typing
-            // Room state remains InProgress
         });
 
         // subscribe to all players completed events
         this.signalRService.onAllPlayersCompleted$.subscribe(({ roomId }) => {
-            // console.log(`COMPETITIVE SERVICE: All players completed drill in room ${roomId}`);
-            // This event indicates all players have finished the drill
-            // The EndDrill event will follow shortly
         });
     }
 
@@ -272,14 +269,12 @@ export class CompetitiveDrillService {
         // Handle page unload/close to ensure graceful disconnection
         window.addEventListener('beforeunload', async (event) => {
             try {
-                // console.log('COMPETITIVE SERVICE: Page unloading, cleaning up...');
                 
-                // If we're in a room, try to leave gracefully
+                // if we're in a room, try to leave gracefully
                 const currentRoomCode = this.roomStateSubject.value.roomCode;
                 if (currentRoomCode) {
                     try {
                         await this.signalRService.leaveRoom(currentRoomCode);
-                        // console.log('COMPETITIVE SERVICE: Successfully left room on page unload');
                     } catch (error) {
                         console.error('COMPETITIVE SERVICE: Error leaving room on page unload:', error);
                     }
@@ -615,32 +610,20 @@ export class CompetitiveDrillService {
         try {
             const roomCode = this.roomStateSubject.value.roomCode;
             if (roomCode) {
-                // Notify server that this player is continuing after drill
+                // notify server that this player is continuing
                 await this.signalRService.continueAfterDrill(roomCode);
             }
         } catch (error) {
             console.error('Error notifying server about continue after drill:', error);
-            // Continue with local state update even if server call fails
+            // continue with local state update even if server call fails
         }
         
-        // Reset room state to waiting
-        this.updateRoomState({
-            roomState: 'Waiting',
-            showRoomModeOverlay: true,
-            showRoomOverlay: false
-        });
-        
-        // Reset all players to not ready
-        const currentPlayers = this.playersSubject.value;
-        const resetPlayers = currentPlayers.map(player => ({
-            ...player,
-            state: 'Connected' as const
-        }));
-        this.playersSubject.next(resetPlayers);
+        // room state will be updated by the server events
+        // no need to manually update local state here
     }
 
     public hideRoomOverlays(): void {
-        // Hide room overlays when post drill overlay is shown
+        // hide room overlays when post drill overlay is shown
         this.updateRoomState({
             showRoomOverlay: false,
             showRoomModeOverlay: false

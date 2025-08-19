@@ -1,25 +1,37 @@
 @if (show) {
   <nz-card id="competitive-post-drill-overlay" class="overlay" #competitivepostdrilloverlay>
     <div class="competitive-post-drill-content">
-      <!-- Winner announcement -->
+      <!-- winner announcement -->
       <div class="winner-announcement">
         <h1 class="winner-text">{{ winnerUsername }} Wins!</h1>
       </div>
 
-      <!-- Action buttons -->
+      <!-- action buttons -->
       <div class="action-buttons">
-        <span class="continue-btn" (click)="continue.emit()" [class.disabled]="isSubmitting">
+        <button 
+          nz-button 
+          nzType="primary" 
+          (click)="onContinue()" 
+          [disabled]="isSubmitting || isWaitingForContinue"
+          [nzLoading]="isSubmitting || isWaitingForContinue"
+          class="post-drill-btn">
           <span nz-icon nzType="reload" nzTheme="outline" style="font-size: 16px;"></span>
-          <span class="button-text">Continue</span>
-        </span>
+          <span class="button-text">{{ isWaitingForContinue ? 'Waiting for others...' : 'Continue' }}</span>
+        </button>
         
-        <span class="leave-btn" (click)="leaveRoom.emit()" [class.disabled]="isSubmitting">
+        <span 
+          class="post-drill-btn"
+          nz-popconfirm
+          nzPopconfirmTitle="Are you sure you want to leave this room?"
+          nzOkText="Yes"
+          nzCancelText="No"
+          (nzOnConfirm)="onLeaveRoom()">
           <span nz-icon nzType="logout" nzTheme="outline" style="font-size: 16px;"></span>
           <span class="button-text">Leave Room</span>
         </span>
       </div>
 
-      <!-- Error message -->
+      <!-- error message -->
       @if (submitError) {
         <div class="error-message">
           <span nz-icon nzType="exclamation-circle" nzTheme="outline"></span>

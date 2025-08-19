@@ -33,5 +33,10 @@ namespace server.Services.Interfaces
         Task<bool> IsPlayerFinishedAsync(string roomCode, string userId);
         Task<int> GetTypingPlayerCountAsync(string roomCode);
         Task<int> GetDisconnectedPlayerCountAsync(string roomCode);
+        
+        // continue after drill methods
+        Task<bool> MarkPlayerContinuedAsync(string roomCode, string userId);
+        Task<bool> HaveAllPlayersContinuedAsync(string roomCode);
+        Task<int> GetContinuedPlayerCountAsync(string roomCode);
     }
 }

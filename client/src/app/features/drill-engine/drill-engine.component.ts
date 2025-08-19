@@ -131,8 +131,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     public winnerMessage: string = '';
     public showCompetitivePostDrillOverlay: boolean = false;
     public competitiveWinnerUsername: string = '';
-    public showCompetitivePostDrillResults: boolean = false; // Track if we should show drill results
-    private continuedPlayers: Set<string> = new Set<string>(); // Track which players have continued
+    public showCompetitivePostDrillResults: boolean = false; // track if we should show drill results
     private drillResultsData: { [userId: string]: any } = {}; // Store drill results data for each player
     private afkPlayers: Set<string> = new Set<string>();
     private subscriptions: Subscription[] = [];
@@ -187,6 +186,17 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
         // initialize current drill type from stored preferences
         this.currentDrillType = this.drillPreferences.drillType || DrillType.Timed;
+
+        // get current user ID from JWT token using centralized method
+        this.currentUserId = this.getCurrentUserId();
+    }
+
+    // get current user ID from JWT token using centralized method
+    private getCurrentUserId(): string {
+        const token = this.authService.getAccessToken();
+        if (!token) return '';
+        const userId = JwtDecoderUtil.getUserId(token);
+        return userId || '';
     }
 
     ngOnInit(): void {
@@ -321,7 +331,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
                     
                     // simple logic: if this player hasn't continued and we have drill results, preserve the drill data
-                    if (!this.continuedPlayers.has(player.userId) && this.drillResultsData[player.userId]) {
+                    if (this.drillResultsData[player.userId]) {
                         const drillData = this.drillResultsData[player.userId];
                         return {
                             ...basePlayer,
@@ -508,42 +518,46 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     // Hide room overlays when post drill overlay is shown
                     this.competitiveDrillService.hideRoomOverlays();
                     
-                    // Clear previous drill results data
+                    // update drill results data for all players
                     this.drillResultsData = {};
-                    // Store drill results data for each player
-                    this.drillResultsData = {};
-                    results?.playerResults?.forEach((playerResult: any) => {
+                    results.playerResults?.forEach((playerResult: any) => {
                         this.drillResultsData[playerResult.userId] = {
                             wpm: playerResult.wpm,
                             accuracy: playerResult.accuracy,
-                            position: playerResult.position,
-                            pointsChange: playerResult.pointsChange,
-                            progress: playerResult.progress // Ensure completed drills show 100% progress
+                            progress: playerResult.position // use position as progress indicator
                         };
                     });
-                    // Update room state to Finished
-                    this.roomState.roomState = 'Finished';
                 } else {
-                    // Handle regular drill completion
+                    // handle regular drill completion
                     const winner = results?.playerResults?.find((p: any) => p.isWinner);
                     this.winnerMessage = winner ? `${winner.username} wins!` : '';
                 }
             });
 
-            // Subscribe to drill start to reset continued players and drill results
+            // subscribe to drill start to reset drill results
             const startDrillSubscription = this.signalRService.onStartDrill$.subscribe(({ roomId, drillText }) => {
                 if (this.isCompetitive) {
-                    // Reset continued players and drill results when new drill starts
-                    this.continuedPlayers.clear();
+                    // reset drill results when new drill starts
                     this.drillResultsData = {};
                     this.showCompetitivePostDrillResults = false;
                 }
             });
             this.subscriptions.push(startDrillSubscription);
 
+            // subscribe to competitive drill service room state changes
+            const roomStateSubscription = this.competitiveDrillService.roomState$.subscribe(roomState => {
+                if (this.isCompetitive && roomState) {
+                    // reset drill results display when returning to lobby
+                    if (roomState.roomState === 'Waiting') {
+                        this.showCompetitivePostDrillResults = false;
+                        this.drillResultsData = {};
+                    }
+                }
+            });
+            this.subscriptions.push(roomStateSubscription);
+
             // get current user ID from JWT token using centralized method
-            const token = this.authService.getAccessToken() || '';
-            this.currentUserId = JwtDecoderUtil.getUserId(token) || '';
+            this.currentUserId = this.getCurrentUserId();
         }
     }
 
@@ -1175,37 +1189,11 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     }
 
     async onCompetitivePostDrillContinue(): Promise<void> {
-        this.showCompetitivePostDrillOverlay = false;
-        // Mark current user as continued
-        this.continuedPlayers.add(this.currentUserId);
-        // Reset room state to waiting and return to lobby
         await this.competitiveDrillService.resetRoomToWaiting();
-        // Update local state to match service state
-        this.roomState = this.competitiveDrillService.getCurrentRoomState();
-        // Map SignalR Player to player panel Player interface
-        const signalRPlayers = this.competitiveDrillService.getCurrentPlayers();
-        this.players = signalRPlayers.map(player => {
-            const basePlayer = {
-                ...player,
-                isReady: player.state === 'Ready',
-                isCreator: player.isCreator || false
-            };
-            
-            // If this player hasn't continued and we have drill results for them, preserve the drill data
-            if (!this.continuedPlayers.has(player.userId) && this.drillResultsData[player.userId]) {
-                const drillData = this.drillResultsData[player.userId];
-                return {
-                    ...basePlayer,
-                    wpm: drillData.wpm,
-                    accuracy: drillData.accuracy,
-                    progress: drillData.progress,
-                    state: 'Finished' as const
-                };
-            }
-            
-            return basePlayer;
-        });
-        this.isCurrentUserReady = false;
+        
+        // The server will handle the state transitions and notify all clients
+        // Local state will be updated via SignalR events
+        // The overlay will be hidden when all players continue via the AllPlayersContinued event
     }
 
     onCompetitivePostDrillLeaveRoom(): void {
@@ -1498,10 +1486,6 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
     get showPlayerPanel(): boolean {
         return this.isCompetitive && !!this.roomState.roomCode;
-    }
-
-    get continuedPlayersSet(): Set<string> {
-        return this.continuedPlayers;
     }
 
     ngOnDestroy(): void {

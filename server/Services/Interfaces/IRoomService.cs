@@ -29,5 +29,6 @@ namespace server.Services.Interfaces
         Task<bool> IsPlayerReadyAsync(string roomCode, string userId);
         Task<bool> IsPlayerCreatorAsync(string roomCode, string userId);
         Task<int> GetReadyPlayerCountAsync(string roomCode);
+        Task<int> GetPlayerCountAsync(string roomCode);
     }
 }

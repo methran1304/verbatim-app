@@ -82,7 +82,7 @@
       [players]="players"
       [currentUserId]="currentUserId"
       [isCreator]="roomState.userRole === 'Creator'"
-      [isActiveDrill]="roomState.roomState === 'InProgress' || (showCompetitivePostDrillResults && !continuedPlayersSet.has(currentUserId))"
+      [isActiveDrill]="roomState.roomState === 'InProgress' || showCompetitivePostDrillResults"
       [show]="true"
       [roomCode]="roomState.roomCode"
       [drillType]="roomState.drillType || 'Timed'"
@@ -127,6 +127,8 @@
   [winnerUsername]="competitiveWinnerUsername"
   [isSubmitting]="isSubmitting"
   [submitError]="submitError"
+  [roomCode]="roomState.roomCode"
   (continue)="onCompetitivePostDrillContinue()"
-  (leaveRoom)="onCompetitivePostDrillLeaveRoom()">
+  (leaveRoom)="onCompetitivePostDrillLeaveRoom()"
+  (allPlayersContinued)="showCompetitivePostDrillOverlay = false">
 </app-competitive-post-drill-overlay>

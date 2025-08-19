@@ -100,7 +100,6 @@ export interface ICompetitiveDrillClient {
   
   // player management
   playerJoin(roomId: string, userId: string, username: string, level: number, isCreator?: boolean): void;
-  playerStateUpdate(roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean): void;
   playerLeave(roomId: string, userId: string): void;
   playerReady(roomId: string, userId: string, isReady: boolean): void;
   playerStatisticsUpdate(roomId: string, statistics: any[]): void;
@@ -111,6 +110,10 @@ export interface ICompetitiveDrillClient {
   beginDrill(roomId: string, drillText: string[]): void;
   endDrill(roomId: string, results: CompetitiveDrillResults): void;
   waitingForOtherPlayers(finishedCount: number, totalCount: number): void;
+  
+  // continue after drill events
+  waitingForPlayersToContinue(roomCode: string, continuedCount: number, totalCount: number): void;
+  allPlayersContinued(roomCode: string): void;
   
   // misc
   playerAFK(roomId: string, userId: string): void;
@@ -143,7 +146,10 @@ export class SignalRService {
   private playerKicked$ = new Subject<{ roomCode: string; reason: string }>();
   private countdown$ = new Subject<{ roomId: string; countdown: number }>();
   private roomCreated$ = new Subject<{ roomId: string; roomCode: string }>();
-  private playerStateUpdate$ = new Subject<{ roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean }>();
+  
+  // continue after drill events
+  private waitingForPlayersToContinue$ = new Subject<{ roomCode: string; continuedCount: number; totalCount: number }>();
+  private allPlayersContinued$ = new Subject<{ roomCode: string }>();
 
   constructor(private authService: AuthService) {}
 
@@ -428,11 +434,6 @@ export class SignalRService {
       this.playerStatisticsUpdate$.next({ roomId, statistics });
     });
 
-    this.hubConnection.on('PlayerStateUpdate', (roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean) => {
-      // console.log(`CLIENT: PlayerStateUpdate event received - roomId: ${roomId}, userId: ${userId}, username: ${username}, isReady: ${isReady}, isCreator: ${isCreator}`);
-      this.playerStateUpdate$.next({ roomId, userId, username, isReady, isCreator });
-    });
-
     this.hubConnection.on('StartDrill', (roomId: string, drillText: string[]) => {
       // console.log(`CLIENT: StartDrill event received - roomId: ${roomId}, drillText length: ${drillText.length}`);
       this.startDrill$.next({ roomId, drillText });
@@ -492,6 +493,17 @@ export class SignalRService {
       // console.log(`CLIENT: RoomJoined event received - roomId: ${roomId}, roomCode: ${roomCode}`);
       this.roomJoined$.next({ roomId, roomCode });
     });
+
+    // continue after drill events
+    this.hubConnection.on('WaitingForPlayersToContinue', (roomCode: string, continuedCount: number, totalCount: number) => {
+      // console.log(`CLIENT: WaitingForPlayersToContinue event received - roomCode: ${roomCode}, continued: ${continuedCount}, total: ${totalCount}`);
+      this.waitingForPlayersToContinue$.next({ roomCode, continuedCount, totalCount });
+    });
+
+    this.hubConnection.on('AllPlayersContinued', (roomCode: string) => {
+      // console.log(`CLIENT: AllPlayersContinued event received - roomCode: ${roomCode}`);
+      this.allPlayersContinued$.next({ roomCode });
+    });
   }
 
   // getters for observables
@@ -513,10 +525,6 @@ export class SignalRService {
 
   get onPlayerStatisticsUpdate$(): Observable<{ roomId: string; statistics: PlayerStatistics[] }> {
     return this.playerStatisticsUpdate$.asObservable();
-  }
-
-  get onPlayerStateUpdate$(): Observable<{ roomId: string, userId: string, username: string, isReady: boolean, isCreator: boolean }> {
-    return this.playerStateUpdate$.asObservable();
   }
 
   get onStartDrill$(): Observable<{ roomId: string; drillText: string[] }> {
@@ -565,6 +573,14 @@ export class SignalRService {
 
   get onRoomJoined$(): Observable<{ roomId: string; roomCode: string }> {
     return this.roomJoined$.asObservable();
+  }
+
+  get onWaitingForPlayersToContinue$(): Observable<{ roomCode: string; continuedCount: number; totalCount: number }> {
+    return this.waitingForPlayersToContinue$.asObservable();
+  }
+
+  get onAllPlayersContinued$(): Observable<{ roomCode: string }> {
+    return this.allPlayersContinued$.asObservable();
   }
 
   isConnected(): boolean {

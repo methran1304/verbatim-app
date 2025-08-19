@@ -303,5 +303,19 @@ namespace server.Services
                 return 0;
             }
         }
+
+        public async Task<int> GetPlayerCountAsync(string roomCode)
+        {
+            try
+            {
+                var players = await GetPlayersInRoomAsync(roomCode);
+                return players.Count;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting player count for room {roomCode}: {ex.Message}");
+                return 0;
+            }
+        }
 	}
 }

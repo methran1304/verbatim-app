@@ -18,7 +18,7 @@ namespace server.Hubs
         
         // player management
         Task PlayerJoin(string roomId, string userId, string username, int level, bool isCreator = false);
-        Task PlayerStateUpdate(string roomId, string userId, string username, bool isReady, bool isCreator);
+        Task PlayerStateUpdate(string roomId, string userId, string username, bool isReady, bool isCreator, double wpm = 0, double accuracy = 0, int completionPercentage = 0);
         Task PlayerLeave(string roomId, string userId);
         Task PlayerReady(string roomId, string userId, bool isReady);
         Task PlayerStatisticsUpdate(string roomId, List<PlayerStatistics> statistics);
@@ -35,6 +35,8 @@ namespace server.Hubs
         Task AFKWarning(string roomId, string userId, int timeoutSeconds);
         Task PlayerKicked(string roomCode, string reason);
         Task Countdown(string roomId, int countdown);
+        Task AllPlayersContinued(string roomCode);
+        Task WaitingForPlayersToContinue(string roomCode, int continuedCount, int totalCount);
     }
 
     public class CompetitiveDrillHub : Hub<ICompetitiveDrillClient>
@@ -376,16 +378,8 @@ namespace server.Hubs
                     return new { success = false, error = "Failed to set ready status" };
                 }
 
-                // Get player info for the state update event
-                var player = await _roomService.GetPlayerInRoomAsync(roomCode, userId);
-                if (player != null)
-                {
-                    var playerUsername = await GetUsernameAsync(userId);
-                    var isPlayerCreator = player.IsCreator;
-                    
-                    // notify all clients in the room about the state change
-                    await Clients.Group(roomCode).PlayerStateUpdate(roomCode, userId, playerUsername, isReady, isPlayerCreator);
-                }
+                // notify all clients in the room about the state change
+                await Clients.Group(roomCode).PlayerReady(roomCode, userId, isReady);
 
                 return new { success = true };
             }
@@ -696,33 +690,45 @@ namespace server.Hubs
                     return new { success = false, error = "Player not found in room" };
                 }
 
-                // If there's an active drill, reset the player's drill state for the next drill
-                if (room.ActiveCompetitiveDrillId != null)
-                {
-                    await _competitiveDrillService.ResetPlayerForNextDrillAsync(roomCode, userId);
-                }
+                // mark player as continued
+                await _competitiveDrillService.MarkPlayerContinuedAsync(roomCode, userId);
 
-                // reset the player's state to not ready
-                await _roomService.UpdatePlayerReadyStateAsync(roomCode, userId, false);
-
-                // if the room is in Finished state, reset it to Waiting
-                if (room.State == RoomState.Finished)
+                // check if all players have continued
+                var allContinued = await _competitiveDrillService.HaveAllPlayersContinuedAsync(roomCode);
+                
+                if (allContinued)
                 {
-                    await _roomService.UpdateRoomStateAsync(roomCode, RoomState.Waiting);
-                }
-
-                // Get the current player's updated state
-                var currentPlayer = await _roomService.GetPlayerInRoomAsync(roomCode, userId);
-                if (currentPlayer != null)
-                {
-                    var playerUsername = await GetUsernameAsync(userId);
-                    var isPlayerCreator = currentPlayer.IsCreator;
+                    // all players continued - transition everyone to lobby
+                    if (room.ActiveCompetitiveDrillId != null)
+                    {
+                        // reset all players for next drill
+                        var roomPlayers = await _roomService.GetPlayersInRoomAsync(roomCode);
+                        foreach (var player in roomPlayers)
+                        {
+                            await _competitiveDrillService.ResetPlayerForNextDrillAsync(roomCode, player.UserId);
+                            await _roomService.UpdatePlayerReadyStateAsync(roomCode, player.UserId, false);
+                        }
+                    }
                     
-                    // Only notify about this specific player's state change
-                    await Clients.Group(roomCode).PlayerStateUpdate(room.RoomId, userId, playerUsername, false, isPlayerCreator);
+                    // clear the active competitive drill ID and reset room state to Waiting
+                    await _roomService.ClearActiveCompetitiveDrillAsync(roomCode);
+                    await _roomService.UpdateRoomStateAsync(roomCode, RoomState.Waiting);
+    
+                    // notify all clients that everyone has continued
+                    await Clients.Group(roomCode).AllPlayersContinued(roomCode);
+                    
+                    Console.WriteLine($"All players continued in room {roomCode}. Transitioning to lobby.");
                 }
-
-                Console.WriteLine($"Player {userId} continued after drill in room {roomCode}. Player returned to lobby.");
+                else
+                {
+                    // not all players continued yet - show waiting state
+                    var continuedCount = await _competitiveDrillService.GetContinuedPlayerCountAsync(roomCode);
+                    var totalCount = await _roomService.GetPlayerCountAsync(roomCode);
+                    
+                    await Clients.Group(roomCode).WaitingForPlayersToContinue(roomCode, continuedCount, totalCount);
+                    
+                    Console.WriteLine($"Player {userId} continued in room {roomCode}. Waiting for {totalCount - continuedCount} more players.");
+                }
 
                 return new { success = true };
             }
@@ -1003,10 +1009,6 @@ namespace server.Hubs
 
             // Send end drill summary to all clients
             await Clients.Group(roomCode).EndDrill(room.RoomId, summary);
-
-            // Clear the active competitive drill ID and reset room state to Waiting
-            await _roomService.ClearActiveCompetitiveDrillAsync(roomCode);
-            await _roomService.UpdateRoomStateAsync(roomCode, RoomState.Waiting);
 
             Console.WriteLine($"Drill completed for room {roomCode}. ActiveCompetitiveDrillId cleared and room state reset to Waiting.");
         }

@@ -627,6 +627,7 @@ namespace server.Services
                 player.TotalWords = 0;
                 player.CompletionPercentage = 0;
                 player.IsAFK = false;
+                player.HasContinued = false;
 
                 Console.WriteLine($"Reset player {userId} for next drill in {room.ActiveCompetitiveDrillId}");
 
@@ -822,5 +823,104 @@ namespace server.Services
             }
         }
 
+        // continue after drill methods
+        public async Task<bool> MarkPlayerContinuedAsync(string roomCode, string userId)
+        {
+            try
+            {
+                var room = await GetRoomByCodeAsync(roomCode);
+                if (room?.ActiveCompetitiveDrillId == null)
+                {
+                    Console.WriteLine($"No active competitive drill found for room {roomCode}");
+                    return false;
+                }
+
+                var competitiveDrill = await GetCompetitiveDrillAsync(room.ActiveCompetitiveDrillId);
+                if (competitiveDrill == null)
+                {
+                    Console.WriteLine($"Competitive drill not found for ID {room.ActiveCompetitiveDrillId}");
+                    return false;
+                }
+
+                var player = competitiveDrill.Players.FirstOrDefault(p => p.UserId == userId);
+                if (player == null)
+                {
+                    Console.WriteLine($"Player {userId} not found in competitive drill {room.ActiveCompetitiveDrillId}");
+                    return false;
+                }
+
+                // mark player as continued
+                player.HasContinued = true;
+                Console.WriteLine($"Marked player {userId} as continued in drill {room.ActiveCompetitiveDrillId}");
+
+                return await UpdateCompetitiveDrillAsync(competitiveDrill);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error marking player {userId} as continued in room {roomCode}: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> HaveAllPlayersContinuedAsync(string roomCode)
+        {
+            try
+            {
+                var room = await GetRoomByCodeAsync(roomCode);
+                if (room?.ActiveCompetitiveDrillId == null)
+                {
+                    return false;
+                }
+
+                var competitiveDrill = await GetCompetitiveDrillAsync(room.ActiveCompetitiveDrillId);
+                if (competitiveDrill == null)
+                {
+                    return false;
+                }
+
+                var activePlayers = competitiveDrill.Players
+                    .Where(p => p.State != PlayerState.Disconnected)
+                    .ToList();
+
+                if (!activePlayers.Any())
+                {
+                    return false;
+                }
+
+                return activePlayers.All(p => p.HasContinued);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking if all players continued in room {roomCode}: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<int> GetContinuedPlayerCountAsync(string roomCode)
+        {
+            try
+            {
+                var room = await GetRoomByCodeAsync(roomCode);
+                if (room?.ActiveCompetitiveDrillId == null)
+                {
+                    return 0;
+                }
+
+                var competitiveDrill = await GetCompetitiveDrillAsync(room.ActiveCompetitiveDrillId);
+                if (competitiveDrill == null)
+                {
+                    return 0;
+                }
+
+                return competitiveDrill.Players
+                    .Where(p => p.State != PlayerState.Disconnected && p.HasContinued)
+                    .Count();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting continued player count for room {roomCode}: {ex.Message}");
+                return 0;
+            }
+        }
     }
 }

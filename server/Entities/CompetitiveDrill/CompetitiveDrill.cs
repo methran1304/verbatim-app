@@ -69,5 +69,8 @@ namespace server.Entities
 
 		[BsonElement("is_afk")]
 		public bool IsAFK { get; set; } = false;
+
+		[BsonElement("has_continued")]
+		public bool HasContinued { get; set; } = false;
 	}
 }
