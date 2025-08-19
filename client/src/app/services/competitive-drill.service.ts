@@ -209,6 +209,8 @@ export class CompetitiveDrillService {
         const connectionSub = this.signalRService.connectionState$.subscribe(state => {
             if (state === ConnectionState.Disconnected && this.roomStateSubject.value.roomCode) {
                 console.log(`COMPETITIVE SERVICE: SignalR disconnected unexpectedly while in room`);
+                console.log('Connection health:', this.signalRService.getConnectionHealth());
+                this.signalRService.debugConnection();
                 
                 // Only trigger cleanup if we were actually in a room
                 const currentRoomCode = this.roomStateSubject.value.roomCode;

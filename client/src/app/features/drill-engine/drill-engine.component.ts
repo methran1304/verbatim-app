@@ -1016,6 +1016,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         this.fillRandomDrillText();
         
         this.signalRService.connect().then(() => {
+            console.log('SignalR connection health:', this.signalRService.getConnectionHealth());
             this.competitiveDrillService.initializeCompetitiveMode();
         }).catch((error: any) => {
             console.error('Failed to connect to SignalR:', error);

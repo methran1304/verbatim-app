@@ -30,7 +30,14 @@ builder.Services.AddCors(options =>
 });
 
         // add signalR
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    // Enable keep-alive to prevent connection timeouts
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    options.MaximumReceiveMessageSize = 1024 * 1024; // 1MB
+    options.EnableDetailedErrors = true;
+});
 
 builder.Services.Configure<MongoDbSettings>(
 	builder.Configuration.GetSection("MongoDbSettings"));

@@ -99,7 +99,13 @@ namespace server.Hubs
                 if (exception != null)
                 {
                     Console.WriteLine($"Disconnect exception: {exception.Message}");
+                    Console.WriteLine($"Disconnect exception type: {exception.GetType().Name}");
+                    Console.WriteLine($"Disconnect stack trace: {exception.StackTrace}");
                 }
+                
+                // Log connection details for debugging
+                Console.WriteLine($"Connection ID: {Context.ConnectionId}");
+                Console.WriteLine($"User authenticated: {Context.User?.Identity?.IsAuthenticated}");
                 
                 // handle player disconnect
                 var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
