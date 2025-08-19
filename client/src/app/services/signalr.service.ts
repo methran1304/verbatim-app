@@ -409,24 +409,11 @@ export class SignalRService {
     this.hubConnection.on('PlayerReady', (roomId: string, userId: string, isReady: boolean) => {
       // console.log(`CLIENT: PlayerReady event received - roomId: ${roomId}, userId: ${userId}, isReady: ${isReady}`);
       
-      // Update the player's ready state and overall state
-      const playerState = isReady ? 'Ready' as const : 'Connected' as const;
-      
-      // Emit both the ready state change and the player join with updated state
+      // Emit the ready state change
       this.playerReady$.next({ roomId, playerId: userId, isReady });
       
-      // Also emit a player join event to update the player's overall state
-      // This ensures the UI reflects both the ready state and the player state
-      const updatedPlayer: Player = {
-        userId,
-        username: '', // Will be filled by the component
-        level: 0, // Will be filled by the component
-        state: playerState,
-        isReady: isReady,
-        isCreator: false // Will be filled by the component
-      };
-      
-      this.playerJoin$.next({ roomId, player: updatedPlayer });
+      // Let the competitive drill service handle the player state update
+      // This preserves all existing player data including isCreator flag
     });
 
     this.hubConnection.on('PlayerStatisticsUpdate', (roomId: string, statistics: PlayerStatistics[]) => {

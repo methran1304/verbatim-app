@@ -73,7 +73,11 @@ export class LobbyOverlayComponent implements OnInit, OnDestroy, OnChanges {
         // only show notification if it's not the current user joining and not the room creator
         const currentUserId = this.getCurrentUserId();
         if (player.userId !== currentUserId && !player.isCreator) {
-          this.notification.create('info', 'Player Joined', `${player.username} joined the room`);
+          const existingPlayer = this.players.find(p => p.userId === player.userId);
+          if (!existingPlayer) {
+            // This is a new player joining
+            this.notification.create('info', 'Player Joined', `${player.username} joined the room`);
+          }
         }
       })
     );

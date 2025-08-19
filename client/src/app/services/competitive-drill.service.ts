@@ -126,13 +126,17 @@ export class CompetitiveDrillService {
 
         // subscribe to player join events
         this.signalRService.onPlayerJoin$.subscribe(({ roomId, player }) => {
-            // console.log(`COMPETITIVE SERVICE: PlayerJoin event received - roomId: ${roomId}, player:`, player);
             this.addPlayer(player);
         });
 
         // subscribe to player leave events
         this.signalRService.onPlayerLeave$.subscribe(({ roomId, playerId }) => {
             this.removePlayer(playerId);
+        });
+
+        // subscribe to player ready events to update player state
+        this.signalRService.onPlayerReady$.subscribe(({ roomId, playerId, isReady }) => {
+            this.updatePlayerReady(playerId, isReady);
         });
 
         this.signalRService.onWaitingForPlayersToContinue$.subscribe(({ roomCode, continuedCount, totalCount }) => {
@@ -266,7 +270,6 @@ export class CompetitiveDrillService {
     }
 
     private setupDisconnectHandler(): void {
-        // Handle page unload/close to ensure graceful disconnection
         window.addEventListener('beforeunload', async (event) => {
             try {
                 
@@ -280,13 +283,10 @@ export class CompetitiveDrillService {
                     }
                 }
                 
-                // Clean up service state
                 this.cleanup();
                 
-                // Disconnect from SignalR
                 try {
                     await this.signalRService.disconnect();
-                    // console.log('COMPETITIVE SERVICE: Successfully disconnected from SignalR on page unload');
                 } catch (error) {
                     console.error('COMPETITIVE SERVICE: Error disconnecting from SignalR on page unload:', error);
                 }
@@ -587,11 +587,16 @@ export class CompetitiveDrillService {
 
     private updatePlayerReady(playerId: string, isReady: boolean): void {
         const currentPlayers = this.playersSubject.value;
-        const updatedPlayers = currentPlayers.map(player => 
-            player.userId === playerId 
-                ? { ...player, state: isReady ? 'Ready' as const : 'Connected' as const }
-                : player
-        );
+        const updatedPlayers = currentPlayers.map(player => {
+            if (player.userId === playerId) {
+                return { 
+                    ...player, 
+                    state: isReady ? 'Ready' as const : 'Connected' as const,
+                    isReady: isReady
+                };
+            }
+            return player;
+        });
         this.playersSubject.next(updatedPlayers);
     }
 
