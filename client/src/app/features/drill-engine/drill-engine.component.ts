@@ -26,7 +26,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { DrillPreference } from '../../models/interfaces/drill-preference.interface';
 import { DrillType } from '../../models/enums/drill-type.enum';
-import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service.ts.service';
+import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service';
 import { AdaptiveService } from '../../services/adaptive.service';
 import { DrillStatisticsService } from '../../services/drill-statistics.service';
 import { DrillSubmissionService } from '../../services/drill-submission.service';
@@ -129,6 +129,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
 
     // winner message displayed
     public winnerMessage: string = '';
+    public showConfetti: boolean = false;
     public showCompetitivePostDrillOverlay: boolean = false;
     public competitiveWinnerUsername: string = '';
     public showCompetitivePostDrillResults: boolean = false; // track if we should show drill results
@@ -516,6 +517,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                 if (this.isCompetitive) {
                     const winner = results?.playerResults?.find((p: any) => p.isWinner);
                     this.competitiveWinnerUsername = winner ? winner.username : '';
+                    this.showConfetti = winner ? winner.userId === this.currentUserId : false;
                     this.showCompetitivePostDrillOverlay = true;
                     this.showCompetitivePostDrillResults = true; // Show drill results in player panel
                     

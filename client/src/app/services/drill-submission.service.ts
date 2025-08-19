@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { DrillService } from './drill.service';
-import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service.ts.service';
+import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service';
 import { DrillStatistic } from '../models/interfaces/drill-stats.interface';
 import { DrillPreference } from '../models/interfaces/drill-preference.interface';
 import { DrillType } from '../models/enums/drill-type.enum';

@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { DrillType } from '../models/enums/drill-type.enum';
 import { DrillPreference } from '../models/interfaces/drill-preference.interface';
 import { DrillStatisticsService } from './drill-statistics.service';
-import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service.ts.service';
+import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service';
 
 export interface TimerState {
     isActive: boolean;

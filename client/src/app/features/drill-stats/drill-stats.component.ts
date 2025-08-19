@@ -28,7 +28,7 @@ import { DrillLength, DrillLengthWordCount } from '../../models/enums/drill-leng
 
 // services
 import { ThemeService } from '../../services/theme.service';
-import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service.ts.service';
+import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service';
 
 @Component({
   selector: 'app-drill-stats',

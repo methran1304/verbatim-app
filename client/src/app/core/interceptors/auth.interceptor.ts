@@ -4,7 +4,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { JwtDecoderUtil } from '../utils/jwt-decoder.util';
-import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service.ts.service';
+import { ZorroNotificationServiceTsService } from '../../shared/zorro-notification.service';
 
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     const authService = inject(AuthService);

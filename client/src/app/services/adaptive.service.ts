@@ -6,7 +6,7 @@ import { DrillDifficulty } from '../models/enums/drill-difficulty.enum';
 import { DrillLength, DrillLengthWordCount } from '../models/enums/drill-length.enum';
 import { DrillPreference } from '../models/interfaces/drill-preference.interface';
 import { LoadingDelayUtil } from '../core/utils/loading-delay.util';
-import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service.ts.service';
+import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service';
 
 export interface FuzzySearchResponse {
   similarWords: { [key: string]: string[] };

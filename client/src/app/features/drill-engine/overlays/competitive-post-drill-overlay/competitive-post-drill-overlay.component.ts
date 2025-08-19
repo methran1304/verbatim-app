@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -8,6 +8,7 @@ import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { Subscription } from 'rxjs';
 import { SignalRService } from '../../../../services/signalr.service';
+import { ConfettiService } from '../../../../shared/confetti.service';
 
 @Component({
   selector: 'app-competitive-post-drill-overlay',
@@ -24,7 +25,7 @@ import { SignalRService } from '../../../../services/signalr.service';
   templateUrl: './competitive-post-drill-overlay.component.html',
   styleUrl: './competitive-post-drill-overlay.component.scss'
 })
-export class CompetitivePostDrillOverlayComponent implements OnInit, OnDestroy {
+export class CompetitivePostDrillOverlayComponent implements OnInit, OnDestroy, OnChanges {
   @Input() show: boolean = false;
   @Input() winnerUsername: string = '';
   @Input() userWpm: number = 0;
@@ -33,6 +34,7 @@ export class CompetitivePostDrillOverlayComponent implements OnInit, OnDestroy {
   @Input() isSubmitting: boolean = false;
   @Input() submitError: string = '';
   @Input() roomCode: string = '';
+  @Input() showConfetti: boolean = false;
 
   @Output() continue = new EventEmitter<void>();
   @Output() leaveRoom = new EventEmitter<void>();
@@ -45,10 +47,18 @@ export class CompetitivePostDrillOverlayComponent implements OnInit, OnDestroy {
   
   private subscriptions: Subscription[] = [];
 
-  constructor(private signalRService: SignalRService) {}
+  constructor(private signalRService: SignalRService, private confettiService: ConfettiService) {}
 
   ngOnInit(): void {
     this.setupSignalRSubscriptions();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['showConfetti'] && changes['showConfetti'].currentValue === true) {
+      setTimeout(() => {
+        this.confettiService.triggerConfetti();
+      }, 500);
+    }
   }
 
   ngOnDestroy(): void {

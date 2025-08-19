@@ -5,7 +5,7 @@ import { AuthService } from '../../../services/auth.service';
 import { ThemeService } from '../../../services/theme.service';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { ZorroNotificationServiceTsService } from '../../../shared/zorro-notification.service.ts.service';
+import { ZorroNotificationServiceTsService } from '../../../shared/zorro-notification.service';
 import { ErrorHandlerUtil } from '../../../core/utils/error-handler.util';
 import { AuthFooterComponent } from '../../../shared/auth-footer/auth-footer.component';
 import { GoogleAuthService } from '../../../services/google-auth.service';

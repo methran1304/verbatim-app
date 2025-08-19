@@ -7,7 +7,7 @@ import { DrillLength } from '../models/enums/drill-length.enum';
 import { DrillType } from '../models/enums/drill-type.enum';
 import { DrillPreference } from '../models/interfaces/drill-preference.interface';
 import { JwtDecoderUtil } from '../core/utils/jwt-decoder.util';
-import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service.ts.service';
+import { ZorroNotificationServiceTsService } from '../shared/zorro-notification.service';
 import { AuthService } from './auth.service';
 
 export interface DrillSettings {
