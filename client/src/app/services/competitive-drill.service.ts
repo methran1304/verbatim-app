@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, Subscription } from 'rxjs';
-import { SignalRService, Player } from './signalr.service';
+import { SignalRService, Player, ConnectionState } from './signalr.service';
 import { DrillDifficulty } from '../models/enums/drill-difficulty.enum';
 import { DrillLength } from '../models/enums/drill-length.enum';
 import { DrillType } from '../models/enums/drill-type.enum';
@@ -58,12 +58,18 @@ export class CompetitiveDrillService {
     private drillTextSubject = new BehaviorSubject<string[]>([]);
     public drillText$ = this.drillTextSubject.asObservable();
 
+    // room disbanded events
+    private roomDisbandedSubject = new BehaviorSubject<{ roomId: string; reason: string } | null>(null);
+    public roomDisbanded$ = this.roomDisbandedSubject.asObservable();
+    
+    // prevent duplicate handling of room disband events
+    private roomDisbandHandled = false;
+
     // pending text received at StartDrill; used to start on BeginDrill
     private pendingDrillText: string[] = [];
     
     // subscription management
     private subscriptions: Subscription[] = [];
-    private kickHandled = false;
 
     constructor(
         private signalRService: SignalRService,
@@ -200,35 +206,28 @@ export class CompetitiveDrillService {
 
         // subscribe to room disbanded events
         this.signalRService.onRoomDisbanded$.subscribe(({ roomId, reason }) => {
-            this.resetState();
-            // you could show a notification here about why the room was disbanded
+            this.handleRoomDisbandEvent(roomId, reason, 'warning');
         });
 
         // subscribe to player kicked events
         const kickSub = this.signalRService.onPlayerKicked$.subscribe(({ roomCode, reason }) => {
-            // console.log(`COMPETITIVE SERVICE: Player kicked - roomCode: ${roomCode}, reason: ${reason}`);
-            
-            // Prevent handling the same kick event multiple times
-            if (this.kickHandled) {
-                // console.log('Kick already handled, ignoring duplicate event');
-                return;
-            }
-            this.kickHandled = true;
-            
-            // Reset state and redirect to main page
-            this.resetState();
-            // Show notification
-            this.notificationService.createNotification('error', 'Kicked from Room', reason);
-            // Navigate to main page
-            this.router.navigate(['/']);
-            
-            // Reset the flag after a short delay to allow for future kicks
-            setTimeout(() => {
-                this.kickHandled = false;
-            }, 2000);
-            
+            this.handleRoomDisbandEvent(roomCode, `Kicked: ${reason}`, 'error');
         });
         this.subscriptions.push(kickSub);
+
+        // subscribe to SignalR connection state for unexpected disconnections
+        const connectionSub = this.signalRService.connectionState$.subscribe(state => {
+            if (state === ConnectionState.Disconnected && this.roomStateSubject.value.roomCode) {
+                console.log(`COMPETITIVE SERVICE: SignalR disconnected unexpectedly while in room`);
+                
+                // Only trigger cleanup if we were actually in a room
+                const currentRoomCode = this.roomStateSubject.value.roomCode;
+                if (currentRoomCode) {
+                    this.handleRoomDisbandEvent(currentRoomCode, 'Connection lost unexpectedly', 'warning');
+                }
+            }
+        });
+        this.subscriptions.push(connectionSub);
 
         // subscribe to end drill events
         this.signalRService.onEndDrill$.subscribe(({ roomId, results }) => {
@@ -248,6 +247,34 @@ export class CompetitiveDrillService {
         // subscribe to all players completed events
         this.signalRService.onAllPlayersCompleted$.subscribe(({ roomId }) => {
         });
+    }
+
+    private handleRoomDisbandEvent(roomId: string, reason: string, notificationType: 'warning' | 'error' = 'warning'): void {
+        // Prevent duplicate handling
+        if (this.roomDisbandHandled) {
+            console.log('Room disband already handled, ignoring duplicate event');
+            return;
+        }
+        
+        this.roomDisbandHandled = true;
+        console.log(`COMPETITIVE SERVICE: Handling room disband - roomId: ${roomId}, reason: ${reason}`);
+        
+        // Emit event to trigger drill engine cleanup
+        this.roomDisbandedSubject.next({ roomId, reason });
+        
+        // Reset state
+        this.resetState();
+        
+        // Show notification to user
+        this.notificationService.createNotification(notificationType, 'Left the room', reason);
+        
+        // Navigate back to main page
+        this.router.navigate(['/']);
+        
+        // Reset the flag after a delay to allow for future events
+        setTimeout(() => {
+            this.roomDisbandHandled = false;
+        }, 3000);
     }
 
     public async initializeCompetitiveMode(): Promise<void> {
@@ -518,8 +545,6 @@ export class CompetitiveDrillService {
             isJoiningRoom: false
         });
         this.playersSubject.next([]);
-        // Reset kick flag
-        this.kickHandled = false;
     }
 
     public cleanup(): void {

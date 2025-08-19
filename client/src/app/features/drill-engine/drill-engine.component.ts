@@ -135,7 +135,6 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     private drillResultsData: { [userId: string]: any } = {}; // Store drill results data for each player
     private afkPlayers: Set<string> = new Set<string>();
     private subscriptions: Subscription[] = [];
-    
     // book progress tracking for classics
     private currentBookId: string | null = null;
     
@@ -431,7 +430,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                 // console.log(`DRILL ENGINE: Player kicked from room ${roomCode}, reason: ${reason}`);
                 // if the current user is kicked, handle accordingly
                 if (roomCode === this.roomState.roomCode) {
-                                          // show notification and redirect
+                    this.handleRoomDisbandCleanup();
                     this.notificationService.createNotification('error', 'Kicked from Room', reason);
                     this.onLeaveRoom();
                 }
@@ -555,6 +554,15 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                 }
             });
             this.subscriptions.push(roomStateSubscription);
+
+            // subscribe to room disbanded events for cleanup
+            const roomDisbandedSubscription = this.competitiveDrillService.roomDisbanded$.subscribe(event => {
+                if (event && this.isCompetitive) {
+                    console.log(`DRILL ENGINE: Room disbanded event received - ${event.reason}`);
+                    this.handleRoomDisbandCleanup();
+                }
+            });
+            this.subscriptions.push(roomDisbandedSubscription);
 
             // get current user ID from JWT token using centralized method
             this.currentUserId = this.getCurrentUserId();
@@ -1246,6 +1254,62 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         this.stopInactivityMonitoring();
         this.timerManagementService.resetTimer(this.drillPreferences);
         this.adaptiveService.resetAdaptiveState();
+    }
+
+    private handleRoomDisbandCleanup(): void {
+        console.log('DRILL ENGINE: Performing room disband cleanup');
+        
+        // stop any active drill
+        if (this.isDrillActive) {
+            this.stopDrill();
+        }
+        
+        // unfocus drill input to prevent further typing
+        if (this.drillInputComponent) {
+            this.drillInputComponent.blurInput();
+        }
+        
+        // stop stats pushing for competitive mode
+        if (this.statsInterval) {
+            clearInterval(this.statsInterval);
+            this.statsInterval = null;
+        }
+        
+        // reset all drill stats and state
+        this.resetDrillStats();
+        
+        // reset competitive-specific state
+        this.showCompetitivePostDrillOverlay = false;
+        this.showCompetitivePostDrillResults = false;
+        this.drillResultsData = {};
+        this.winnerMessage = '';
+        this.competitiveWinnerUsername = '';
+        this.players = [];
+        this.isCurrentUserReady = false;
+        this.playerWordsCompleted = {};
+        this.afkPlayers.clear();
+        
+        // reset countdown state
+        this.showCountdown = false;
+        this.countdownValue = 0;
+        this.isCountdownBegin = false;
+        this.countdownInProgress = false;
+        if (this.countdownHideTimeout) {
+            clearTimeout(this.countdownHideTimeout);
+            this.countdownHideTimeout = null;
+        }
+        
+        // clear any pending timeouts
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+            this.typingTimeout = null;
+        }
+        
+        // reset drill state management
+        this.drillStateManagementService.setInputFocusState(false);
+        this.drillStateManagementService.stopDrill();
+        
+        console.log('DRILL ENGINE: Room disband cleanup completed');
     }
 
     fillRandomDrillText(): void {

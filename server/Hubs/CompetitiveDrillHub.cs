@@ -287,37 +287,71 @@ namespace server.Hubs
                     return new { success = false, error = "User not authenticated" };
                 }
 
-                // If there's an active drill, mark the player as disconnected in the drill
+                // get room info to check if user is creator
                 var room = await _roomService.GetRoomByCodeAsync(roomCode);
-                if (room?.ActiveCompetitiveDrillId != null)
+                if (room == null)
+                {
+                    return new { success = false, error = "Room not found" };
+                }
+
+                var isCreator = room.CreatedBy == userId;
+                Console.WriteLine($"User {userId} leaving room {roomCode}, isCreator: {isCreator}");
+
+                // If there's an active drill, mark the player as disconnected in the drill
+                if (room.ActiveCompetitiveDrillId != null)
                 {
                     await _competitiveDrillService.MarkPlayerDisconnectedAsync(roomCode, userId);
                 }
 
-                // remove player from room using database
-                var success = await _roomService.RemovePlayerFromRoomAsync(roomCode, userId);
-                if (!success)
+                if (isCreator)
                 {
-                    return new { success = false, error = "Failed to leave room" };
-                }
-
-                // if the room is empty, delete it
-                var remainingPlayers = await _roomService.GetPlayersInRoomAsync(roomCode);
-                if (remainingPlayers.Count == 0)
-                {
-                    Console.WriteLine($"Room {roomCode} is empty, deleting room");
-                    await _roomService.DeleteRoomAsync(roomCode, userId);
+                    // creator is leaving - disband the room and notify all players
+                    Console.WriteLine($"Room creator {userId} is leaving, disbanding room {roomCode}");
+                    
+                    // stop any active timers for this room
+                    StopRoomTimers(roomCode);
+                    
                     // clear statistics cache
                     ClearDrillStatistics(roomCode);
+                    
+                    // remove connection from group
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
+                    
+                    // notify all players that the room has been disbanded
+                    await Clients.Group(roomCode).RoomDisbanded(room.RoomId, "Room creator has left the room");
+                    
+                    // deactivate the room
+                    await _roomService.DeactivateRoomAsync(roomCode);
+                    
+                    Console.WriteLine($"Room {roomCode} disbanded because creator left");
                 }
+                else
+                {
+                    // regular player leaving
+                    var success = await _roomService.RemovePlayerFromRoomAsync(roomCode, userId);
+                    if (!success)
+                    {
+                        return new { success = false, error = "Failed to leave room" };
+                    }
 
-                // remove connection from group
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
+                    // if the room is empty after removal, delete it
+                    var remainingPlayers = await _roomService.GetPlayersInRoomAsync(roomCode);
+                    if (remainingPlayers.Count == 0)
+                    {
+                        Console.WriteLine($"Room {roomCode} is empty, deleting room");
+                        await _roomService.DeleteRoomAsync(roomCode, userId);
+                        // clear statistics cache
+                        ClearDrillStatistics(roomCode);
+                    }
 
-                Console.WriteLine($"User {userId} left room {roomCode}");
+                    // remove connection from group
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomCode);
 
-                // notify all clients in the room
-                await Clients.Group(roomCode).PlayerLeave(roomCode, userId);
+                    Console.WriteLine($"User {userId} left room {roomCode}");
+
+                    // notify all clients in the room
+                    await Clients.Group(roomCode).PlayerLeave(roomCode, userId);
+                }
 
                 return new { success = true };
             }
