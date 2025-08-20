@@ -662,3 +662,58 @@
     padding-left: 12px !important;
   }
 }
+
+// Current user row highlighting - using the working approach with cleaner colors
+.current-user-row {
+  background-color: rgba(24, 144, 255, 0.1) !important;
+  border-left: 3px solid #1890ff !important;
+  position: relative;
+  
+  td {
+    background-color: rgba(24, 144, 255, 0.1) !important;
+  }
+  
+  &:hover {
+    background-color: rgba(24, 144, 255, 0.15) !important;
+    
+    td {
+      background-color: rgba(24, 144, 255, 0.15) !important;
+    }
+  }
+  
+  // Light theme specific styling
+  @media (prefers-color-scheme: light) {
+    background-color: rgba(24, 144, 255, 0.08) !important;
+    border-left-color: #1890ff !important;
+    
+    td {
+      background-color: rgba(24, 144, 255, 0.08) !important;
+    }
+    
+    &:hover {
+      background-color: rgba(24, 144, 255, 0.12) !important;
+      
+      td {
+        background-color: rgba(24, 144, 255, 0.12) !important;
+      }
+    }
+  }
+  
+  // Dark theme specific styling
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba(24, 144, 255, 0.15) !important;
+    border-left-color: #40a9ff !important;
+    
+    td {
+      background-color: rgba(24, 144, 255, 0.15) !important;
+    }
+    
+    &:hover {
+      background-color: rgba(24, 144, 255, 0.2) !important;
+      
+      td {
+        background-color: rgba(24, 144, 255, 0.2) !important;
+      }
+    }
+  }
+}

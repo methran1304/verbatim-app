@@ -8,6 +8,8 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
 import { LeaderboardService, OverallLeaderboardEntry, CompetitiveLeaderboardEntry, LeaderboardResponse } from '../../services/leaderboard.service';
+import { AuthService } from '../../services/auth.service';
+import { JwtDecoderUtil } from '../../core/utils/jwt-decoder.util';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -45,10 +47,24 @@ export class LeaderboardComponent implements OnInit, OnDestroy {
   
   // Active tab
   activeTabIndex = 0;
+  // Current user info
+  currentUsername = '';
 
-  constructor(private leaderboardService: LeaderboardService) {}
+  constructor(
+    private leaderboardService: LeaderboardService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void {
+    // Get current username from JWT token
+    this.authService.getUsername().subscribe(username => {
+      if (username) {
+        this.currentUsername = username;
+      } else {
+        this.currentUsername = '';
+      }
+    });
+    
     this.loadCasualLeaderboard();
     this.loadCompetitiveLeaderboard();
   }
@@ -86,6 +102,7 @@ export class LeaderboardComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           this.competitiveData = response.entries as CompetitiveLeaderboardEntry[];
+          this.competitiveTotal = response.pagination.totalCount;
           this.competitiveLoading = false;
         },
         error: (error) => {
@@ -141,5 +158,22 @@ export class LeaderboardComponent implements OnInit, OnDestroy {
 
   trackByPosition(index: number, item: any): number {
     return item.position;
+  }
+
+  // Get current user ID from JWT token
+  private getCurrentUserId(): string {
+    const token = this.authService.getAccessToken();
+    if (!token) return '';
+    const userId = JwtDecoderUtil.getUserId(token);
+    return userId || '';
+  }
+
+  // Check if entry belongs to current user
+  isCurrentUser(entry: OverallLeaderboardEntry | CompetitiveLeaderboardEntry): boolean {
+    const isMatch = this.currentUsername !== '' && entry.username === this.currentUsername;
+    if (this.currentUsername !== '') {
+      console.log(`Checking user: ${entry.username} vs current: ${this.currentUsername} = ${isMatch}`);
+    }
+    return isMatch;
   }
 }

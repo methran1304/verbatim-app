@@ -58,9 +58,10 @@
             #overallTable 
             [nzData]="overallData"
             [nzLoading]="overallLoading"
-            [nzTotal]="2"
+            [nzTotal]="overallTotal"
             [nzPageSize]="overallPageSize"
             [nzPageIndex]="overallCurrentPage"
+            [nzFrontPagination]="false"
             [nzShowPagination]="true"
             [nzShowSizeChanger]="false"
             (nzPageIndexChange)="onOverallPageChange($event)"
@@ -81,7 +82,8 @@
             </thead>
             
             <tbody>
-              <tr *ngFor="let entry of overallTable.data; trackBy: trackByPosition">
+              <tr *ngFor="let entry of overallTable.data; trackBy: trackByPosition" 
+                  [class.current-user-row]="isCurrentUser(entry)">
                 <td class="position-cell">
                   <div class="position-wrapper" [class]="getPositionClass(entry.position)">
                     <span class="position-number">{{ entry.position }}</span>
@@ -135,6 +137,7 @@
             [nzTotal]="competitiveTotal"
             [nzPageSize]="competitivePageSize"
             [nzPageIndex]="competitiveCurrentPage"
+            [nzFrontPagination]="false"
             [nzShowPagination]="true"
             [nzShowSizeChanger]="false"
             (nzPageIndexChange)="onCompetitivePageChange($event)"
@@ -155,7 +158,8 @@
             </thead>
             
             <tbody>
-              <tr *ngFor="let entry of competitiveTable.data; trackBy: trackByPosition">
+              <tr *ngFor="let entry of competitiveTable.data; trackBy: trackByPosition" 
+                  [class.current-user-row]="isCurrentUser(entry)">
                 <td class="position-cell">
                   <div class="position-wrapper" [class]="getPositionClass(entry.position)">
                     <span class="position-number">{{ entry.position }}</span>
