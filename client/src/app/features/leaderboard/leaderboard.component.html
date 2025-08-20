@@ -25,9 +25,13 @@
       </div>
       
       <div class="leaderboard-stats-summary">
-        <div class="stat-card">
-          <div class="stat-value">{{ overallData.length > 0 ? overallData[0].userPoints || 0 : 0 }}</div>
-          <div class="stat-label">Top Score</div>
+        <div class="stat-card casual">
+          <div class="stat-value">{{ overallData.length > 0 ? overallData[0].username || '—' : '—' }}</div>
+          <div class="stat-label">Casual #1</div>
+        </div>
+        <div class="stat-card competitive">
+          <div class="stat-value">{{ competitiveData.length > 0 ? competitiveData[0].username || '—' : '—' }}</div>
+          <div class="stat-label">Competitive #1</div>
         </div>
       </div>
     </div>

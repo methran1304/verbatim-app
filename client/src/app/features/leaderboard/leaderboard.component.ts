@@ -50,6 +50,7 @@ export class LeaderboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadCasualLeaderboard();
+    this.loadCompetitiveLeaderboard();
   }
 
   ngOnDestroy(): void {
@@ -59,11 +60,6 @@ export class LeaderboardComponent implements OnInit, OnDestroy {
 
   onTabChange(index: number): void {
     this.activeTabIndex = index;
-    if (index === 0 && this.overallData.length === 0) {
-      this.loadCasualLeaderboard();
-    } else if (index === 1 && this.competitiveData.length === 0) {
-      this.loadCompetitiveLeaderboard();
-    }
   }
 
   loadCasualLeaderboard(): void {

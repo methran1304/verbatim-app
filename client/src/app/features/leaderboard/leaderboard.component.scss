@@ -101,30 +101,25 @@
         border-color: var(--color-primary);
       }
       
-      &:nth-child(1) {
-        background: rgba(var(--color-primary-rgb), 0.1);
-        border: none;
-        
-        .stat-value {
-          color: var(--color-primary);
-        }
-      }
-      
-      &:nth-child(2) {
-        background: rgba(var(--color-success-rgb), 0.1);
-        border: none;
-        
+      // Success color for casual #1
+      &.casual {
         .stat-value {
           color: var(--color-success);
         }
+        
+        &:hover {
+          border-color: var(--color-success);
+        }
       }
       
-      &:nth-child(3) {
-        background: rgba(var(--color-warning-rgb), 0.1);
-        border: none;
-        
+      // Warning color for competitive #1
+      &.competitive {
         .stat-value {
           color: var(--color-warning);
+        }
+        
+        &:hover {
+          border-color: var(--color-warning);
         }
       }
       
