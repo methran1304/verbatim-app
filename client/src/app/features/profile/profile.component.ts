@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
+import { NzSkeletonModule } from 'ng-zorro-antd/skeleton';
 import { Subject, takeUntil } from 'rxjs';
 import { ProfileService, BookProgress } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
@@ -34,12 +35,20 @@ interface ProfileStats {
   username?: string;
   emailAddress?: string;
   memberSince?: Date;
+  // Overall level information
+  overallLevel?: {
+    name: string;
+    level: number;
+    currentPoints: number;
+    nextLevelThreshold: number;
+    progress: number;
+  };
 }
 
 @Component({
     selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, NgxChartsModule],
+  imports: [CommonModule, NgxChartsModule, NzSkeletonModule],
     templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
@@ -47,6 +56,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   @Input() profileStats: ProfileStats | null = null;
   
   private destroy$ = new Subject<void>();
+  isLoading = true;
   
   curve = d3.curveMonotoneX;
   
@@ -108,6 +118,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.isLoading = true;
     this.loadProfileStats();
     this.loadPerformanceData();
     this.prepareMetricsLineChartData();
@@ -128,11 +139,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
           
           // map the backend response to our component interface
           this.profileStats = profileData;
+          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error loading profile stats:', error);
           // fallback to mock data if API fails
           this.loadMockProfileData();
+          this.isLoading = false;
         }
       });
   }
@@ -488,5 +501,21 @@ export class ProfileComponent implements OnInit, OnDestroy {
   getAvatarInitial(): string {
     if (!this.profileStats?.username) return 'U';
     return this.profileStats.username.charAt(0).toUpperCase();
+  }
+
+  getOverallLevelClass(levelName?: string): string {
+    if (!levelName) return 'level-novice';
+    
+    return `level-${levelName.toLowerCase().replace(/\s+/g, '-')}`;
+  }
+
+  shouldShowLevelProgress(): boolean {
+    return !!(this.profileStats?.overallLevel?.nextLevelThreshold && 
+              this.profileStats.overallLevel.nextLevelThreshold < 2147483647);
+  }
+
+  getLevelProgressText(): string {
+    if (!this.profileStats?.overallLevel) return '';
+    return `${this.profileStats.overallLevel.currentPoints} / ${this.profileStats.overallLevel.nextLevelThreshold} pts`;
   }
 }

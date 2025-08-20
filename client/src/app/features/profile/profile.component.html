@@ -1,6 +1,12 @@
 <div class="profile-container">
-  <!-- profile content -->
-  <div class="profile-content">
+  <!-- loading skeleton -->
+  @if (isLoading) {
+    <div class="profile-skeleton">
+      <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }" [nzTitle]="{ width: '60%' }"></nz-skeleton>
+    </div>
+  } @else {
+    <!-- profile content -->
+    <div class="profile-content">
     
     <!-- header section -->
     <div class="profile-header">
@@ -12,6 +18,14 @@
       
       <div class="profile-info">
         <h1 class="username">{{ profileStats?.username || 'User' }}</h1>
+        <div class="level-info">
+          <span class="overall-level" [class]="getOverallLevelClass(profileStats?.overallLevel?.name)">
+            {{ profileStats?.overallLevel?.name || 'Novice' }}
+          </span>
+          @if (shouldShowLevelProgress()) {
+            <span class="level-progress">{{ getLevelProgressText() }}</span>
+          }
+        </div>
         <p class="email">{{ profileStats?.emailAddress || 'user@example.com' }}</p>
         <p class="member-since">Member since {{ getMemberSinceFormatted() }}</p>
       </div>
@@ -107,44 +121,42 @@
             </div>
           </div>
 
-
-
           <!-- activity summary -->
           <div class="metric-section">
             <h3>Activity Summary</h3>
-                          <div class="activity-metrics">
-                <div class="activity-metric-card">
-                  <div class="metric-header">
-                    <span class="metric-title">Total Words</span>
-                  </div>
-                  <div class="metric-value">{{ profileStats?.totalWords?.toLocaleString() || 0 }}</div>
-                  <div class="metric-subtitle">Words Typed</div>
+            <div class="activity-metrics">
+              <div class="activity-metric-card">
+                <div class="metric-header">
+                  <span class="metric-title">Total Words</span>
                 </div>
-                
-                <div class="activity-metric-card">
-                  <div class="metric-header">
-                    <span class="metric-title">Total Letters</span>
-                  </div>
-                  <div class="metric-value">{{ profileStats?.totalLetters?.toLocaleString() || 0 }}</div>
-                  <div class="metric-subtitle">Letters Typed</div>
-                </div>
-                
-                <div class="activity-metric-card">
-                  <div class="metric-header">
-                    <span class="metric-title">Total Drills</span>
-                  </div>
-                  <div class="metric-value">{{ profileStats?.totalDrillsParticipated || 0 }}</div>
-                  <div class="metric-subtitle">Drills Completed</div>
-                </div>
-                
-                <div class="activity-metric-card">
-                  <div class="metric-header">
-                    <span class="metric-title">Practice Time</span>
-                  </div>
-                  <div class="metric-value">{{ getTotalTimeFormatted() }}</div>
-                  <div class="metric-subtitle">Time Spent</div>
-                </div>
+                <div class="metric-value">{{ profileStats?.totalWords?.toLocaleString() || 0 }}</div>
+                <div class="metric-subtitle">Words Typed</div>
               </div>
+              
+              <div class="activity-metric-card">
+                <div class="metric-header">
+                  <span class="metric-title">Total Letters</span>
+                </div>
+                <div class="metric-value">{{ profileStats?.totalLetters?.toLocaleString() || 0 }}</div>
+                <div class="metric-subtitle">Letters Typed</div>
+              </div>
+              
+              <div class="activity-metric-card">
+                <div class="metric-header">
+                  <span class="metric-title">Total Drills</span>
+                </div>
+                <div class="metric-value">{{ profileStats?.totalDrillsParticipated || 0 }}</div>
+                <div class="metric-subtitle">Drills Completed</div>
+              </div>
+              
+              <div class="activity-metric-card">
+                <div class="metric-header">
+                  <span class="metric-title">Practice Time</span>
+                </div>
+                <div class="metric-value">{{ getTotalTimeFormatted() }}</div>
+                <div class="metric-subtitle">Time Spent</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -247,11 +259,11 @@
                 <div class="losses-bar" [style.width.%]="getLossRate()"></div>
                 <div class="progress-divider"></div>
               </div>
-                              <div class="progress-stats">
-                  <span class="wins-count">{{ profileStats?.wins || 0 }}</span>
-                  <span class="total-count">Total: {{ profileStats?.competitiveDrills || 0 }}</span>
-                  <span class="losses-count">{{ profileStats?.losses || 0 }}</span>
-                </div>
+              <div class="progress-stats">
+                <span class="wins-count">{{ profileStats?.wins || 0 }}</span>
+                <span class="total-count">Total: {{ profileStats?.competitiveDrills || 0 }}</span>
+                <span class="losses-count">{{ profileStats?.losses || 0 }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -299,8 +311,7 @@
           </div>
         </div>
       </div>
-
-
     </div>
-  </div>
+    </div>
+  }
 </div>

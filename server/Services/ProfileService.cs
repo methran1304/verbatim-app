@@ -557,6 +557,13 @@ namespace server.Services
 				var drillDistribution = await GetDrillDistribution(userId, "year");
 				var user = await _userService.GetByUserId(userId);
 
+				// calculate overall level information
+				var overallLevelName = _levelCalculationService.GetOverallLevelName(profile.OverallLevel);
+				var nextOverallLevelThreshold = _levelCalculationService.GetNextOverallLevelThreshold((int)profile.OverallLevel);
+				var overallLevelProgress = nextOverallLevelThreshold != int.MaxValue
+					? (double)(profile.UserPoints - GetCurrentLevelThreshold((int)profile.OverallLevel)) / (nextOverallLevelThreshold - GetCurrentLevelThreshold((int)profile.OverallLevel))
+					: 1.0;
+
 				// create result object using profile properties and append additional data
 				var result = new
 				{
@@ -584,6 +591,16 @@ namespace server.Services
 					Username = user?.Username,
 					EmailAddress = user?.EmailAddress,
 					MemberSince = user?.CreatedAt,
+					
+					// overall level information
+					OverallLevel = new
+					{
+						name = overallLevelName,
+						level = (int)profile.OverallLevel,
+						currentPoints = profile.UserPoints,
+						nextLevelThreshold = nextOverallLevelThreshold,
+						progress = overallLevelProgress
+					},
 					
 					// additional drill distribution data
 					DrillsByType = drillDistribution.ContainsKey("drillTypes") 
@@ -637,6 +654,18 @@ namespace server.Services
 				Console.WriteLine($"Error getting AI insight: {ex.Message}");
 				return new { message = "Error retrieving AI insight" };
 			}
+		}
+
+		private int GetCurrentLevelThreshold(int level)
+		{
+			return level switch
+			{
+				1 => 0,      // Novice
+				2 => 1000,   // Apprentice
+				3 => 2500,   // Adept
+				4 => 5000,   // Expert
+				_ => 0
+			};
 		}
 	}
 }
