@@ -94,7 +94,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     public isUserInactive: boolean = false;
     public hasBeenInactive: boolean = false;
     private inactivityTimeout: any;
-    private readonly MAX_INACTIVITY_SECONDS = 10;
+    private readonly MAX_INACTIVITY_SECONDS = 60;
 
     private readonly INACTIVITY_CHECK_INTERVAL = 10000;
     private inactivityCheckInterval: any;
@@ -681,7 +681,10 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             }
         }
 
-        this.updateUserActivity();
+        // only update user activity for all drills except competitive and classics
+        if (!this.isCompetitive && !this.isClassicsMode) {
+            this.updateUserActivity();
+        }
 
         // set typing state for toolbar animation
         this.setTypingState(true);
@@ -893,7 +896,8 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     startTimer(): void {
         this.realTimeDataService.addTimeSeriesDataPoint(0, this.wpm, this.accuracy);
 
-        if (this.drillPreferences.drillType !== DrillType.Timed) {
+        // start inactivity monitoring for all drills except competitive and classics
+        if (!this.isCompetitive && !this.isClassicsMode) {
             this.startInactivityMonitoring();
         }
 
@@ -907,11 +911,16 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                     const currentTimePoint = timerState.totalTimeInSeconds - timerState.remainingSeconds;
                     this.realTimeDataService.addTimeSeriesDataPoint(currentTimePoint, this.wpm, this.accuracy);
             } else {
-                // only add data points if user is active or within reasonable inactivity period
+                // for all drills except competitive and classics, only add data points if user is active or within reasonable inactivity period
+                if (!this.isCompetitive && !this.isClassicsMode) {
                     if (!this.isUserInactive || timerState.elapsedSeconds <= this.MAX_INACTIVITY_SECONDS) {
                         this.realTimeDataService.addTimeSeriesDataPoint(timerState.elapsedSeconds, this.wpm, this.accuracy);
                     }
+                } else {
+                    // for competitive and classics drills, always add data points
+                    this.realTimeDataService.addTimeSeriesDataPoint(timerState.elapsedSeconds, this.wpm, this.accuracy);
                 }
+            }
             },
             onTimeout: () => {
                 this.stopDrill();
@@ -1387,13 +1396,17 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         const drillSubmission: DrillSubmissionRequest = {
             drillDifficulty: this.drillPreferences.drillDifficulty,
             drillType: this.drillPreferences.drillType,
-            drillStatistic: this.drillStatistic
+            drillStatistic: this.drillStatistic,
+            isCompetitive: this.isCompetitive,
+            isClassicsMode: this.isClassicsMode
         };
 
         this.drillSubmissionService.submitDrill(
             drillSubmission,
             this.drillPreferences,
             this.hasBeenInactive,
+            this.isCompetitive,
+            this.isClassicsMode,
             (loading: boolean) => this.drillStateManagementService.setSubmissionState(loading)
         ).then(() => {
             this.drillStateManagementService.hidePostDrillOverlay();
@@ -1406,10 +1419,12 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     private updateUserActivity(): void {
         this.lastActivityTime = Date.now();
 
+
+
         // if user was inactive and now becomes active, clear the current afk state but keep the permanent flag
-        // only show notification if drill is actually active and started
+        // only show notification if drill is actually active and started and is not competitive or classics
         const timerState = this.timerManagementService.getCurrentTimerState();
-        if (this.isUserInactive && this.isDrillActive && timerState.startTime > 0) {
+        if (this.isUserInactive && this.isDrillActive && timerState.startTime > 0 && !this.isCompetitive && !this.isClassicsMode) {
             this.isUserInactive = false;
             // report resumption to server in competitive mode
             if (this.isCompetitive && this.roomState.roomCode) {
@@ -1429,9 +1444,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
             clearTimeout(this.inactivityTimeout);
         }
 
-        // set new inactivity timeout only if drill is active
+        // set new inactivity timeout only if drill is active and is not competitive or classics
         const currentTimerState = this.timerManagementService.getCurrentTimerState();
-        if (this.isDrillActive && currentTimerState.startTime > 0) {
+        if (this.isDrillActive && currentTimerState.startTime > 0 && !this.isCompetitive && !this.isClassicsMode) {
             this.inactivityTimeout = setTimeout(() => {
                 this.isUserInactive = true;
                 this.hasBeenInactive = true;
@@ -1448,11 +1463,11 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     }
 
     private startInactivityMonitoring(): void {
-        // check for inactivity every INACTIVITY_CHECK_INTERVAL
+        // check for inactivity every INACTIVITY_CHECK_INTERVAL - for all drills except competitive and classics
         this.inactivityCheckInterval = setInterval(() => {
-            // only monitor if drill is active and has started
+            // only monitor if drill is active, has started, and is not competitive or classics
             const currentTimerState = this.timerManagementService.getCurrentTimerState();
-            if (this.isDrillActive && currentTimerState.startTime > 0) {
+            if (this.isDrillActive && currentTimerState.startTime > 0 && !this.isCompetitive && !this.isClassicsMode) {
                 const currentTime = Date.now();
                 const timeSinceLastActivity = (currentTime - this.lastActivityTime) / 1000;
 
@@ -1485,9 +1500,9 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     @HostListener('document:mousedown', ['$event'])
     @HostListener('document:touchstart', ['$event'])
     onGlobalActivity(): void {
-        // only track activity if drill is active, started, and is a non-timed drill
+        // only track activity if drill is active, started, and is not competitive or classics
         const currentTimerState = this.timerManagementService.getCurrentTimerState();
-        if (this.isDrillActive && currentTimerState.startTime > 0 && this.drillPreferences.drillType !== DrillType.Timed) {
+        if (this.isDrillActive && currentTimerState.startTime > 0 && !this.isCompetitive && !this.isClassicsMode) {
             this.updateUserActivity();
         }
     }

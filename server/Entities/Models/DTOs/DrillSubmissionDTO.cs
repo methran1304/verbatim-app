@@ -9,6 +9,8 @@ namespace server.Entities.Models
         public List<string> SourceText { get; set; } = new();
         public List<string> TypedWords { get; set; } = new();
         public DrillStatistic DrillStatistic { get; set; } = new();
+        public bool IsCompetitive { get; set; } = false;
+        public bool IsClassicsMode { get; set; } = false;
     }
 
     public class DrillSubmissionResponseDTO

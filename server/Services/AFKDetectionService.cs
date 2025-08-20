@@ -136,12 +136,7 @@ namespace server.Services
 
         public TimeSpan GetAFKTimeout(DrillSettings drillSettings)
         {
-            return drillSettings.Type switch
-            {
-                CompetitiveDrillType.Timed => TimeSpan.FromSeconds(drillSettings.Duration * 0.5), // 50% of drill duration
-                CompetitiveDrillType.Marathon => TimeSpan.FromSeconds(drillSettings.Length * 2), // 2 seconds per word for marathon
-                _ => TimeSpan.FromSeconds(60) // default 60 seconds
-            };
+            return TimeSpan.FromSeconds(60); // 60 seconds for all drill types
         }
 
         private DateTime? GetLastActivity(string roomCode, string userId)

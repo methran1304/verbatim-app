@@ -2,5 +2,7 @@ export enum DrillType {
     Timed = 'timed',
     Marathon = 'marathon',
     Memory = 'memory',
-    Adaptive = 'adaptive'
+    Adaptive = 'adaptive',
+    Classics = 'classics',
+    Competitive = 'competitive'
 } 

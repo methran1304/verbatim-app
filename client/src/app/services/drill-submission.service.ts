@@ -30,10 +30,12 @@ export class DrillSubmissionService {
     validateDrillSubmission(
         drillStatistic: DrillStatistic,
         drillPreferences: DrillPreference,
-        hasBeenInactive: boolean
+        hasBeenInactive: boolean,
+        isCompetitive: boolean = false,
+        isClassicsMode: boolean = false
     ): DrillSubmissionValidationResult {
-        // check if user was afk during the drill (permanent flag)
-        if (hasBeenInactive) {
+        // check if user was afk during the drill (permanent flag) - for all drills except competitive and classics
+        if (hasBeenInactive && !isCompetitive && !isClassicsMode) {
             return {
                 isValid: false,
                 errorMessage: 'Cannot submit drill due to inactivity. Please restart the drill.'
@@ -58,8 +60,8 @@ export class DrillSubmissionService {
             };
         }
 
-        // for non-timed drills, check for suspicious inactivity patterns
-        if (drillPreferences.drillType !== DrillType.Timed) {
+        // for all drills except competitive and classics, check for suspicious inactivity patterns
+        if (!isCompetitive && !isClassicsMode) {
             const totalTypedChars = drillStatistic.correctLetters + drillStatistic.incorrectLetters;
             const charsPerSecond = drillDuration > 0 ? totalTypedChars / drillDuration : 0;
 
@@ -80,10 +82,12 @@ export class DrillSubmissionService {
         drillSubmission: DrillSubmissionRequest,
         drillPreferences: DrillPreference,
         hasBeenInactive: boolean,
+        isCompetitive: boolean = false,
+        isClassicsMode: boolean = false,
         onLoadingChange?: (loading: boolean) => void
     ): Promise<void> {
         // validate submission first
-        const validation = this.validateDrillSubmission(drillSubmission.drillStatistic, drillPreferences, hasBeenInactive);
+        const validation = this.validateDrillSubmission(drillSubmission.drillStatistic, drillPreferences, hasBeenInactive, isCompetitive, isClassicsMode);
         
         if (!validation.isValid) {
             this.notificationService.createNotification('error', 'AFK Detected', validation.errorMessage!);

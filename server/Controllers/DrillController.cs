@@ -145,7 +145,7 @@ namespace server.Controllers
         {
             const int MAX_DRILL_DURATION_SECONDS = 7200; // 2 hours
             const int MAX_REALTIME_DATA_POINTS = 7200; // 2 hours worth of data points
-            const double MIN_CHARS_PER_SECOND = 0.1; // Minimum characters per second for non-timed drills
+            const double MIN_CHARS_PER_SECOND = 0.1; // Minimum characters per second for non-competitive/non-classics drills
 
             // Check if drill duration is reasonable
             if (submission.DrillStatistic.Duration > MAX_DRILL_DURATION_SECONDS)
@@ -167,8 +167,8 @@ namespace server.Controllers
                 };
             }
 
-            // For non-timed drills, check for suspicious inactivity patterns
-            if (submission.DrillType != DrillType.Timed)
+            // For all drills except competitive and classics, check for suspicious inactivity patterns
+            if (!submission.IsCompetitive && !submission.IsClassicsMode)
             {
                 var totalTypedChars = submission.DrillStatistic.CorrectLetters + submission.DrillStatistic.IncorrectLetters;
                 var charsPerSecond = submission.DrillStatistic.Duration > 0 

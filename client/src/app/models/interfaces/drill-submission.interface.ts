@@ -6,6 +6,8 @@ export interface DrillSubmissionRequest {
     drillDifficulty: DrillDifficulty;
     drillType: DrillType;
     drillStatistic: DrillStatistic;
+    isCompetitive?: boolean;
+    isClassicsMode?: boolean;
 }
 
 export interface DrillSubmissionResponse {

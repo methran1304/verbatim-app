@@ -47,8 +47,11 @@ namespace server.Services
             await _roomService.UpdateRoomStateAsync(roomCode, RoomState.InProgress);
             await _roomService.SetActiveCompetitiveDrillAsync(roomCode, competitiveDrill.CompetitiveDrillId);
 
-            // start AFK monitoring
-            _afkDetectionService.StartAFKMonitoring(roomCode, room.DrillSettings);
+            // start AFK monitoring only for marathon drills
+            if (room.DrillSettings.Type == CompetitiveDrillType.Marathon)
+            {
+                _afkDetectionService.StartAFKMonitoring(roomCode, room.DrillSettings);
+            }
 
             return true;
         }

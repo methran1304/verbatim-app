@@ -215,7 +215,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
         [DrillType.Timed]: 45,
         [DrillType.Marathon]: 67,
         [DrillType.Adaptive]: 32,
-        [DrillType.Memory]: 12
+        [DrillType.Memory]: 12,
+        [DrillType.Classics]: 8,
+        [DrillType.Competitive]: 15
       },
       drillsByDifficulty: {
         [DrillDifficulty.Beginner]: 23,
