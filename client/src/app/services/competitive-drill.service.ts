@@ -672,5 +672,18 @@ export class CompetitiveDrillService {
         });
     }
 
+    public updatePlayerCompetitiveRank(userId: string, newCompetitiveRank: string): void {
+        const currentPlayers = this.playersSubject.value;
+        const updatedPlayers = currentPlayers.map(player => {
+            if (player.userId === userId) {
+                return {
+                    ...player,
+                    competitiveRank: newCompetitiveRank
+                };
+            }
+            return player;
+        });
+        this.playersSubject.next(updatedPlayers);
+    }
 
 }

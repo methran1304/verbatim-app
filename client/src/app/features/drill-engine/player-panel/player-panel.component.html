@@ -61,7 +61,9 @@
                       }
                     </div>
                     <div class="username">{{ player.username }}</div>
-                    <div class="level">Lvl. {{ player.level }}</div>
+                    <div class="competitive-rank" [class]="getCompetitiveRankClass(player.competitiveRank)">
+                      {{ player.competitiveRank || 'Bronze' }}
+                    </div>
                   </div>
 
                   <!-- statistics section -->

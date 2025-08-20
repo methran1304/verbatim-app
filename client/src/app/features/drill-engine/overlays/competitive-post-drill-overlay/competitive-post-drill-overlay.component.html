@@ -24,6 +24,24 @@
             {{ userPointsChange }} Pts.
           </span>
         </div>
+
+        <!-- competitive rank progress -->
+        <div class="rank-progress-section">
+          <div class="rank-info">
+            <span class="current-rank" [class]="getCompetitiveRankClass(userNewCompetitiveRank)">
+              {{ userNewCompetitiveRank }}
+            </span>
+            @if (userPointsToNextRank > 0) {
+              <span class="points-to-next">{{ userPointsToNextRank }} pts to next Level</span>
+            }
+            @if (userHasLeveledUp) {
+              <span class="level-up-badge">
+                <span nz-icon nzType="star" nzTheme="fill"></span>
+                Level up!
+              </span>
+            }
+          </div>
+        </div>
       </div>
 
       <!-- action buttons -->

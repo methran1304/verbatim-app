@@ -23,6 +23,7 @@ export interface Player {
   userId: string;
   username: string;
   level: number;
+  competitiveRank?: string; // competitive rank (Bronze, Silver, Gold, etc.)
   state: 'Connected' | 'Ready' | 'Typing' | 'Finished' | 'Disconnected';
   isReady: boolean;
   isCreator: boolean;
@@ -437,5 +438,11 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
 
   getPlayerAvatarColor(player: Player): string {
     return this.playerColorMap[player.userId] || 'primary';
+  }
+
+  getCompetitiveRankClass(rank?: string): string {
+    if (!rank) return 'rank-bronze';
+    
+    return `rank-${rank.toLowerCase().replace(/\s+/g, '-')}`;
   }
 }

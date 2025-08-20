@@ -22,5 +22,11 @@ namespace server.Entities.Models
         public int PointsChange { get; set; }
         public DateTime FinishedAt { get; set; }
         public bool IsWinner { get; set; }
+        public int PreviousCompetitivePoints { get; set; }
+        public int NewCompetitivePoints { get; set; }
+        public string PreviousCompetitiveRank { get; set; } = string.Empty;
+        public string NewCompetitiveRank { get; set; } = string.Empty;
+        public bool HasLeveledUp { get; set; }
+        public int PointsToNextRank { get; set; }
     }
 } 

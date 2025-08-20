@@ -18,7 +18,7 @@ namespace server.Hubs
         Task RoomDisbanded(string roomId, string reason);
         
         // player management
-        Task PlayerJoin(string roomId, string userId, string username, int level, bool isCreator = false, bool isReady = false);
+        Task PlayerJoin(string roomId, string userId, string username, int level, string competitiveRank, bool isCreator = false, bool isReady = false);
         Task PlayerStateUpdate(string roomId, string userId, string username, bool isReady, bool isCreator, double wpm = 0, double accuracy = 0, int completionPercentage = 0);
         Task PlayerLeave(string roomId, string userId);
         Task PlayerReady(string roomId, string userId, bool isReady, object? competitiveStats = null);
@@ -47,6 +47,7 @@ namespace server.Hubs
         private readonly ICompetitiveDrillService _competitiveDrillService;
         private readonly IAFKDetectionService _afkDetectionService;
         private readonly IDrillTextService _drillTextService;
+        private readonly ILevelCalculationService _levelCalculationService;
         private readonly IUserService _userService;
         private readonly IProfileService _profileService;
         
@@ -66,6 +67,7 @@ namespace server.Hubs
             ICompetitiveDrillService competitiveDrillService,
             IAFKDetectionService afkDetectionService,
             IDrillTextService drillTextService,
+            ILevelCalculationService levelCalculationService,
             IUserService userService,
             IProfileService profileService)
         {
@@ -74,6 +76,7 @@ namespace server.Hubs
             _competitiveDrillService = competitiveDrillService;
             _afkDetectionService = afkDetectionService;
             _drillTextService = drillTextService;
+            _levelCalculationService = levelCalculationService;
             _userService = userService;
             _profileService = profileService;
         }
@@ -158,7 +161,8 @@ namespace server.Hubs
 
                 var username = await GetUsernameAsync(userId);
                 var level = GetUserLevel(userId);
-                await Clients.Group(room.RoomCode).PlayerJoin(room.RoomId, userId, username, level, true, false);
+                var competitiveRank = await GetUserCompetitiveRankAsync(userId);
+                await Clients.Group(room.RoomCode).PlayerJoin(room.RoomId, userId, username, level, competitiveRank, true, false);
 
                 return new { success = true, roomId = room.RoomId, roomCode = room.RoomCode };
             }
@@ -215,16 +219,18 @@ namespace server.Hubs
                 {
                     var playerUsername = await GetUsernameAsync(player.UserId);
                     var playerLevel = GetUserLevel(player.UserId);
+                    var playerCompetitiveRank = await GetUserCompetitiveRankAsync(player.UserId);
                     var isPlayerCreator = player.IsCreator;
                     var isPlayerReady = player.IsReady;
                     
-                    await Clients.Caller.PlayerJoin(room.RoomId, player.UserId, playerUsername, playerLevel, isPlayerCreator, isPlayerReady);
+                    await Clients.Caller.PlayerJoin(room.RoomId, player.UserId, playerUsername, playerLevel, playerCompetitiveRank, isPlayerCreator, isPlayerReady);
                 }
 
                 var username = await GetUsernameAsync(userId);
                 var level = GetUserLevel(userId);
+                var competitiveRank = await GetUserCompetitiveRankAsync(userId);
                 var isNewPlayerCreator = room.CreatedBy == userId;
-                await Clients.Group(roomCode).PlayerJoin(room.RoomId, userId, username, level, isNewPlayerCreator, false);
+                await Clients.Group(roomCode).PlayerJoin(room.RoomId, userId, username, level, competitiveRank, isNewPlayerCreator, false);
                 
                 await Clients.Caller.RoomJoined(room.RoomId, roomCode);
 
@@ -1081,6 +1087,15 @@ namespace server.Hubs
                 // Calculate competitive points based on position and performance
                 var competitivePoints = CalculateCompetitivePoints(position, stat.WPM, stat.Accuracy, sortedStats.Count);
                 
+                // Get user's profile to calculate level information
+                var profile = await _profileService.GetByUserId(stat.UserId);
+                var previousCompetitivePoints = profile?.CompetitivePoints ?? 0;
+                var previousCompetitiveRank = profile != null ? _levelCalculationService.GetCompetitiveRankName(profile.CompetitiveRank) : "Bronze";
+                var newCompetitivePoints = previousCompetitivePoints + competitivePoints;
+                var newCompetitiveRank = _levelCalculationService.GetCompetitiveRankName(_levelCalculationService.CalculateCompetitiveRank(newCompetitivePoints));
+                var hasLeveledUp = previousCompetitiveRank != newCompetitiveRank;
+                var pointsToNextRank = _levelCalculationService.GetNextCompetitiveRankThreshold((int)_levelCalculationService.CalculateCompetitiveRank(newCompetitivePoints)) - newCompetitivePoints;
+                
                 playerResults.Add(new PlayerResult
                 {
                     UserId = stat.UserId,
@@ -1090,7 +1105,13 @@ namespace server.Hubs
                     Position = position,
                     PointsChange = competitivePoints,
                     FinishedAt = DateTime.UtcNow,
-                    IsWinner = stat.UserId == winnerId
+                    IsWinner = stat.UserId == winnerId,
+                    PreviousCompetitivePoints = previousCompetitivePoints,
+                    NewCompetitivePoints = newCompetitivePoints,
+                    PreviousCompetitiveRank = previousCompetitiveRank,
+                    NewCompetitiveRank = newCompetitiveRank,
+                    HasLeveledUp = hasLeveledUp,
+                    PointsToNextRank = pointsToNextRank
                 });
             }
 
@@ -1209,9 +1230,14 @@ namespace server.Hubs
                         Console.WriteLine($"User {playerResult.UserId} lost the drill");
                     }
 
+                    // Update competitive points and rank
+                    profile.CompetitivePoints += playerResult.PointsChange;
+                    var competitiveRank = _levelCalculationService.CalculateCompetitiveRank(profile.CompetitivePoints);
+                    profile.CompetitiveRank = competitiveRank;
+
                     // Save updated profile
                     await _profileService.UpdateProfilePostCompetitiveDrillAsync(profile);
-                    Console.WriteLine($"Updated profile for user {playerResult.UserId}: CompetitiveDrills={profile.CompetitiveDrills}, Wins={profile.Wins}, Losses={profile.Losses}");
+                    Console.WriteLine($"Updated profile for user {playerResult.UserId}: CompetitiveDrills={profile.CompetitiveDrills}, Wins={profile.Wins}, Losses={profile.Losses}, CompetitivePoints={profile.CompetitivePoints}, Rank={competitiveRank}");
                 }
             }
             catch (Exception ex)
@@ -1403,6 +1429,26 @@ namespace server.Hubs
         {
             // TODO
             return 1;
+        }
+
+        private async Task<string> GetUserCompetitiveRankAsync(string userId)
+        {
+            try
+            {
+                var profile = await _profileService.GetByUserId(userId);
+                if (profile == null)
+                {
+                    return "Bronze";
+                }
+                
+                var rank = _levelCalculationService.CalculateCompetitiveRank(profile.CompetitivePoints);
+                return _levelCalculationService.GetCompetitiveRankName(rank);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting competitive rank for user {userId}: {ex.Message}");
+                return "Bronze";
+            }
         }
     }
 }

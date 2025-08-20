@@ -134,7 +134,17 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
     public competitiveWinnerUsername: string = '';
     public showCompetitivePostDrillResults: boolean = false; // track if we should show drill results
     private drillResultsData: { [userId: string]: any } = {}; // Store drill results data for each player
-    public currentUserCompetitiveResults: { wpm: number; accuracy: number; pointsChange: number } = { wpm: 0, accuracy: 0, pointsChange: 0 };
+    public currentUserCompetitiveResults: { 
+    wpm: number; 
+    accuracy: number; 
+    pointsChange: number;
+    previousCompetitivePoints?: number;
+    newCompetitivePoints?: number;
+    previousCompetitiveRank?: string;
+    newCompetitiveRank?: string;
+    hasLeveledUp?: boolean;
+    pointsToNextRank?: number;
+  } = { wpm: 0, accuracy: 0, pointsChange: 0 };
     private afkPlayers: Set<string> = new Set<string>();
     private subscriptions: Subscription[] = [];
     // book progress tracking for classics
@@ -306,6 +316,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                             userId: player.userId,
                             username: player.username,
                             level: player.level,
+                            competitiveRank: player.competitiveRank,
                             state: player.state,
                             isReady: player.state === 'Ready',
                             isCreator: player.isCreator || false,
@@ -321,6 +332,7 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                             userId: player.userId,
                             username: player.username,
                             level: player.level,
+                            competitiveRank: player.competitiveRank,
                             state: player.state,
                             isReady: player.state === 'Ready',
                             isCreator: player.isCreator || false,
@@ -539,9 +551,18 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
                             this.currentUserCompetitiveResults = {
                                 wpm: playerResult.wpm,
                                 accuracy: playerResult.accuracy,
-                                pointsChange: playerResult.pointsChange
+                                pointsChange: playerResult.pointsChange,
+                                previousCompetitivePoints: playerResult.previousCompetitivePoints,
+                                newCompetitivePoints: playerResult.newCompetitivePoints,
+                                previousCompetitiveRank: playerResult.previousCompetitiveRank,
+                                newCompetitiveRank: playerResult.newCompetitiveRank,
+                                hasLeveledUp: playerResult.hasLeveledUp,
+                                pointsToNextRank: playerResult.pointsToNextRank
                             };
                         }
+
+                        // Update player competitive rank in the player panel
+                        this.updatePlayerCompetitiveRank(playerResult.userId, playerResult.newCompetitiveRank);
                     });
                 } else {
                     // handle regular drill completion
@@ -1345,6 +1366,11 @@ export class DrillEngineComponent implements OnInit, OnDestroy {
         this.drillStateManagementService.stopDrill();
         
         console.log('DRILL ENGINE: Room disband cleanup completed');
+    }
+
+    private updatePlayerCompetitiveRank(userId: string, newCompetitiveRank: string): void {
+        // Update the player's competitive rank in the competitive drill service
+        this.competitiveDrillService.updatePlayerCompetitiveRank(userId, newCompetitiveRank);
     }
 
     fillRandomDrillText(): void {

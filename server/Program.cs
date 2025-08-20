@@ -56,6 +56,8 @@ builder.Services.AddScoped<IAIInsightService, AIInsightService>();
 builder.Services.AddScoped<IAdaptiveService, AdaptiveService>();
 builder.Services.AddScoped<IFuzzySearchService, FuzzySearchService>();
 builder.Services.AddScoped<AFKDetectionService>();
+builder.Services.AddScoped<LevelCalculationService>();
+builder.Services.AddScoped<ILevelCalculationService, LevelCalculationService>();
 
 
 builder.Services.AddHttpClient<IAIInsightService, AIInsightService>(client =>

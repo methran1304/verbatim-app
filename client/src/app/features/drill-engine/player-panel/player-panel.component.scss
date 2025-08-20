@@ -292,16 +292,66 @@
       text-align: center;
       line-height: 1.2;
       padding: 0.05rem 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      word-break: break-word;
     }
 
-    .level {
+    .competitive-rank {
       font-size: 0.8rem;
-      color: var(--color-text);
-      font-weight: 500;
+      font-weight: 600;
       margin: 0;
       text-align: center;
       line-height: 1.2;
       padding: 0.05rem 0;
+      border-radius: 4px;
+      padding: 0.1rem 0.3rem;
+      display: inline-block;
+      min-width: 60px;
+
+      &.rank-bronze {
+        color: #cd7f32;
+        background: rgba(205, 127, 50, 0.1);
+        border: 1px solid rgba(205, 127, 50, 0.3);
+      }
+
+      &.rank-silver {
+        color: #c0c0c0;
+        background: rgba(192, 192, 192, 0.1);
+        border: 1px solid rgba(192, 192, 192, 0.3);
+      }
+
+      &.rank-gold {
+        color: #ffd700;
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+      }
+
+      &.rank-platinum {
+        color: #9370db;
+        background: rgba(147, 112, 219, 0.1);
+        border: 1px solid rgba(147, 112, 219, 0.3);
+      }
+
+      &.rank-diamond {
+        color: #b9f2ff;
+        background: rgba(185, 242, 255, 0.1);
+        border: 1px solid rgba(185, 242, 255, 0.3);
+      }
+
+      &.rank-master {
+        color: #ff6b6b;
+        background: rgba(255, 107, 107, 0.1);
+        border: 1px solid rgba(255, 107, 107, 0.3);
+      }
+
+      &.rank-grandmaster {
+        color: #ff4500;
+        background: rgba(255, 69, 0, 0.1);
+        border: 1px solid rgba(255, 69, 0, 0.3);
+      }
     }
   }
 

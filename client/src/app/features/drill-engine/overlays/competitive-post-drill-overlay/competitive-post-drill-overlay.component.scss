@@ -70,6 +70,17 @@
   }
 }
 
+@keyframes subtleLevelUp {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
 .your-result-section {
   display: flex;
   flex-direction: column;
@@ -98,7 +109,108 @@
       display: flex;
       align-items: center;
       gap: 0.25rem;
+    }
+  }
 
+  .rank-progress-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+
+    .rank-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+
+      .current-rank {
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid;
+        display: inline-block;
+        min-width: 60px;
+        text-align: center;
+
+        &.rank-bronze {
+          color: #cd7f32;
+          background: rgba(205, 127, 50, 0.1);
+          border-color: rgba(205, 127, 50, 0.3);
+        }
+
+        &.rank-silver {
+          color: #c0c0c0;
+          background: rgba(192, 192, 192, 0.1);
+          border-color: rgba(192, 192, 192, 0.3);
+        }
+
+        &.rank-gold {
+          color: #ffd700;
+          background: rgba(255, 215, 0, 0.1);
+          border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        &.rank-platinum {
+          color: #9370db;
+          background: rgba(147, 112, 219, 0.1);
+          border-color: rgba(147, 112, 219, 0.3);
+        }
+
+        &.rank-diamond {
+          color: #b9f2ff;
+          background: rgba(185, 242, 255, 0.1);
+          border-color: rgba(185, 242, 255, 0.3);
+        }
+
+        &.rank-master {
+          color: #ff6b6b;
+          background: rgba(255, 107, 107, 0.1);
+          border-color: rgba(255, 107, 107, 0.3);
+        }
+
+        &.rank-grandmaster {
+          color: #ff4500;
+          background: rgba(255, 69, 0, 0.1);
+          border-color: rgba(255, 69, 0, 0.3);
+        }
+      }
+
+      .points-to-next {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+        font-weight: 500;
+      }
+
+      .level-up-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--color-success);
+        background: rgba(82, 196, 26, 0.1);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        border: 1px solid rgba(82, 196, 26, 0.3);
+        animation: subtleLevelUp 2s ease-in-out infinite;
+
+        span[nz-icon] {
+          font-size: 0.75rem;
+          color: var(--color-success);
+        }
+      }
+    }
+  }
+
+  .stats-line {
+    .stat-item {
       &.wpm {
         color: var(--color-primary);
       }

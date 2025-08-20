@@ -13,6 +13,7 @@ namespace server.Services.Interfaces
 		Task<Profile?> GetByUserId(string userId);
 		public Task<bool> UpdateProfilePostDrill(string userId, Drill completedDrill);
 		Task<bool> UpdateProfilePostCompetitiveDrillAsync(Profile profile);
+		Task<bool> UpdateProfileLevelsAsync(string userId, int userPoints, int competitivePoints);
 		Task<AiInsight?> GetLastAiInsight(string userId);
 		Task<bool> SaveAiInsightAsync(string userId, AIFeedbackDTO aiFeedback);
 		

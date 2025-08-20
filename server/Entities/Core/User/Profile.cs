@@ -36,7 +36,18 @@ namespace server.Entities
 		[BsonElement("user_points")]
 		public int UserPoints { get; set; } = 0;
 
-		        // competitive stats
+		[BsonElement("competitive_points")]
+		public int CompetitivePoints { get; set; } = 0;
+
+		[BsonElement("overall_level")]
+		[BsonRepresentation(BsonType.Int32)]
+		public OverallLevel OverallLevel { get; set; } = OverallLevel.Novice;
+
+		[BsonElement("competitive_rank")]
+		[BsonRepresentation(BsonType.Int32)]
+		public CompetitiveRank CompetitiveRank { get; set; } = CompetitiveRank.Bronze;
+
+		// competitive stats
 
 		[BsonElement("competitive_drills")]
 		public int CompetitiveDrills { get; set; } = 0;

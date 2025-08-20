@@ -26,6 +26,7 @@ export interface Player {
   userId: string;
   username: string;
   level: number;
+  competitiveRank?: string; // competitive rank (Bronze, Silver, Gold, etc.)
   state: 'Connected' | 'Ready' | 'Typing' | 'Finished' | 'Disconnected';
   statistics?: PlayerStatistics;
   isCreator?: boolean;
@@ -88,6 +89,12 @@ export interface CompetitiveDrillResults {
     accuracy: number;
     position: number;
     pointsChange: number;
+    previousCompetitivePoints?: number;
+    newCompetitivePoints?: number;
+    previousCompetitiveRank?: string;
+    newCompetitiveRank?: string;
+    hasLeveledUp?: boolean;
+    pointsToNextRank?: number;
   }[];
   startedAt: Date;
   endedAt: Date;
@@ -446,11 +453,12 @@ export class SignalRService {
     });
 
     // competitive drill events
-    this.hubConnection.on('PlayerJoin', (roomId: string, userId: string, username: string, level: number, isCreator: boolean = false, isReady: boolean = false) => {
+    this.hubConnection.on('PlayerJoin', (roomId: string, userId: string, username: string, level: number, competitiveRank: string, isCreator: boolean = false, isReady: boolean = false) => {
       const player: Player = {
         userId,
         username,
         level,
+        competitiveRank,
         state: isReady ? 'Ready' as const : 'Connected',
         isCreator: isCreator,
         isReady: isReady

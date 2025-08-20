@@ -31,6 +31,12 @@ export class CompetitivePostDrillOverlayComponent implements OnInit, OnDestroy, 
   @Input() userWpm: number = 0;
   @Input() userAccuracy: number = 0;
   @Input() userPointsChange: number = 0;
+  @Input() userPreviousCompetitivePoints: number = 0;
+  @Input() userNewCompetitivePoints: number = 0;
+  @Input() userPreviousCompetitiveRank: string = '';
+  @Input() userNewCompetitiveRank: string = '';
+  @Input() userHasLeveledUp: boolean = false;
+  @Input() userPointsToNextRank: number = 0;
   @Input() isSubmitting: boolean = false;
   @Input() submitError: string = '';
   @Input() roomCode: string = '';
@@ -99,5 +105,11 @@ export class CompetitivePostDrillOverlayComponent implements OnInit, OnDestroy, 
 
   onLeaveRoom(): void {
     this.leaveRoom.emit();
+  }
+
+  getCompetitiveRankClass(rank?: string): string {
+    if (!rank) return 'rank-bronze';
+    
+    return `rank-${rank.toLowerCase().replace(/\s+/g, '-')}`;
   }
 }

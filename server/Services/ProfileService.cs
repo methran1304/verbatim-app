@@ -13,11 +13,12 @@ using System.Globalization;
 
 namespace server.Services
 {
-	public class ProfileService(MongoDbContext context, IBookService bookService, IUserService userService) : IProfileService
+	public class ProfileService(MongoDbContext context, IBookService bookService, IUserService userService, ILevelCalculationService levelCalculationService) : IProfileService
 	{
 		private readonly IMongoCollection<Profile> _profiles = context.Profiles;
 		private readonly IBookService _bookService = bookService;
 		private readonly IUserService _userService = userService;
+		private readonly ILevelCalculationService _levelCalculationService = levelCalculationService;
 		public async Task CreateProfileAsync(Profile profile)
 		{
 			await _profiles.InsertOneAsync(profile);
@@ -44,7 +45,9 @@ namespace server.Services
 					.Update
 					.Set(p => p.CompetitiveDrills, profile.CompetitiveDrills)
 					.Set(p => p.Wins, profile.Wins)
-					.Set(p => p.Losses, profile.Losses);
+					.Set(p => p.Losses, profile.Losses)
+					.Set(p => p.CompetitivePoints, profile.CompetitivePoints)
+					.Set(p => p.CompetitiveRank, profile.CompetitiveRank);
 
 				var updateResult = await _profiles.UpdateOneAsync(filter, updateDefinition);
 				return updateResult.IsAcknowledged;
@@ -52,6 +55,32 @@ namespace server.Services
 			catch (Exception ex)
 			{
 				Console.WriteLine($"Error updating profile competitive statistics: {ex.Message}");
+				return false;
+			}
+		}
+
+		public async Task<bool> UpdateProfileLevelsAsync(string userId, int userPoints, int competitivePoints)
+		{
+			try
+			{
+				var overallLevel = _levelCalculationService.CalculateOverallLevel(userPoints);
+				var competitiveRank = _levelCalculationService.CalculateCompetitiveRank(competitivePoints);
+
+				var filter = Builders<Profile>
+					.Filter
+					.Eq(p => p.ProfileId, userId);
+
+				var updateDefinition = Builders<Profile>
+					.Update
+					.Set(p => p.OverallLevel, overallLevel)
+					.Set(p => p.CompetitiveRank, competitiveRank);
+
+				var updateResult = await _profiles.UpdateOneAsync(filter, updateDefinition);
+				return updateResult.IsAcknowledged;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error updating profile levels: {ex.Message}");
 				return false;
 			}
 		}
@@ -111,6 +140,13 @@ namespace server.Services
 				.Inc("total_drill_duration", completedDrill.Statistics.Duration);
 
 			var updateResult = await _profiles.UpdateOneAsync(userFilter, updateDefinition);
+
+			// Update levels after updating points
+			if (updateResult.IsAcknowledged)
+			{
+				var newUserPoints = currentProfile.UserPoints + completedDrill.PointsGained;
+				await UpdateProfileLevelsAsync(userId, newUserPoints, currentProfile.CompetitivePoints);
+			}
 
 			return updateResult.IsAcknowledged;
 		}
