@@ -1,7 +1,34 @@
 <div class="classics-container">
+    <!-- header section -->
     <div class="classics-header">
-        <h1>Books</h1>
-        <p>Practice typing with classic literature and famous passages</p>
+      <div class="classics-icon">
+        <div class="icon-placeholder">
+          <span nz-icon nzType="book" nzTheme="fill"></span>
+        </div>
+      </div>
+      
+      <div class="classics-info">
+        <h1 class="title">Classics</h1>
+        <div class="subtitle-info">
+          <span class="subtitle">Practice typing with classic literature and famous passages</span>
+        </div>
+        <p class="description">Improve your skills by typing through timeless works of literature</p>
+      </div>
+      
+      <div class="classics-stats-summary">
+        <div class="stat-card">
+          <div class="stat-value">{{ books.length }}</div>
+          <div class="stat-label">Total Books</div>
+        </div>
+        <div class="stat-card in-progress">
+          <div class="stat-value">{{ getInProgressBooksCount() }}</div>
+          <div class="stat-label">In Progress</div>
+        </div>
+        <div class="stat-card completed">
+          <div class="stat-value">{{ getCompletedBooksCount() }}</div>
+          <div class="stat-label">Completed</div>
+        </div>
+      </div>
     </div>
 
     <div class="books-grid-container">

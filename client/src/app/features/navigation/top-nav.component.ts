@@ -62,22 +62,12 @@ export class TopNavComponent implements OnInit {
       label: 'Adaptive',
       icon: 'bulb',
       tooltip: 'Practice the words you struggle with most. Powered by AI to improve your weak spots.'
-    }
-  ];
-
-  // competitive dropdown items
-  competitiveMenuItems = [
-    {
-      key: 'compete',
-      label: 'Compete',
-      icon: 'team',
-      tooltip: 'Compete with a friend in realtime by creating or joining a room. Challenge others and improve together.'
     },
     {
-      key: 'leaderboard',
-      label: 'Leaderboard',
-      icon: 'bar-chart',
-      tooltip: 'View the leaderboard to see top performers and track your ranking among other typists.'
+      key: 'competitive',
+      label: 'Competitive',
+      icon: 'team',
+      tooltip: 'Compete with a friend in realtime by creating or joining a room. Challenge others and improve together.'
     }
   ];
 
@@ -140,22 +130,27 @@ export class TopNavComponent implements OnInit {
     });
   }
 
-  onDrillSelect(drillType: DrillType) {
-    this.currentDrillType = drillType;
-    this.currentDrillTypeLabel = this.getDrillTypeLabel(drillType);
-    this.currentDrillTypeIcon = this.getDrillTypeIcon(drillType);
-    this.navigationService.setCurrentDrillType(drillType);
+  onDrillSelect(drillType: DrillType | string) {
+    if (drillType === 'competitive') {
+      this.router.navigate(['/competitive-drill']);
+      return;
+    }
+    
+    this.currentDrillType = drillType as DrillType;
+    this.currentDrillTypeLabel = this.getDrillTypeLabel(drillType as DrillType);
+    this.currentDrillTypeIcon = this.getDrillTypeIcon(drillType as DrillType);
+    this.navigationService.setCurrentDrillType(drillType as DrillType);
     this.navigationService.setCurrentSection('drills');
     
     // update drill preferences in local storage
     const currentPreferences = this.drillService.getDrillPreferences();
     if (currentPreferences) {
-      currentPreferences.drillType = drillType;
+      currentPreferences.drillType = drillType as DrillType;
       this.drillService.setDrillPreferences(currentPreferences);
     } else {
       // create default preferences if none exists
       const defaultPreferences = {
-        drillType: drillType,
+        drillType: drillType as DrillType,
         drillDifficulty: DrillDifficulty.Intermediate,
         drillLength: DrillLength.Medium,
         drillDuration: 30
@@ -168,13 +163,7 @@ export class TopNavComponent implements OnInit {
     });
   }
 
-  onCompetitiveSelect(key: string) {
-    if (key === 'leaderboard') {
-      this.router.navigate(['/leaderboard']);
-    } else if (key === 'compete') {
-      this.router.navigate(['/competitive-drill']);
-    }
-  }
+
 
   onUserSelect(key: string) {
     if (key === 'profile') {
@@ -192,6 +181,9 @@ export class TopNavComponent implements OnInit {
     switch (section) {
       case 'classics':
         this.router.navigate(['/classics']);
+        break;
+      case 'leaderboard':
+        this.router.navigate(['/leaderboard']);
         break;
       case 'guide':
         this.router.navigate(['/guide']);

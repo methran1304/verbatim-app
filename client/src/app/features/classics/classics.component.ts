@@ -172,6 +172,18 @@ export class ClassicsComponent implements OnInit, OnDestroy {
         return Math.round((book.progress.completedWords / book.progress.totalWords) * 100);
     }
 
+    getCompletedBooksCount(): number {
+        return this.books.filter(book => book.progress?.isCompleted).length;
+    }
+
+    getInProgressBooksCount(): number {
+        return this.books.filter(book => 
+            book.progress && 
+            !book.progress.isCompleted && 
+            book.progress.completedWords > 0
+        ).length;
+    }
+
     getBookCoverUrl(book: BookWithProgress): string {
         // if book has a cover image from the database, use it
         if (book.coverImage && book.coverImage.startsWith('data:image/')) {

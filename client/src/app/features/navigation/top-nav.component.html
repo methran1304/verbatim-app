@@ -57,34 +57,17 @@
         Classics
       </button>
 
-      <!-- competitive dropdown -->
-      <div 
-        nz-dropdown 
-        [nzDropdownMenu]="competitiveMenu" 
-        nzTrigger="click"
-        class="nav-dropdown">
-        <button 
-          nz-button 
-          class="nav-button"
-          [class.active]="currentSection === 'competitive'">
-          Competitive
-          <span nz-icon nzType="down" nzTheme="outline" class="dropdown-arrow"></span>
-        </button>
-        <nz-dropdown-menu #competitiveMenu="nzDropdownMenu">
-          <ul nz-menu>
-            @for (item of competitiveMenuItems; track item.key) {
-              <li nz-menu-item 
-                  (click)="onCompetitiveSelect(item.key)"
-                  nz-tooltip
-                  [nzTooltipTitle]="item.tooltip"
-                  [nzTooltipMouseEnterDelay]="1.5">
-                <span nz-icon [nzType]="item.icon" nzTheme="outline"></span>
-                {{ item.label }}
-              </li>
-            }
-          </ul>
-        </nz-dropdown-menu>
-      </div>
+      <!-- leaderboard -->
+      <button 
+        nz-button 
+        class="nav-button"
+        [class.active]="currentSection === 'leaderboard'"
+        (click)="onSectionClick('leaderboard')"
+        nz-tooltip
+        nzTooltipTitle="View rankings for casual and competitive drills. Track your progress and compete with others."
+        [nzTooltipMouseEnterDelay]="1.5">
+        Leaderboard
+      </button>
 
       <!-- guide -->
       <button 
