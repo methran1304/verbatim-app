@@ -124,19 +124,19 @@
         min-width: 80px;
         text-align: center;
 
-        &.level-novice {
+        &.level-beginner {
           color: #8b4513;
           background: rgba(139, 69, 19, 0.1);
           border-color: rgba(139, 69, 19, 0.3);
         }
 
-        &.level-apprentice {
+        &.level-intermediate {
           color: #4682b4;
           background: rgba(70, 130, 180, 0.1);
           border-color: rgba(70, 130, 180, 0.3);
         }
 
-        &.level-adept {
+        &.level-advanced {
           color: #32cd32;
           background: rgba(50, 205, 50, 0.1);
           border-color: rgba(50, 205, 50, 0.3);

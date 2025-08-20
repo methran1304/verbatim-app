@@ -37,5 +37,9 @@ namespace server.Services.Interfaces
 		// admin methods for clearing all data
 		Task<bool> ClearAllBookProgress();
 		Task<bool> ClearAllAiFeedback();
+		
+		// leaderboard methods
+		Task<object> GetCasualLeaderboard(int page, int pageSize);
+		Task<object> GetCompetitiveLeaderboard(int page, int pageSize);
 	}
 }

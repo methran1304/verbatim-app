@@ -4,23 +4,23 @@ namespace server.Services
 {
     public interface ILevelCalculationService
     {
-        OverallLevel CalculateOverallLevel(int userPoints);
+        OverallLevel CalculateCasualLevel(int userPoints);
         CompetitiveRank CalculateCompetitiveRank(int competitivePoints);
-        int GetNextOverallLevelThreshold(int currentLevel);
+        int GetNextCasualLevelThreshold(int currentLevel);
         int GetNextCompetitiveRankThreshold(int currentRank);
-        string GetOverallLevelName(OverallLevel level);
+        string GetCasualLevelName(OverallLevel level);
         string GetCompetitiveRankName(CompetitiveRank rank);
     }
 
     public class LevelCalculationService : ILevelCalculationService
     {
-        public OverallLevel CalculateOverallLevel(int userPoints)
+        public OverallLevel CalculateCasualLevel(int userPoints)
         {
             return userPoints switch
             {
-                < 1000 => OverallLevel.Novice,
-                < 2500 => OverallLevel.Apprentice,
-                < 5000 => OverallLevel.Adept,
+                < 1000 => OverallLevel.Beginner,
+                < 2500 => OverallLevel.Intermediate,
+                < 5000 => OverallLevel.Advanced,
                 _ => OverallLevel.Expert
             };
         }
@@ -39,13 +39,13 @@ namespace server.Services
             };
         }
 
-        public int GetNextOverallLevelThreshold(int currentLevel)
+        public int GetNextCasualLevelThreshold(int currentLevel)
         {
             return currentLevel switch
             {
-                1 => 1000,  // Novice -> Apprentice
-                2 => 2500,  // Apprentice -> Adept
-                3 => 5000,  // Adept -> Expert
+                1 => 1000,  // Beginner -> Intermediate
+                2 => 2500,  // Intermediate -> Advanced
+                3 => 5000,  // Advanced -> Expert
                 _ => int.MaxValue // Expert is max level
             };
         }
@@ -64,13 +64,13 @@ namespace server.Services
             };
         }
 
-        public string GetOverallLevelName(OverallLevel level)
+        public string GetCasualLevelName(OverallLevel level)
         {
             return level switch
             {
-                OverallLevel.Novice => "Novice",
-                OverallLevel.Apprentice => "Apprentice",
-                OverallLevel.Adept => "Adept",
+                OverallLevel.Beginner => "Beginner",
+                OverallLevel.Intermediate => "Intermediate",
+                OverallLevel.Advanced => "Advanced",
                 OverallLevel.Expert => "Expert",
                 _ => "Unknown"
             };

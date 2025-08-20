@@ -504,7 +504,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   getOverallLevelClass(levelName?: string): string {
-    if (!levelName) return 'level-novice';
+    if (!levelName) return 'level-beginner';
     
     return `level-${levelName.toLowerCase().replace(/\s+/g, '-')}`;
   }

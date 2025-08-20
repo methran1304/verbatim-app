@@ -15,6 +15,7 @@ namespace server.Services
 {
 	public class ProfileService(MongoDbContext context, IBookService bookService, IUserService userService, ILevelCalculationService levelCalculationService) : IProfileService
 	{
+		private readonly MongoDbContext _context = context;
 		private readonly IMongoCollection<Profile> _profiles = context.Profiles;
 		private readonly IBookService _bookService = bookService;
 		private readonly IUserService _userService = userService;
@@ -63,7 +64,7 @@ namespace server.Services
 		{
 			try
 			{
-				var overallLevel = _levelCalculationService.CalculateOverallLevel(userPoints);
+				var overallLevel = _levelCalculationService.CalculateCasualLevel(userPoints);
 				var competitiveRank = _levelCalculationService.CalculateCompetitiveRank(competitivePoints);
 
 				var filter = Builders<Profile>
@@ -558,8 +559,8 @@ namespace server.Services
 				var user = await _userService.GetByUserId(userId);
 
 				// calculate overall level information
-				var overallLevelName = _levelCalculationService.GetOverallLevelName(profile.OverallLevel);
-				var nextOverallLevelThreshold = _levelCalculationService.GetNextOverallLevelThreshold((int)profile.OverallLevel);
+				var overallLevelName = _levelCalculationService.GetCasualLevelName(profile.OverallLevel);
+				var nextOverallLevelThreshold = _levelCalculationService.GetNextCasualLevelThreshold((int)profile.OverallLevel);
 				var overallLevelProgress = nextOverallLevelThreshold != int.MaxValue
 					? (double)(profile.UserPoints - GetCurrentLevelThreshold((int)profile.OverallLevel)) / (nextOverallLevelThreshold - GetCurrentLevelThreshold((int)profile.OverallLevel))
 					: 1.0;
@@ -660,12 +661,174 @@ namespace server.Services
 		{
 			return level switch
 			{
-				1 => 0,      // Novice
-				2 => 1000,   // Apprentice
-				3 => 2500,   // Adept
+				1 => 0,      // Beginner
+				2 => 1000,   // Intermediate
+				3 => 2500,   // Advanced
 				4 => 5000,   // Expert
 				_ => 0
 			};
+		}
+
+		public async Task<object> GetCasualLeaderboard(int page, int pageSize)
+		{
+			try
+			{
+				var skip = (page - 1) * pageSize;
+				
+				// Get profiles sorted by user points (descending)
+				var profiles = await _profiles
+					.Find(_ => true)
+					.Sort(Builders<Profile>.Sort.Descending(p => p.UserPoints))
+					.Skip(skip)
+					.Limit(pageSize)
+					.ToListAsync();
+
+				// Get total count for pagination
+				var totalCount = await _profiles.CountDocumentsAsync(_ => true);
+
+				// Get user details for each profile
+				var leaderboardEntries = new List<object>();
+				var position = skip + 1;
+
+				foreach (var profile in profiles)
+				{
+					var user = await _userService.GetByUserId(profile.ProfileId);
+					if (user != null)
+					{
+											leaderboardEntries.Add(new
+					{
+						position = position++,
+						username = user.Username,
+						userLevel = profile.OverallLevel.ToString(),
+						userPoints = profile.UserPoints,
+						maxWpm = profile.MaxWPM,
+						avgWpm = profile.AvgWPM,
+						maxAccuracy = profile.MaxAccuracy,
+						avgAccuracy = profile.AvgAccuracy,
+						totalDrills = profile.TotalDrillsParticipated,
+						errorRate = profile.AvgErrorRate
+					});
+					}
+				}
+
+				return new
+				{
+					entries = leaderboardEntries,
+					pagination = new
+					{
+						currentPage = page,
+						pageSize = pageSize,
+						totalCount = totalCount,
+						totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+					}
+				};
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error getting casual leaderboard: {ex.Message}");
+				throw;
+			}
+		}
+
+				public async Task<object> GetCompetitiveLeaderboard(int page, int pageSize)
+		{
+			try
+			{
+				var skip = (page - 1) * pageSize;
+				
+				// Get profiles sorted by competitive points (descending)
+				var profiles = await _profiles
+					.Find(_ => true)
+					.Sort(Builders<Profile>.Sort.Descending(p => p.CompetitivePoints))
+					.Skip(skip)
+					.Limit(pageSize)
+					.ToListAsync();
+
+				// Get total count for pagination
+				var totalCount = await _profiles.CountDocumentsAsync(_ => true);
+
+				// Get all completed competitive drills once
+				var completedDrills = await _context.CompetitiveDrills
+					.Find(drill => drill.State == DrillState.Completed)
+					.ToListAsync();
+
+				// Get user details for each profile
+				var leaderboardEntries = new List<object>();
+				var position = skip + 1;
+
+				foreach (var profile in profiles)
+				{
+					var user = await _userService.GetByUserId(profile.ProfileId);
+					if (user != null)
+					{
+						var winRate = profile.CompetitiveDrills > 0 
+							? Math.Round((double)profile.Wins / profile.CompetitiveDrills * 100, 1)
+							: 0.0;
+
+						// Calculate competitive-specific avg WPM and accuracy from competitive drills
+						var competitiveAvgWpm = 0.0;
+						var competitiveAvgAccuracy = 0.0;
+
+						try
+						{
+							var userCompetitiveDrillData = new List<(double wpm, double accuracy)>();
+
+							foreach (var drill in completedDrills)
+							{
+								var playerData = drill.Players.FirstOrDefault(p => p.UserId == profile.ProfileId);
+								if (playerData != null)
+								{
+									userCompetitiveDrillData.Add((playerData.WPM, playerData.Accuracy));
+								}
+							}
+
+							if (userCompetitiveDrillData.Count > 0)
+							{
+								competitiveAvgWpm = Math.Round(userCompetitiveDrillData.Average(x => x.wpm), 1);
+								competitiveAvgAccuracy = Math.Round(userCompetitiveDrillData.Average(x => x.accuracy), 1);
+							}
+						}
+						catch (Exception ex)
+						{
+							Console.WriteLine($"Error calculating competitive averages for user {profile.ProfileId}: {ex.Message}");
+							// Fall back to profile averages if calculation fails
+							competitiveAvgWpm = Math.Round(profile.AvgWPM, 1);
+							competitiveAvgAccuracy = Math.Round(profile.AvgAccuracy, 1);
+						}
+
+										leaderboardEntries.Add(new
+					{
+						position = position++,
+						username = user.Username,
+						rank = profile.CompetitiveRank.ToString(),
+						competitivePoints = profile.CompetitivePoints,
+						totalDrills = profile.CompetitiveDrills,
+						avgWpm = competitiveAvgWpm,
+						avgAccuracy = competitiveAvgAccuracy,
+						wins = profile.Wins,
+						losses = profile.Losses,
+						winRate = winRate
+					});
+					}
+				}
+
+				return new
+				{
+					entries = leaderboardEntries,
+					pagination = new
+					{
+						currentPage = page,
+						pageSize = pageSize,
+						totalCount = totalCount,
+						totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+					}
+				};
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error getting competitive leaderboard: {ex.Message}");
+				throw;
+			}
 		}
 	}
 }

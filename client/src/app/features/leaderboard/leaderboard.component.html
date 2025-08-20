@@ -1,0 +1,199 @@
+<div class="leaderboard-container">
+  <!-- loading skeleton -->
+  @if (overallLoading && overallData.length === 0) {
+    <div class="leaderboard-skeleton">
+      <nz-skeleton [nzActive]="true" [nzParagraph]="{ rows: 8 }" [nzTitle]="{ width: '60%' }"></nz-skeleton>
+    </div>
+  } @else {
+    <!-- leaderboard content -->
+    <div class="leaderboard-content">
+    
+    <!-- header section -->
+    <div class="leaderboard-header">
+      <div class="leaderboard-icon">
+        <div class="icon-placeholder">
+          <span nz-icon nzType="trophy" nzTheme="fill"></span>
+        </div>
+      </div>
+      
+      <div class="leaderboard-info">
+        <h1 class="title">Leaderboard</h1>
+        <div class="subtitle-info">
+          <span class="subtitle">Compete with the best typists and track your progress</span>
+        </div>
+        <p class="description">View rankings for casual (timed, marathon and adaptive) and competitive drills</p>
+      </div>
+      
+      <div class="leaderboard-stats-summary">
+        <div class="stat-card">
+          <div class="stat-value">{{ overallData.length > 0 ? overallData[0].userPoints || 0 : 0 }}</div>
+          <div class="stat-label">Top Score</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- navigation tabs -->
+    <div class="leaderboard-tabs">
+      <button 
+        *ngFor="let tab of ['casual', 'competitive']; let i = index"
+        [class.active]="activeTabIndex === i"
+        (click)="onTabChange(i)"
+        class="tab-button"
+      >
+        {{ tab.charAt(0).toUpperCase() + tab.slice(1) }}
+      </button>
+    </div>
+
+    <!-- tab content -->
+    <div class="tab-content">
+      
+      <!-- casual tab -->
+      <div *ngIf="activeTabIndex === 0" class="casual-tab">
+        <div class="leaderboard-table-container">
+          <nz-table 
+            #overallTable 
+            [nzData]="overallData"
+            [nzLoading]="overallLoading"
+            [nzTotal]="2"
+            [nzPageSize]="overallPageSize"
+            [nzPageIndex]="overallCurrentPage"
+            [nzShowPagination]="true"
+            [nzShowSizeChanger]="false"
+            (nzPageIndexChange)="onOverallPageChange($event)"
+            class="leaderboard-table">
+            
+            <thead>
+              <tr>
+                <th class="position-column">Position</th>
+                <th class="username-column">Username</th>
+                <th class="points-column">User Points</th>
+                <th class="drills-column">Total Drills</th>
+                <th class="wpm-column">Max WPM</th>
+                <th class="avg-wpm-column">Avg WPM</th>
+                <th class="accuracy-column">Max Accuracy</th>
+                <th class="avg-accuracy-column">Avg Accuracy</th>
+                <th class="error-column">Error Rate</th>
+              </tr>
+            </thead>
+            
+            <tbody>
+              <tr *ngFor="let entry of overallTable.data; trackBy: trackByPosition">
+                <td class="position-cell">
+                  <div class="position-wrapper" [class]="getPositionClass(entry.position)">
+                    <span class="position-number">{{ entry.position }}</span>
+                    @if (entry.position === 1) {
+                      <span nz-icon nzType="trophy" nzTheme="fill" class="trophy-icon"></span>
+                    }
+                  </div>
+                </td>
+                <td class="username-cell">
+                  <div class="username-with-level">
+                    <span class="username">{{ entry.username }}</span>
+                    <span class="level-tag" [class]="getOverallLevelClass(entry.userLevel)">
+                      {{ entry.userLevel }}
+                    </span>
+                  </div>
+                </td>
+                <td class="points-cell">
+                  <span class="points">{{ entry.userPoints.toLocaleString() }}</span>
+                </td>
+                <td class="drills-cell">
+                  <span class="drills">{{ entry.totalDrills || 0 }}</span>
+                </td>
+                <td class="wpm-cell">
+                  <span class="wpm">{{ entry.maxWpm.toFixed(1) }}</span>
+                </td>
+                <td class="avg-wpm-cell">
+                  <span class="avg-wpm">{{ (entry.avgWpm || 0).toFixed(1) }}</span>
+                </td>
+                <td class="accuracy-cell">
+                  <span class="accuracy">{{ (entry.maxAccuracy || 0).toFixed(1) }}%</span>
+                </td>
+                <td class="avg-accuracy-cell">
+                  <span class="avg-accuracy">{{ (entry.avgAccuracy || 0).toFixed(1) }}%</span>
+                </td>
+                <td class="error-cell">
+                  <span class="error-rate">{{ entry.errorRate.toFixed(1) }}%</span>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </div>
+      </div>
+
+      <!-- competitive tab -->
+      <div *ngIf="activeTabIndex === 1" class="competitive-tab">
+        <div class="leaderboard-table-container">
+          <nz-table 
+            #competitiveTable 
+            [nzData]="competitiveData"
+            [nzLoading]="competitiveLoading"
+            [nzTotal]="competitiveTotal"
+            [nzPageSize]="competitivePageSize"
+            [nzPageIndex]="competitiveCurrentPage"
+            [nzShowPagination]="true"
+            [nzShowSizeChanger]="false"
+            (nzPageIndexChange)="onCompetitivePageChange($event)"
+            class="leaderboard-table">
+            
+            <thead>
+              <tr>
+                <th class="position-column">Position</th>
+                <th class="username-column">Username</th>
+                <th class="points-column">Competitive Points</th>
+                <th class="drills-column">Total Drills</th>
+                <th class="avg-wpm-column">Avg WPM</th>
+                <th class="avg-accuracy-column">Avg Accuracy</th>
+                <th class="wins-column">Wins</th>
+                <th class="losses-column">Losses</th>
+                <th class="winrate-column">Win Rate (%)</th>
+              </tr>
+            </thead>
+            
+            <tbody>
+              <tr *ngFor="let entry of competitiveTable.data; trackBy: trackByPosition">
+                <td class="position-cell">
+                  <div class="position-wrapper" [class]="getPositionClass(entry.position)">
+                    <span class="position-number">{{ entry.position }}</span>
+                    @if (entry.position === 1) {
+                      <span nz-icon nzType="trophy" nzTheme="fill" class="trophy-icon"></span>
+                    }
+                  </div>
+                </td>
+                <td class="username-cell">
+                  <div class="username-with-rank">
+                    <span class="username">{{ entry.username }}</span>
+                    <span class="rank-tag" [class]="getCompetitiveRankClass(entry.rank)">
+                      {{ entry.rank }}
+                    </span>
+                  </div>
+                </td>
+                <td class="points-cell">
+                  <span class="points">{{ entry.competitivePoints.toLocaleString() }}</span>
+                </td>
+                <td class="drills-cell">
+                  <span class="drills">{{ entry.totalDrills }}</span>
+                </td>
+                <td class="avg-wpm-cell">
+                  <span class="avg-wpm">{{ (entry.avgWpm || 0).toFixed(1) }}</span>
+                </td>
+                <td class="avg-accuracy-cell">
+                  <span class="avg-accuracy">{{ (entry.avgAccuracy || 0).toFixed(1) }}%</span>
+                </td>
+                <td class="wins-cell">
+                  <span class="wins">{{ entry.wins || 0 }}</span>
+                </td>
+                <td class="losses-cell">
+                  <span class="losses">{{ entry.losses || 0 }}</span>
+                </td>
+                <td class="winrate-cell">
+                  <span class="winrate">{{ entry.winRate.toFixed(1) }}%</span>
+                </td>
+              </tr>
+            </tbody>
+          </nz-table>
+        </div>
+      </div>
+    </div>
+  </div>
+}

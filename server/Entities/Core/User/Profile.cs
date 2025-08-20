@@ -41,7 +41,7 @@ namespace server.Entities
 
 		[BsonElement("overall_level")]
 		[BsonRepresentation(BsonType.Int32)]
-		public OverallLevel OverallLevel { get; set; } = OverallLevel.Novice;
+		        public OverallLevel OverallLevel { get; set; } = OverallLevel.Beginner;
 
 		[BsonElement("competitive_rank")]
 		[BsonRepresentation(BsonType.Int32)]

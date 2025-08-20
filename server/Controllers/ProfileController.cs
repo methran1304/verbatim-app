@@ -33,9 +33,9 @@ namespace server.Controllers
                     return NotFound(new { error = "Profile not found" });
                 }
 
-                var overallLevelName = _levelCalculationService.GetOverallLevelName(profile.OverallLevel);
+                var overallLevelName = _levelCalculationService.GetCasualLevelName(profile.OverallLevel);
                 var competitiveRankName = _levelCalculationService.GetCompetitiveRankName(profile.CompetitiveRank);
-                var nextOverallLevelThreshold = _levelCalculationService.GetNextOverallLevelThreshold((int)profile.OverallLevel);
+                var nextOverallLevelThreshold = _levelCalculationService.GetNextCasualLevelThreshold((int)profile.OverallLevel);
                 var nextCompetitiveRankThreshold = _levelCalculationService.GetNextCompetitiveRankThreshold((int)profile.CompetitiveRank);
 
                 var response = new
@@ -185,6 +185,34 @@ namespace server.Controllers
             var userId = UserIdRequired;
             var aiInsight = await _profileService.GetAIInsight(userId);
             return Ok(aiInsight);
+        }
+
+        [HttpGet("leaderboard/casual")]
+        public async Task<IActionResult> GetCasualLeaderboard([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var leaderboard = await _profileService.GetCasualLeaderboard(page, pageSize);
+                return Ok(leaderboard);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Failed to retrieve casual leaderboard", details = ex.Message });
+            }
+        }
+
+        [HttpGet("leaderboard/competitive")]
+        public async Task<IActionResult> GetCompetitiveLeaderboard([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var leaderboard = await _profileService.GetCompetitiveLeaderboard(page, pageSize);
+                return Ok(leaderboard);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Failed to retrieve competitive leaderboard", details = ex.Message });
+            }
         }
     }
 

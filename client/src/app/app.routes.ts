@@ -6,6 +6,7 @@ import { LogoutComponent } from './features/auth/logout/logout.component';
 import { DrillEngineComponent } from './features/drill-engine/drill-engine.component';
 import { DrillStatsComponent } from './features/drill-stats/drill-stats.component';
 import { ProfileComponent } from './features/profile/profile.component';
+import { LeaderboardComponent } from './features/leaderboard/leaderboard.component';
 import { AIInsightsComponent } from './features/ai-insights/ai-insights.component';
 import { ClassicsComponent } from './features/classics/classics.component';
 import { authGuard } from './auth.guard';
@@ -53,7 +54,7 @@ export const routes: Routes = [
     },
     {
         path: 'leaderboard',
-        component: ProfileComponent, // TODO: Replace with LeaderboardComponent
+        component: LeaderboardComponent,
         canActivate: [authGuard],
     },
     {
