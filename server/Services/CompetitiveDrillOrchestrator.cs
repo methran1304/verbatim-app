@@ -174,36 +174,48 @@ namespace server.Services
 
         private async Task EndDrillWithWinner(string roomCode)
         {
-            Console.WriteLine($"EndDrillWithWinner called for room {roomCode}");
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] EndDrillWithWinner called for room {roomCode}");
             
-            var room = await _roomService.GetRoomByCodeAsync(roomCode);
-            if (room?.ActiveCompetitiveDrillId == null)
+            try
             {
-                Console.WriteLine($"Room or ActiveCompetitiveDrillId not found for room {roomCode}");
-                return;
+                var room = await _roomService.GetRoomByCodeAsync(roomCode);
+                if (room?.ActiveCompetitiveDrillId == null)
+                {
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR: Room or ActiveCompetitiveDrillId not found for room {roomCode}");
+                    return;
+                }
+
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Found room: RoomId={room.RoomId}, ActiveCompetitiveDrillId={room.ActiveCompetitiveDrillId}, DrillType={room.DrillSettings?.Type}");
+
+                // determine winner
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Determining winner for drill {room.ActiveCompetitiveDrillId}");
+                var winnerId = await _competitiveDrillService.DetermineWinnerAsync(room.ActiveCompetitiveDrillId);
+                if (!string.IsNullOrEmpty(winnerId))
+                {
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] Winner determined: {winnerId}");
+                    await _competitiveDrillService.SetWinnerAsync(room.ActiveCompetitiveDrillId, winnerId);
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] Winner set in database: {winnerId}");
+                }
+                else
+                {
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] WARNING: No winner determined for drill {room.ActiveCompetitiveDrillId}");
+                }
+
+                // update drill state and end
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Updating drill state to Completed for drill {room.ActiveCompetitiveDrillId}");
+                await _competitiveDrillService.UpdateDrillStateAsync(room.ActiveCompetitiveDrillId, DrillState.Completed);
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Drill state updated to Completed");
+                
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Calling EndDrillAsync for room {roomCode}");
+                await EndDrillAsync(roomCode);
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] EndDrillAsync completed for room {roomCode}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] EndDrillWithWinner completed successfully for room {roomCode}");
             }
-
-            Console.WriteLine($"Found room with ActiveCompetitiveDrillId: {room.ActiveCompetitiveDrillId}");
-
-            // determine winner
-            var winnerId = await _competitiveDrillService.DetermineWinnerAsync(room.ActiveCompetitiveDrillId);
-            if (!string.IsNullOrEmpty(winnerId))
+            catch (Exception ex)
             {
-                await _competitiveDrillService.SetWinnerAsync(room.ActiveCompetitiveDrillId, winnerId);
-                Console.WriteLine($"Winner set: {winnerId}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR in EndDrillWithWinner for room {roomCode}: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stack trace: {ex.StackTrace}");
             }
-            else
-            {
-                Console.WriteLine($"No winner determined");
-            }
-
-            // update drill state and end
-            await _competitiveDrillService.UpdateDrillStateAsync(room.ActiveCompetitiveDrillId, DrillState.Completed);
-            Console.WriteLine($"Drill state updated to Completed");
-            
-            Console.WriteLine($"Calling EndDrillAsync for room {roomCode}");
-            await EndDrillAsync(roomCode);
-            Console.WriteLine($"EndDrillAsync completed for room {roomCode}");
         }
     }
 } 

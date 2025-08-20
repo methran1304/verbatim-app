@@ -876,28 +876,48 @@ namespace server.Hubs
 
         private async Task EndTimedDrillAsync(string roomCode)
         {
-            Console.WriteLine($"Ending timed drill for room {roomCode}");
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] Starting timed drill end process for room {roomCode}");
             
-            // stop timers
-            StopRoomTimers(roomCode);
-            
-            // Send end summary and reset room state
-            await SendEndSummaryAsync(roomCode);
-            
-            Console.WriteLine($"Timed drill ended for room {roomCode}");
+            try
+            {
+                // stop timers
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stopping timers for room {roomCode}");
+                StopRoomTimers(roomCode);
+                
+                // Send end summary and reset room state
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Sending end summary for room {roomCode}");
+                await SendEndSummaryAsync(roomCode);
+                
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Timed drill end process completed successfully for room {roomCode}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR during timed drill end for room {roomCode}: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stack trace: {ex.StackTrace}");
+            }
         }
 
         private async Task EndMarathonDrillAsync(string roomCode)
         {
-            Console.WriteLine($"Ending marathon drill for room {roomCode}");
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] Starting marathon drill end process for room {roomCode}");
             
-            // stop timers
-            StopRoomTimers(roomCode);
-            
-            // Send end summary and reset room state
-            await SendEndSummaryAsync(roomCode);
-            
-            Console.WriteLine($"Marathon drill ended for room {roomCode}");
+            try
+            {
+                // stop timers
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stopping timers for room {roomCode}");
+                StopRoomTimers(roomCode);
+                
+                // Send end summary and reset room state
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Sending end summary for room {roomCode}");
+                await SendEndSummaryAsync(roomCode);
+                
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Marathon drill end process completed successfully for room {roomCode}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR during marathon drill end for room {roomCode}: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stack trace: {ex.StackTrace}");
+            }
         }
 
         private void StopRoomTimers(string roomCode)
@@ -1019,103 +1039,157 @@ namespace server.Hubs
 
         private async Task SendEndSummaryAsync(string roomCode)
         {
-            var room = await _roomService.GetRoomByCodeAsync(roomCode);
-            if (room == null) return;
-
-            var (playerResults, winnerId, totalPlayers) = await BuildPlayerResultsAsync(room.ActiveCompetitiveDrillId!, room.RoomCode, room.DrillSettings!.Type);
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] SendEndSummaryAsync started for room {roomCode}");
             
-            // Update the competitive drill in database with final results
-            await UpdateCompetitiveDrillWithFinalResultsAsync(room.ActiveCompetitiveDrillId!, playerResults, winnerId);
-            
-            var summary = new DrillSummary
+            try
             {
-                CompetitiveDrillId = room.ActiveCompetitiveDrillId ?? string.Empty,
-                RoomId = room.RoomId,
-                WinnerId = winnerId,
-                StartedAt = DateTime.UtcNow,
-                EndedAt = DateTime.UtcNow,
-                TotalPlayers = totalPlayers,
-                DrillSettings = room.DrillSettings,
-                PlayerResults = playerResults
-            };
+                var room = await _roomService.GetRoomByCodeAsync(roomCode);
+                if (room == null)
+                {
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR: Room not found for roomCode {roomCode}");
+                    return;
+                }
 
-            // Send end drill summary to all clients
-            await Clients.Group(roomCode).EndDrill(room.RoomId, summary);
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Found room: RoomId={room.RoomId}, ActiveCompetitiveDrillId={room.ActiveCompetitiveDrillId}, DrillType={room.DrillSettings?.Type}");
 
-            Console.WriteLine($"Drill completed for room {roomCode}. Final results updated in database.");
+                var (playerResults, winnerId, totalPlayers) = await BuildPlayerResultsAsync(room.ActiveCompetitiveDrillId!, room.RoomCode, room.DrillSettings!.Type);
+                
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Built player results: TotalPlayers={totalPlayers}, WinnerId={winnerId}, PlayerResultsCount={playerResults.Count}");
+                
+                // Update the competitive drill in database with final results
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Updating competitive drill with final results for drillId {room.ActiveCompetitiveDrillId}");
+                await UpdateCompetitiveDrillWithFinalResultsAsync(room.ActiveCompetitiveDrillId!, playerResults, winnerId);
+                
+                var summary = new DrillSummary
+                {
+                    CompetitiveDrillId = room.ActiveCompetitiveDrillId ?? string.Empty,
+                    RoomId = room.RoomId,
+                    WinnerId = winnerId,
+                    StartedAt = DateTime.UtcNow,
+                    EndedAt = DateTime.UtcNow,
+                    TotalPlayers = totalPlayers,
+                    DrillSettings = room.DrillSettings,
+                    PlayerResults = playerResults
+                };
+
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Created drill summary: CompetitiveDrillId={summary.CompetitiveDrillId}, RoomId={summary.RoomId}, WinnerId={summary.WinnerId}");
+
+                // Send end drill summary to all clients
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Sending EndDrill signal to clients in group {roomCode}");
+                await Clients.Group(roomCode).EndDrill(room.RoomId, summary);
+
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Drill completed for room {roomCode}. Final results updated in database and sent to clients.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR in SendEndSummaryAsync for room {roomCode}: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stack trace: {ex.StackTrace}");
+            }
         }
 
         private async Task<(List<PlayerResult> playerResults, string winnerId, int totalPlayers)> BuildPlayerResultsAsync(string competitiveDrillId, string roomCode, CompetitiveDrillType drillType)
         {
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] BuildPlayerResultsAsync started for drillId={competitiveDrillId}, roomCode={roomCode}, drillType={drillType}");
+            
             List<PlayerResult> playerResults = new();
             string winnerId = string.Empty;
             int totalPlayers = 0;
 
-            // Get the room code from the competitive drill to access the cache
-            var competitiveDrill = await _competitiveDrillService.GetCompetitiveDrillAsync(competitiveDrillId);
-            if (competitiveDrill == null) return (playerResults, winnerId, totalPlayers);
-
-            // Get current statistics from the in-memory cache
-            var currentStats = GetCurrentStatistics(roomCode);
-            if (!currentStats.Any()) return (playerResults, winnerId, totalPlayers);
-
-            totalPlayers = currentStats.Count;
-            
-            // Determine winner from cached statistics
-            var winner = currentStats
-                .OrderByDescending(p => p.WPM)
-                .ThenByDescending(p => p.Accuracy)
-                .FirstOrDefault();
-            winnerId = winner?.UserId ?? string.Empty;
-            
-            // Sort players by performance to calculate final positions
-            var sortedStats = currentStats
-                .OrderByDescending(p => p.WPM)
-                .ThenByDescending(p => p.Accuracy)
-                .ToList();
-            
-            // Build player results with calculated positions
-            for (int i = 0; i < sortedStats.Count; i++)
+            try
             {
-                var stat = sortedStats[i];
-                var username = await GetUsernameAsync(stat.UserId);
-                var position = i + 1; // 1-based position
-                
-                // Get additional data from the competitive drill player
-                var drillPlayer = competitiveDrill.Players.FirstOrDefault(p => p.UserId == stat.UserId);
-                
-                // Calculate competitive points based on position and performance
-                var competitivePoints = CalculateCompetitivePoints(position, stat.WPM, stat.Accuracy, sortedStats.Count);
-                
-                // Get user's profile to calculate level information
-                var profile = await _profileService.GetByUserId(stat.UserId);
-                var previousCompetitivePoints = profile?.CompetitivePoints ?? 0;
-                var previousCompetitiveRank = profile != null ? _levelCalculationService.GetCompetitiveRankName(profile.CompetitiveRank) : "Bronze";
-                var newCompetitivePoints = previousCompetitivePoints + competitivePoints;
-                var newCompetitiveRank = _levelCalculationService.GetCompetitiveRankName(_levelCalculationService.CalculateCompetitiveRank(newCompetitivePoints));
-                var hasLeveledUp = previousCompetitiveRank != newCompetitiveRank;
-                var pointsToNextRank = _levelCalculationService.GetNextCompetitiveRankThreshold((int)_levelCalculationService.CalculateCompetitiveRank(newCompetitivePoints)) - newCompetitivePoints;
-                
-                playerResults.Add(new PlayerResult
+                // Get the room code from the competitive drill to access the cache
+                var competitiveDrill = await _competitiveDrillService.GetCompetitiveDrillAsync(competitiveDrillId);
+                if (competitiveDrill == null)
                 {
-                    UserId = stat.UserId,
-                    Username = username,
-                    WPM = stat.WPM,
-                    Accuracy = stat.Accuracy,
-                    Position = position,
-                    PointsChange = competitivePoints,
-                    FinishedAt = DateTime.UtcNow,
-                    IsWinner = stat.UserId == winnerId,
-                    PreviousCompetitivePoints = previousCompetitivePoints,
-                    NewCompetitivePoints = newCompetitivePoints,
-                    PreviousCompetitiveRank = previousCompetitiveRank,
-                    NewCompetitiveRank = newCompetitiveRank,
-                    HasLeveledUp = hasLeveledUp,
-                    PointsToNextRank = pointsToNextRank
-                });
-            }
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR: Competitive drill not found for drillId {competitiveDrillId}");
+                    return (playerResults, winnerId, totalPlayers);
+                }
 
-            return (playerResults, winnerId, totalPlayers);
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Found competitive drill: DrillId={competitiveDrill.CompetitiveDrillId}, PlayerCount={competitiveDrill.Players?.Count ?? 0}");
+
+                // Get current statistics from the in-memory cache
+                var currentStats = GetCurrentStatistics(roomCode);
+                if (!currentStats.Any())
+                {
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR: No current statistics found in cache for roomCode {roomCode}");
+                    return (playerResults, winnerId, totalPlayers);
+                }
+
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Found {currentStats.Count} players in statistics cache");
+
+                totalPlayers = currentStats.Count;
+                
+                // Determine winner from cached statistics
+                var winner = currentStats
+                    .OrderByDescending(p => p.WPM)
+                    .ThenByDescending(p => p.Accuracy)
+                    .FirstOrDefault();
+                winnerId = winner?.UserId ?? string.Empty;
+                
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Determined winner: UserId={winnerId}, WPM={winner?.WPM}, Accuracy={winner?.Accuracy}");
+                
+                // Sort players by performance to calculate final positions
+                var sortedStats = currentStats
+                    .OrderByDescending(p => p.WPM)
+                    .ThenByDescending(p => p.Accuracy)
+                    .ToList();
+                
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Sorted {sortedStats.Count} players by performance");
+                
+                // Build player results with calculated positions
+                for (int i = 0; i < sortedStats.Count; i++)
+                {
+                    var stat = sortedStats[i];
+                    var username = await GetUsernameAsync(stat.UserId);
+                    var position = i + 1; // 1-based position
+                    
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] Processing player {i + 1}/{sortedStats.Count}: UserId={stat.UserId}, Username={username}, Position={position}, WPM={stat.WPM}, Accuracy={stat.Accuracy}");
+                    
+                    // Get additional data from the competitive drill player
+                    var drillPlayer = competitiveDrill.Players.FirstOrDefault(p => p.UserId == stat.UserId);
+                    
+                    // Calculate competitive points based on position and performance
+                    var competitivePoints = CalculateCompetitivePoints(position, stat.WPM, stat.Accuracy, sortedStats.Count);
+                    
+                    // Get user's profile to calculate level information
+                    var profile = await _profileService.GetByUserId(stat.UserId);
+                    var previousCompetitivePoints = profile?.CompetitivePoints ?? 0;
+                    var previousCompetitiveRank = profile != null ? _levelCalculationService.GetCompetitiveRankName(profile.CompetitiveRank) : "Bronze";
+                    var newCompetitivePoints = previousCompetitivePoints + competitivePoints;
+                    var newCompetitiveRank = _levelCalculationService.GetCompetitiveRankName(_levelCalculationService.CalculateCompetitiveRank(newCompetitivePoints));
+                    var hasLeveledUp = previousCompetitiveRank != newCompetitiveRank;
+                    var pointsToNextRank = _levelCalculationService.GetNextCompetitiveRankThreshold((int)_levelCalculationService.CalculateCompetitiveRank(newCompetitivePoints)) - newCompetitivePoints;
+                    
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] Player {stat.UserId} stats: PreviousPoints={previousCompetitivePoints}, NewPoints={newCompetitivePoints}, PreviousRank={previousCompetitiveRank}, NewRank={newCompetitiveRank}, HasLeveledUp={hasLeveledUp}");
+                    
+                    playerResults.Add(new PlayerResult
+                    {
+                        UserId = stat.UserId,
+                        Username = username,
+                        WPM = stat.WPM,
+                        Accuracy = stat.Accuracy,
+                        Position = position,
+                        PointsChange = competitivePoints,
+                        FinishedAt = DateTime.UtcNow,
+                        IsWinner = stat.UserId == winnerId,
+                        PreviousCompetitivePoints = previousCompetitivePoints,
+                        NewCompetitivePoints = newCompetitivePoints,
+                        PreviousCompetitiveRank = previousCompetitiveRank,
+                        NewCompetitiveRank = newCompetitiveRank,
+                        HasLeveledUp = hasLeveledUp,
+                        PointsToNextRank = pointsToNextRank
+                    });
+                }
+
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] BuildPlayerResultsAsync completed: TotalPlayers={totalPlayers}, WinnerId={winnerId}, PlayerResultsCount={playerResults.Count}");
+                return (playerResults, winnerId, totalPlayers);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR in BuildPlayerResultsAsync: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stack trace: {ex.StackTrace}");
+                return (playerResults, winnerId, totalPlayers);
+            }
         }
 
         private string DetermineWinner(List<CompetitiveDrillPlayer> activePlayers)
@@ -1130,22 +1204,26 @@ namespace server.Hubs
 
         private async Task UpdateCompetitiveDrillWithFinalResultsAsync(string competitiveDrillId, List<PlayerResult> playerResults, string winnerId)
         {
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] UpdateCompetitiveDrillWithFinalResultsAsync started for drillId={competitiveDrillId}, winnerId={winnerId}, playerResultsCount={playerResults.Count}");
+            
             try
             {
-                Console.WriteLine($"Updating competitive drill {competitiveDrillId} with final results. Winner: {winnerId}");
-                
                 var competitiveDrill = await _competitiveDrillService.GetCompetitiveDrillAsync(competitiveDrillId);
                 if (competitiveDrill == null)
                 {
-                    Console.WriteLine($"Competitive drill {competitiveDrillId} not found for final results update");
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR: Competitive drill {competitiveDrillId} not found for final results update");
                     return;
                 }
+
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Found competitive drill: DrillId={competitiveDrill.CompetitiveDrillId}, CurrentState={competitiveDrill.State}, PlayerCount={competitiveDrill.Players?.Count ?? 0}");
 
                 // Update winner
                 competitiveDrill.WinnerId = winnerId;
                 competitiveDrill.State = DrillState.Completed;
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Updated drill state: WinnerId={competitiveDrill.WinnerId}, State={competitiveDrill.State}");
 
                 // Update each player with final results and calculated points
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Updating {playerResults.Count} players with final results");
                 foreach (var playerResult in playerResults)
                 {
                     var drillPlayer = competitiveDrill.Players.FirstOrDefault(p => p.UserId == playerResult.UserId);
@@ -1160,24 +1238,35 @@ namespace server.Hubs
                         // Use the already calculated points from PlayerResult
                         drillPlayer.PointsChange = playerResult.PointsChange;
                         
-                        Console.WriteLine($"Player {playerResult.UserId} - Position: {playerResult.Position}, WPM: {playerResult.WPM}, Accuracy: {playerResult.Accuracy}, Points: {playerResult.PointsChange}");
+                        Console.WriteLine($"[COMPETITIVE_DRILL_END] Updated player {playerResult.UserId}: Position={playerResult.Position}, WPM={playerResult.WPM}, Accuracy={playerResult.Accuracy}, Points={playerResult.PointsChange}, State={drillPlayer.State}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[COMPETITIVE_DRILL_END] WARNING: Player {playerResult.UserId} not found in competitive drill players list");
                     }
                 }
 
                 // Save updated competitive drill to database
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Saving updated competitive drill to database");
                 await _competitiveDrillService.UpdateCompetitiveDrillAsync(competitiveDrill);
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Successfully saved competitive drill to database");
                 
                 // Update user profiles with competitive statistics
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Updating user profiles with competitive results");
                 await UpdateUserProfilesWithCompetitiveResultsAsync(playerResults, winnerId);
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] UpdateCompetitiveDrillWithFinalResultsAsync completed successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error updating competitive drill {competitiveDrillId} with final results: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR updating competitive drill {competitiveDrillId} with final results: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stack trace: {ex.StackTrace}");
             }
         }
 
         private int CalculateCompetitivePoints(int position, double wpm, double accuracy, int totalPlayers)
         {
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] CalculateCompetitivePoints called: position={position}, wpm={wpm}, accuracy={accuracy}, totalPlayers={totalPlayers}");
+            
             // Base points calculation using existing DrillScorer
             var basePoints = DrillScorer.CalculateUserPoints(DrillType.Competitive, DrillDifficulty.Intermediate, wpm, accuracy);
             
@@ -1195,25 +1284,29 @@ namespace server.Hubs
             
             var finalPoints = (int)(basePoints * positionMultiplier) + participationBonus;
             
-            Console.WriteLine($"Calculated points for position {position}: base={basePoints}, multiplier={positionMultiplier}, final={finalPoints}");
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] Calculated points for position {position}: base={basePoints}, multiplier={positionMultiplier}, participationBonus={participationBonus}, final={finalPoints}");
             
             return Math.Max(0, finalPoints); // Ensure non-negative points
         }
 
         private async Task UpdateUserProfilesWithCompetitiveResultsAsync(List<PlayerResult> playerResults, string winnerId)
         {
+            Console.WriteLine($"[COMPETITIVE_DRILL_END] UpdateUserProfilesWithCompetitiveResultsAsync started for winnerId={winnerId}, playerResultsCount={playerResults.Count}");
+            
             try
             {
-                Console.WriteLine($"Updating user profiles with competitive results. Winner: {winnerId}");
-                
                 foreach (var playerResult in playerResults)
                 {
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] Processing profile update for user {playerResult.UserId}");
+                    
                     var profile = await _profileService.GetByUserId(playerResult.UserId);
                     if (profile == null)
                     {
-                        Console.WriteLine($"Profile not found for user {playerResult.UserId}, skipping profile update");
+                        Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR: Profile not found for user {playerResult.UserId}, skipping profile update");
                         continue;
                     }
+
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] Found profile for user {playerResult.UserId}: CurrentCompetitiveDrills={profile.CompetitiveDrills}, CurrentWins={profile.Wins}, CurrentLosses={profile.Losses}, CurrentCompetitivePoints={profile.CompetitivePoints}");
 
                     // Increment total competitive drills
                     profile.CompetitiveDrills++;
@@ -1222,27 +1315,36 @@ namespace server.Hubs
                     if (playerResult.UserId == winnerId)
                     {
                         profile.Wins++;
-                        Console.WriteLine($"User {playerResult.UserId} won the drill");
+                        Console.WriteLine($"[COMPETITIVE_DRILL_END] User {playerResult.UserId} won the drill - incrementing wins");
                     }
                     else
                     {
                         profile.Losses++;
-                        Console.WriteLine($"User {playerResult.UserId} lost the drill");
+                        Console.WriteLine($"[COMPETITIVE_DRILL_END] User {playerResult.UserId} lost the drill - incrementing losses");
                     }
 
                     // Update competitive points and rank
+                    var previousCompetitivePoints = profile.CompetitivePoints;
+                    var previousCompetitiveRank = profile.CompetitiveRank;
+                    
                     profile.CompetitivePoints += playerResult.PointsChange;
                     var competitiveRank = _levelCalculationService.CalculateCompetitiveRank(profile.CompetitivePoints);
                     profile.CompetitiveRank = competitiveRank;
 
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] User {playerResult.UserId} points update: PreviousPoints={previousCompetitivePoints}, PointsChange={playerResult.PointsChange}, NewPoints={profile.CompetitivePoints}, PreviousRank={previousCompetitiveRank}, NewRank={competitiveRank}");
+
                     // Save updated profile
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] Saving updated profile for user {playerResult.UserId}");
                     await _profileService.UpdateProfilePostCompetitiveDrillAsync(profile);
-                    Console.WriteLine($"Updated profile for user {playerResult.UserId}: CompetitiveDrills={profile.CompetitiveDrills}, Wins={profile.Wins}, Losses={profile.Losses}, CompetitivePoints={profile.CompetitivePoints}, Rank={competitiveRank}");
+                    Console.WriteLine($"[COMPETITIVE_DRILL_END] Successfully updated profile for user {playerResult.UserId}: CompetitiveDrills={profile.CompetitiveDrills}, Wins={profile.Wins}, Losses={profile.Losses}, CompetitivePoints={profile.CompetitivePoints}, Rank={competitiveRank}");
                 }
+                
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] UpdateUserProfilesWithCompetitiveResultsAsync completed successfully for all {playerResults.Count} players");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error updating user profiles with competitive results: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] ERROR updating user profiles with competitive results: {ex.Message}");
+                Console.WriteLine($"[COMPETITIVE_DRILL_END] Stack trace: {ex.StackTrace}");
             }
         }
 
