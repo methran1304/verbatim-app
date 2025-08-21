@@ -33,6 +33,9 @@
     transition: opacity 0.2s ease;
     box-shadow: none;
     outline: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     
     &:hover {
       opacity: 0.8;
@@ -46,11 +49,18 @@
     }
   }
   
+  .logo-image {
+    height: 22px;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  
   .logo-text {
     font-size: 1.65rem;
-    font-weight: 700;
+    font-weight: normal;
     color: var(--color-text);
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Audiowide', cursive;
   }
 }
 

@@ -1,0 +1,538 @@
+<div class="guide-container">
+  <div class="guide-content">
+    
+    <!-- header section -->
+    <div class="guide-header">
+      <div class="guide-icon">
+        <div class="icon-placeholder">
+          <span nz-icon nzType="book" nzTheme="outline"></span>
+        </div>
+      </div>
+      
+      <div class="guide-info">
+        <h1 class="title">Guide</h1>
+        <div class="subtitle-info">
+          <span class="subtitle">Master touch typing and learn the application</span>
+        </div>
+        <p class="description">Comprehensive guide to touch typing techniques, finger placement, and understanding Verbatim's features</p>
+      </div>
+      
+
+    </div>
+
+    <!-- navigation tabs -->
+    <div class="guide-tabs">
+      <button 
+        *ngFor="let tab of ['Touch Typing', 'Finger Placement', 'Application Guide']; let i = index"
+        [class.active]="activeTabIndex === i"
+        (click)="onTabChange(i)"
+        class="tab-button"
+      >
+        {{ tab }}
+      </button>
+    </div>
+
+    <!-- tab content -->
+    <div class="tab-content">
+      
+      <!-- Touch Typing tab -->
+      <div *ngIf="activeTabIndex === 0" class="touch-typing-tab">
+        <div class="content-grid">
+          
+          <!-- What is Touch Typing -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="bulb" nzTheme="outline" class="section-icon"></span>
+              <h2>What is Touch Typing?</h2>
+            </div>
+            <div class="section-content">
+              <p>Touch typing is a typing technique where you type without looking at the keyboard. Your fingers rest on specific keys (home row) and move to reach other keys based on muscle memory.</p>
+              
+              <div class="key-benefits">
+                <h3>Key Benefits:</h3>
+                <ul>
+                  <li><strong>Speed:</strong> Significantly faster typing speeds (60-100+ WPM)</li>
+                  <li><strong>Accuracy:</strong> Reduced errors and improved precision</li>
+                  <li><strong>Efficiency:</strong> Focus on content, not keyboard location</li>
+                  <li><strong>Ergonomics:</strong> Better hand positioning reduces strain</li>
+                  <li><strong>Productivity:</strong> Faster completion of typing tasks</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Why Important Now -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="rise" nzTheme="outline" class="section-icon"></span>
+              <h2>Why is Touch Typing Important Now?</h2>
+            </div>
+            <div class="section-content">
+              <p>In today's digital world, typing is a fundamental skill that affects productivity in almost every profession and daily activity.</p>
+              
+              <div class="importance-grid">
+                <div class="importance-item">
+                  <span nz-icon nzType="laptop" nzTheme="outline"></span>
+                  <h4>Remote Work</h4>
+                  <p>Essential for efficient communication and document creation</p>
+                </div>
+                <div class="importance-item">
+                  <span nz-icon nzType="message" nzTheme="outline"></span>
+                  <h4>Digital Communication</h4>
+                  <p>Faster messaging, emails, and social media interaction</p>
+                </div>
+                <div class="importance-item">
+                  <span nz-icon nzType="code" nzTheme="outline"></span>
+                  <h4>Programming</h4>
+                  <p>Critical for developers and technical professionals</p>
+                </div>
+                <div class="importance-item">
+                  <span nz-icon nzType="file-text" nzTheme="outline"></span>
+                  <h4>Content Creation</h4>
+                  <p>Blogging, writing, and creative work efficiency</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- How to Begin -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="play-circle" nzTheme="outline" class="section-icon"></span>
+              <h2>How to Begin Touch Typing</h2>
+            </div>
+            <div class="section-content">
+              <div class="steps-grid">
+                <div class="step-item">
+                  <div class="step-number">1</div>
+                  <h4>Learn Home Row</h4>
+                  <p>Start with A, S, D, F (left hand) and J, K, L, ; (right hand)</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">2</div>
+                  <h4>Practice Basic Words</h4>
+                  <p>Begin with simple words using home row keys</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">3</div>
+                  <h4>Expand Gradually</h4>
+                  <p>Add keys outside home row one finger at a time</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">4</div>
+                  <h4>Build Speed</h4>
+                  <p>Focus on accuracy first, then increase speed</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">5</div>
+                  <h4>Practice Regularly</h4>
+                  <p>Consistent practice is key to developing muscle memory</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">6</div>
+                  <h4>Use Verbatim</h4>
+                  <p>Leverage our adaptive drills and AI insights for personalized practice</p>
+                </div>
+              </div>
+              
+              <div class="recommendations-section">
+                <h3>Recommendations:</h3>
+                <ul>
+                  <li>Don't look at the keyboard - cover it if needed</li>
+                  <li>Start slow and focus on accuracy over speed</li>
+                  <li>Practice for short, regular sessions (15-30 minutes daily)</li>
+                  <li>Use proper posture and hand positioning</li>
+                  <li>Be patient - it takes time to develop muscle memory</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- Finger Placement tab -->
+      <div *ngIf="activeTabIndex === 1" class="finger-placement-tab">
+        <div class="content-grid">
+          
+                          <!-- Finger Color Map -->
+                <div class="section-card full-width">
+                  <div class="section-header">
+                    <span nz-icon nzType="keyboard" nzTheme="outline" class="section-icon"></span>
+                    <h2>Finger Color Map</h2>
+                  </div>
+                  <div class="section-content">
+                    <p>Use the interactive keyboard below to see proper finger placement. Each color represents a different finger:</p>
+                    
+                    <div class="keyboard-container">
+                      <app-virtual-keyboard 
+                        [inputValue]="''"
+                        [isDarkTheme]="isDarkTheme"
+                        [shouldBlur]="false">
+                      </app-virtual-keyboard>
+                    </div>
+                    
+                    <div class="finger-legend">
+                      <div class="finger-item">
+                        <div class="color-box" [ngClass]="{'green-light': !isDarkTheme, 'green-dark': isDarkTheme}"></div>
+                        <div class="finger-info">
+                          <h4>Left and Right Pinky Fingers</h4>
+                          <p>{{ isDarkTheme ? 'Dark Green' : 'Green' }} Keys</p>
+                        </div>
+                      </div>
+                      <div class="finger-item">
+                        <div class="color-box" [ngClass]="{'dark-green-light': !isDarkTheme, 'dark-green-dark': isDarkTheme}"></div>
+                        <div class="finger-info">
+                          <h4>Left and Right Ring Fingers</h4>
+                          <p>{{ isDarkTheme ? 'Olive' : 'Dark Green' }} Keys</p>
+                        </div>
+                      </div>
+                      <div class="finger-item">
+                        <div class="color-box" [ngClass]="{'yellow-light': !isDarkTheme, 'yellow-dark': isDarkTheme}"></div>
+                        <div class="finger-info">
+                          <h4>Left and Right Middle Fingers</h4>
+                          <p>{{ isDarkTheme ? 'Brown' : 'Yellow' }} Keys</p>
+                        </div>
+                      </div>
+                      <div class="finger-item">
+                        <div class="color-box" [ngClass]="{'blue-light': !isDarkTheme, 'blue-dark': isDarkTheme}"></div>
+                        <div class="finger-info">
+                          <h4>Left and Right Index Fingers</h4>
+                          <p>{{ isDarkTheme ? 'Gray' : 'Blue' }} Keys</p>
+                        </div>
+                      </div>
+                      <div class="finger-item">
+                        <div class="color-box" [ngClass]="{'pink-light': !isDarkTheme, 'pink-dark': isDarkTheme}"></div>
+                        <div class="finger-info">
+                          <h4>Left and Right Index Fingers (Extended)</h4>
+                          <p>{{ isDarkTheme ? 'Purple' : 'Pink' }} Keys</p>
+                        </div>
+                      </div>
+                      <div class="finger-item">
+                        <div class="color-box" [ngClass]="{'red-light': !isDarkTheme, 'red-dark': isDarkTheme}"></div>
+                        <div class="finger-info">
+                          <h4>Thumbs</h4>
+                          <p>{{ isDarkTheme ? 'Dark Red' : 'Red' }} Keys (Spacebar and Modifiers)</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+          <!-- Keyboard Zones -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="layout" nzTheme="outline" class="section-icon"></span>
+              <h2>Keyboard Zones</h2>
+            </div>
+            <div class="section-content">
+              <div class="keyboard-zones">
+                <div class="zone-item">
+                  <h3>Top Row</h3>
+                  <p>Numbers and symbols (1-0, -, =, etc.) - Use your pinky and ring fingers to reach these keys. Keep your hands in the home row position and stretch up.</p>
+                </div>
+                <div class="zone-item">
+                  <h3>Home Row</h3>
+                  <p>ASDF (left hand) and JKL; (right hand) - This is your base position. Your fingers should always return here after pressing other keys.</p>
+                </div>
+                <div class="zone-item">
+                  <h3>Bottom Row</h3>
+                  <p>ZXCV (left hand) and NM,./ (right hand) - Use your pinky and ring fingers to reach down to these keys while maintaining home row position.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Application Guide tab -->
+      <div *ngIf="activeTabIndex === 2" class="application-guide-tab">
+        <div class="content-grid">
+          
+          <!-- Terminology -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="info-circle" nzTheme="outline" class="section-icon"></span>
+              <h2>Application Terminology</h2>
+            </div>
+            <div class="section-content">
+              
+              <!-- Terminology Subsection -->
+              <div class="terminology-subsection">
+                <h3>Terminology</h3>
+                <div class="terminology-list">
+                  <div class="term-item">
+                    <span class="term-name">Verbatim</span>
+                    <span class="term-description">The name of our typing application - meaning "word for word"</span>
+                  </div>
+                  <div class="term-item">
+                    <span class="term-name">Drills</span>
+                    <span class="term-description">Individual typing practice sessions with different modes and difficulty levels</span>
+                  </div>
+                  <div class="term-item">
+                    <span class="term-name">Timed</span>
+                    <span class="term-description">Drills with fixed time limits (15s, 30s, 60s, 120s) - type as many words as possible</span>
+                  </div>
+                  <div class="term-item">
+                    <span class="term-name">Marathon</span>
+                    <span class="term-description">No timer drills with fixed word counts - practice at your own pace</span>
+                  </div>
+                  <div class="term-item">
+                    <span class="term-name">Adaptive</span>
+                    <span class="term-description">AI-powered drills that target your weak spots and adjust difficulty based on performance</span>
+                  </div>
+                  <div class="term-item">
+                    <span class="term-name">Classics</span>
+                    <span class="term-description">Practice with famous literature and passages from classic books</span>
+                  </div>
+                  <div class="term-item">
+                    <span class="term-name">AI Insights</span>
+                    <span class="term-description">Personalized analysis of your typing patterns, error trends, and improvement recommendations</span>
+                  </div>
+                  <div class="term-item">
+                    <span class="term-name">Profile</span>
+                    <span class="term-description">Your personal statistics, performance history, and progress tracking across all drill types</span>
+                  </div>
+                  <div class="term-item">
+                    <span class="term-name">Leaderboard</span>
+                    <span class="term-description">Rankings of players by casual performance (WPM, accuracy) and competitive points</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Drill Preferences Subsection -->
+              <div class="drill-preferences-subsection">
+                <h3>Drill Preferences</h3>
+                
+                <div class="preference-group">
+                  <h4>Word Length (Applicable for Marathon Drills)</h4>
+                  <div class="terminology-list">
+                    <div class="term-item">
+                      <span class="term-name">Short</span>
+                      <span class="term-description">30 words - Quick practice sessions</span>
+                    </div>
+                    <div class="term-item">
+                      <span class="term-name">Medium</span>
+                      <span class="term-description">50 words - Standard practice length</span>
+                    </div>
+                    <div class="term-item">
+                      <span class="term-name">Long</span>
+                      <span class="term-description">100 words - Extended practice sessions</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="preference-group">
+                  <h4>Time Limit (Applicable for Timed Drills)</h4>
+                  <div class="terminology-list">
+                    <div class="term-item">
+                      <span class="term-name">15s</span>
+                      <span class="term-description">Quick sprint - test your burst speed</span>
+                    </div>
+                    <div class="term-item">
+                      <span class="term-name">30s</span>
+                      <span class="term-description">Short session - balance speed and accuracy</span>
+                    </div>
+                    <div class="term-item">
+                      <span class="term-name">60s</span>
+                      <span class="term-description">Standard session - typical practice length</span>
+                    </div>
+                    <div class="term-item">
+                      <span class="term-name">120s</span>
+                      <span class="term-description">Extended session - endurance practice</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="preference-group">
+                  <h4>Word Difficulty</h4>
+                  <div class="terminology-list">
+                    <div class="term-item">
+                      <span class="term-name">Beginner</span>
+                      <span class="term-description">Common, short words with simple letter combinations</span>
+                    </div>
+                    <div class="term-item">
+                      <span class="term-name">Intermediate</span>
+                      <span class="term-description">Longer words with moderate complexity and some repetition</span>
+                    </div>
+                    <div class="term-item">
+                      <span class="term-name">Advanced</span>
+                      <span class="term-description">Complex words with challenging letter patterns and rare combinations</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Competitive Rankings -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="trophy" nzTheme="outline" class="section-icon"></span>
+              <h2>Competitive Ranking System</h2>
+            </div>
+            <div class="section-content">
+              <p>Compete with other players and climb the competitive ladder:</p>
+              
+              <nz-table 
+                #rankTable 
+                [nzData]="competitiveRanks"
+                [nzShowPagination]="false"
+                class="rank-table">
+                
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Points Required</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                
+                <tbody>
+                  <tr *ngFor="let rank of rankTable.data">
+                    <td class="rank-cell">
+                      <span class="rank-tag" [class]="getRankClass(rank.rank)">{{ rank.rank }}</span>
+                    </td>
+                    <td class="points-cell">{{ rank.points }}</td>
+                    <td class="description-cell">{{ rank.description }}</td>
+                  </tr>
+                </tbody>
+              </nz-table>
+              
+              <div class="ranking-info">
+                <h3>How Points Work:</h3>
+                <ul>
+                  <li>Win competitive matches to earn points</li>
+                  <li>Higher WPM and accuracy = more points</li>
+                  <li>Losing matches may result in point loss</li>
+                  <li>Consistent performance helps maintain rank</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Overall Levels -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="star" nzTheme="outline" class="section-icon"></span>
+              <h2>Overall Skill Levels</h2>
+            </div>
+            <div class="section-content">
+              <p>Track your overall typing progress across all drill types:</p>
+              
+              <nz-table 
+                #levelTable 
+                [nzData]="overallLevels"
+                [nzShowPagination]="false"
+                class="level-table">
+                
+                <thead>
+                  <tr>
+                    <th>Level</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                
+                <tbody>
+                  <tr *ngFor="let level of levelTable.data">
+                    <td class="level-cell">
+                      <span class="level-tag" [class]="getLevelClass(level.level)">{{ level.level }}</span>
+                    </td>
+                    <td class="description-cell">{{ level.description }}</td>
+                  </tr>
+                </tbody>
+              </nz-table>
+              
+              <div class="level-progression">
+                <h3>Level Progression:</h3>
+                <ul>
+                  <li>Complete drills to earn experience points</li>
+                  <li>Higher WPM and accuracy = more XP</li>
+                  <li>Consistent practice leads to faster progression</li>
+                  <li>Each level unlocks new features and challenges</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Themes -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="skin" nzTheme="outline" class="section-icon"></span>
+              <h2>Theme Options</h2>
+            </div>
+            <div class="section-content">
+              <div class="theme-options">
+                <div class="theme-item">
+                  <div class="theme-preview light-theme">
+                    <span class="theme-label">Light Theme</span>
+                  </div>
+                  <p>Clean, bright interface for daytime use</p>
+                </div>
+                <div class="theme-item">
+                  <div class="theme-preview dark-theme">
+                    <span class="theme-label">Dark Theme</span>
+                  </div>
+                  <p>Easy on the eyes for low-light environments</p>
+                </div>
+              </div>
+              
+              <div class="theme-features">
+                <h3>Theme Features:</h3>
+                <ul>
+                  <li>Automatic theme switching based on system preference</li>
+                  <li>Manual theme selection in user settings</li>
+                  <li>Consistent styling across all components</li>
+                  <li>Optimized for readability and reduced eye strain</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Getting Started -->
+          <div class="section-card">
+            <div class="section-header">
+              <span nz-icon nzType="rocket" nzTheme="outline" class="section-icon"></span>
+              <h2>Getting Started with Verbatim</h2>
+            </div>
+            <div class="section-content">
+              <div class="getting-started-steps">
+                <div class="step-item">
+                  <div class="step-number">1</div>
+                  <h4>Start with Timed Drills</h4>
+                  <p>Begin with 30-second or 1-minute drills to build confidence</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">2</div>
+                  <h4>Try Adaptive Mode</h4>
+                  <p>Let AI adjust difficulty based on your performance</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">3</div>
+                  <h4>Check Your Profile</h4>
+                  <p>Monitor your progress and identify areas for improvement</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">4</div>
+                  <h4>Generate AI Insights</h4>
+                  <p>Get personalized feedback and improvement suggestions</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">5</div>
+                  <h4>Join Competitive Matches</h4>
+                  <p>Test your skills against other players</p>
+                </div>
+                <div class="step-item">
+                  <div class="step-number">6</div>
+                  <h4>Explore Classics</h4>
+                  <p>Practice with famous literature and passages</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

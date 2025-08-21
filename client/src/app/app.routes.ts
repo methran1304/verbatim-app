@@ -9,6 +9,7 @@ import { ProfileComponent } from './features/profile/profile.component';
 import { LeaderboardComponent } from './features/leaderboard/leaderboard.component';
 import { AIInsightsComponent } from './features/ai-insights/ai-insights.component';
 import { ClassicsComponent } from './features/classics/classics.component';
+import { GuideComponent } from './features/guide/guide.component';
 import { authGuard } from './auth.guard';
 import { redirectIfAuthenticatedGuard } from './auth-redirect.guard';
 
@@ -44,7 +45,7 @@ export const routes: Routes = [
     },
     {
         path: 'guide',
-        component: DrillEngineComponent, // TODO
+        component: GuideComponent,
         canActivate: [authGuard],
     },
     {

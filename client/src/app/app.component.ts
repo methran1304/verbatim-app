@@ -1,7 +1,7 @@
-import { Component, OnInit, HostListener } from '@angular/core';
+import { Component, OnInit, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -11,6 +11,8 @@ import { AuthService } from './services/auth.service';
 import { ThemeType } from './models/enums/theme-type.enum';
 import { UserPreference } from './models/interfaces/user-preference.interface';
 import { TopNavComponent } from './features/navigation/top-nav.component';
+import { filter, takeUntil } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 
 @Component({
     selector: 'app-root',
@@ -27,7 +29,7 @@ import { TopNavComponent } from './features/navigation/top-nav.component';
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss',
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
     title = 'verbatim.app';
     darkMode = false;
     userPreference!: UserPreference;
@@ -40,9 +42,27 @@ export class AppComponent implements OnInit {
     private readonly MIN_WIDTH = 800;
     private readonly MIN_HEIGHT = 600;
 
+    // dynamic title management
+    private destroy$ = new Subject<void>();
+    private readonly routeTitleMap: { [key: string]: string } = {
+        'drill': 'Drills',
+        'drill-stats': 'Drill Stats',
+        'classics': 'Classics',
+        'guide': 'Guide',
+        'ai-insights': 'AI Insights',
+        'leaderboard': 'Leaderboard',
+        'profile': 'Profile',
+        'competitive-drill': 'Competitive',
+        'auth': 'Login',
+        'auth/login': 'Login',
+        'auth/register': 'Register',
+        'logout': 'Logout'
+    };
+
     constructor(
         private themeService: ThemeService,
-        private authService: AuthService
+        private authService: AuthService,
+        private router: Router
     ) {}
 
     ngOnInit() {
@@ -72,6 +92,10 @@ export class AppComponent implements OnInit {
                 this.setTheme(isDark);
             }
         });
+        
+        // setup dynamic title management
+        this.setupDynamicTitle();
+        
         // check initial screen size
         this.checkScreenSize();
     }
@@ -102,5 +126,35 @@ export class AppComponent implements OnInit {
         } else {
             html.removeAttribute('data-theme');
         }
+    }
+
+    private setupDynamicTitle(): void {
+        this.router.events
+            .pipe(
+                filter(event => event instanceof NavigationEnd),
+                takeUntil(this.destroy$)
+            )
+            .subscribe((event: NavigationEnd) => {
+                this.updatePageTitle(event.url);
+            });
+    }
+
+    private updatePageTitle(url: string): void {
+        let route = url.substring(1);
+        
+        // Remove query parameters if present
+        if (route.includes('?')) {
+            route = route.split('?')[0];
+        }
+        // Get the page name from the route map
+        const pageName = this.routeTitleMap[route] || 'Verbatim';
+        
+        // Update the document title
+        document.title = `Verbatim | ${pageName}`;
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 }
