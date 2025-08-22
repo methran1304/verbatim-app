@@ -60,7 +60,12 @@
                         <span nz-icon nzType="setting" nzTheme="outline" class="creator-badge"></span>
                       }
                     </div>
-                    <div class="username">{{ player.username }}</div>
+                    <div class="username" 
+                         nz-tooltip 
+                         [nzTooltipTitle]="player.username.length > 10 ? player.username : ''"
+                         nzTooltipPlacement="top">
+                      {{ getTruncatedUsername(player.username) }}
+                    </div>
                     <div class="competitive-rank" [class]="getCompetitiveRankClass(player.competitiveRank)">
                       {{ player.competitiveRank || 'Bronze' }}
                     </div>

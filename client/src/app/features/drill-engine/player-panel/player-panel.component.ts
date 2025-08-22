@@ -445,4 +445,11 @@ export class PlayerPanelComponent implements OnInit, OnDestroy, OnChanges {
     
     return `rank-${rank.toLowerCase().replace(/\s+/g, '-')}`;
   }
+
+  getTruncatedUsername(username: string): string {
+    if (username.length <= 10) {
+      return username;
+    }
+    return username.substring(0, 10) + '...';
+  }
 }

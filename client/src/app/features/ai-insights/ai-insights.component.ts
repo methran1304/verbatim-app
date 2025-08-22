@@ -120,7 +120,7 @@ export class AIInsightsComponent implements OnInit, OnDestroy {
             }
 
             this.aiFeedback = lastInsight.insight;
-            this.lastGeneratedAt = lastInsight.lastGeneratedAt;
+            this.lastGeneratedAt = new Date(lastInsight.lastGeneratedAt);
             this.hasGeneratedBefore = true;
           }
         });
@@ -234,15 +234,27 @@ export class AIInsightsComponent implements OnInit, OnDestroy {
   get lastUpdatedText(): string {
     if (!this.lastGeneratedAt) return '';
 
-    const now = new Date();
-    const diff = now.getTime() - this.lastGeneratedAt.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
+    try {
+      // Ensure we have a proper Date object
+      const lastGenerated = this.lastGeneratedAt instanceof Date ? this.lastGeneratedAt : new Date(this.lastGeneratedAt);
+      
+      if (isNaN(lastGenerated.getTime())) {
+        return 'Unknown';
+      }
 
-    if (hours < 1) return 'Just now';
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      const now = new Date();
+      const diff = now.getTime() - lastGenerated.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
 
-    const days = Math.floor(hours / 24);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
+      if (hours < 1) return 'Just now';
+      if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+
+      const days = Math.floor(hours / 24);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    } catch (error) {
+      console.error('Error formatting last updated text:', error);
+      return 'Unknown';
+    }
   }
 
   getTrendIcon(trend: string): string {
