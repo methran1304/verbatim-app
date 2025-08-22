@@ -14,5 +14,7 @@ namespace server.Services.Interfaces
         Task<TokenResponseDTO?> LoginAsync(LoginRequestDTO request);
         Task<TokenResponseDTO?> RefreshTokensAsync(RefreshTokenRequestDTO request);
         Task<TokenResponseDTO?> GoogleSignInAsync(string idToken);
+        Task<bool> ForgotPasswordAsync(string emailAddress);
+        Task<bool> ResetPasswordAsync(string token, string newPassword);
     }
 }

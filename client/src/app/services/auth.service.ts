@@ -7,6 +7,8 @@ import {
     RefreshTokenRequestDTO,
     RegisterRequestDTO,
     TokenResponseDTO,
+    ForgotPasswordRequestDTO,
+    ResetPasswordRequestDTO,
 } from '../models/interfaces/auth.interface';
 import { BehaviorSubject, catchError, map, Observable, tap } from 'rxjs';
 import { JwtDecoderUtil, JwtPayload } from '../core/utils/jwt-decoder.util';
@@ -192,5 +194,15 @@ export class AuthService {
                 });
             })
         );
+    }
+
+    forgotPassword(emailAddress: string): Observable<any> {
+        const request: ForgotPasswordRequestDTO = { emailAddress };
+        return this.http.post(`${this.baseUrl}/forgot-password`, request);
+    }
+
+    resetPassword(token: string, newPassword: string, confirmPassword: string): Observable<any> {
+        const request: ResetPasswordRequestDTO = { token, newPassword, confirmPassword };
+        return this.http.post(`${this.baseUrl}/reset-password`, request);
     }
 }

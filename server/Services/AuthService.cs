@@ -172,6 +172,39 @@ namespace server.Services.Interfaces
             }
         }
 
+        public async Task<bool> ForgotPasswordAsync(string emailAddress)
+        {
+            var user = await _userService.GetByEmailAsync(emailAddress);
+            
+            if (user == null)
+            {
+                // Don't reveal if user exists or not for security reasons
+                return true;
+            }
+
+            // Generate reset token (for now, just return true - email functionality would be implemented here)
+            // In a real implementation, you would:
+            // 1. Generate a secure reset token
+            // 2. Store it in the database with an expiration time
+            // 3. Send an email with the reset link
+            // 4. Return true if email was sent successfully
+            
+            return true;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+        {
+            // In a real implementation, you would:
+            // 1. Validate the reset token
+            // 2. Check if it's expired
+            // 3. Find the user associated with the token
+            // 4. Update the password
+            // 5. Invalidate the token
+            
+            // For now, return false to indicate invalid token
+            return false;
+        }
+
         private string GenerateUsernameFromEmail(string email)
         {
             var baseUsername = email.Split('@')[0];

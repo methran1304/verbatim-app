@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { AuthComponent } from './features/auth/auth.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
+import { ForgotPasswordComponent } from './features/auth/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './features/auth/reset-password/reset-password.component';
 import { LogoutComponent } from './features/auth/logout/logout.component';
 import { DrillEngineComponent } from './features/drill-engine/drill-engine.component';
 import { DrillStatsComponent } from './features/drill-stats/drill-stats.component';
@@ -21,6 +23,8 @@ export const routes: Routes = [
         children: [
             { path: 'login', component: LoginComponent },
             { path: 'register', component: RegisterComponent },
+            { path: 'forgot-password', component: ForgotPasswordComponent },
+            { path: 'reset-password', component: ResetPasswordComponent },
             { path: '', redirectTo: 'login', pathMatch: 'full' },
         ],
     },

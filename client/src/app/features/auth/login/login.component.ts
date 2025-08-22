@@ -135,11 +135,15 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   }
   
   onForgotPassword(): void {
-    // TODO: Implement forgot password
+    this.router.navigate(['/auth/forgot-password']);
   }
 
   onSignUp(): void {
     this.router.navigate(['/auth/register']);
+  }
+
+  onLogoClick(): void {
+    this.router.navigate(['/drill']);
   }
 
 

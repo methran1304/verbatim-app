@@ -136,6 +136,9 @@ export class RegisterComponent implements AfterViewInit, OnDestroy {
     this.router.navigate(['/auth/login']);
   }
 
+  onLogoClick(): void {
+    this.router.navigate(['/drill']);
+  }
 
 
   get username() { return this.registerForm.get('username'); }

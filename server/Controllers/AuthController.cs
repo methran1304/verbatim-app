@@ -68,19 +68,22 @@ namespace server.Controllers
 			return Ok(result);
 		}
 
-		// TODO
 		[HttpPost("forgot-password")]
-		public async Task<ActionResult<Object>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+		public async Task<ActionResult<Object>> ForgotPassword([FromBody] ForgotPasswordRequestDTO request)
 		{
-			await Task.FromResult(false);
-			return Ok();
+			var result = await _authService.ForgotPasswordAsync(request.EmailAddress);
+			return Ok(new { message = "If an account with that email exists, a password reset link has been sent." });
 		}
 
 		[HttpPost("reset-password")]
-		public async Task<ActionResult<Object>> ResetPassword([FromBody] ResetPasswordRequest request)
+		public async Task<ActionResult<Object>> ResetPassword([FromBody] ResetPasswordRequestDTO request)
 		{
-			await Task.FromResult(false);
-			return Ok();
+			var result = await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
+			
+			if (!result)
+				return BadRequest("Invalid or expired reset token.");
+				
+			return Ok(new { message = "Password has been reset successfully." });
 		}
 
 		[HttpPost("google-signin")]

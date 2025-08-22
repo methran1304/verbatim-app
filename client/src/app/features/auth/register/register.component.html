@@ -1,4 +1,17 @@
 <div class="register-viewport">
+  <!-- Logo in top left corner -->
+  <div class="auth-logo">
+    <button 
+      class="logo-button"
+      (click)="onLogoClick()">
+      @if (isDarkMode) {
+        <img src="assets/icons/logo-dark.png" alt="Verbatim Logo" class="logo-image">
+      } @else {
+        <img src="assets/icons/logo-light.png" alt="Verbatim Logo" class="logo-image">
+      }
+    </button>
+  </div>
+
   <div class="register-box">
     <div class="register-header">
       <header>Sign Up</header>

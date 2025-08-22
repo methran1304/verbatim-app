@@ -18,3 +18,13 @@ export interface RefreshTokenRequestDTO {
     userId: string;
     refreshToken: string;
 }
+
+export interface ForgotPasswordRequestDTO {
+    emailAddress: string;
+}
+
+export interface ResetPasswordRequestDTO {
+    token: string;
+    newPassword: string;
+    confirmPassword: string;
+}

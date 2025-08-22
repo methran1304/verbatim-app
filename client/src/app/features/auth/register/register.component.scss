@@ -7,6 +7,48 @@
   min-height: 100vh;
   background: var(--color-bg);
   font-family: var(--font-family-auth);
+  position: relative;
+}
+
+// Auth logo styling
+.auth-logo {
+  position: fixed;
+  top: 2.2rem;
+  left: 2.2rem;
+  z-index: 1000;
+  
+  .logo-button {
+    background: transparent;
+    border: none;
+    padding: 0;
+    height: auto;
+    line-height: 1;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    box-shadow: none;
+    outline: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    &:hover {
+      opacity: 0.8;
+      box-shadow: none;
+      outline: none;
+    }
+    
+    &:focus {
+      box-shadow: none;
+      outline: none;
+    }
+  }
+  
+  .logo-image {
+    height: 22px;
+    width: auto;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
 }
 
 .register-box {
@@ -192,11 +234,25 @@ button {
     padding: 10px 30px;
     margin: 20px;
   }
+  
+  .auth-logo {
+    top: 1.5rem;
+    left: 1.5rem;
+  }
 }
 
 @media only screen and (max-width: 415px) {
   .register-box {
     padding: 10px 25px;
     margin: 15px;
+  }
+  
+  .auth-logo {
+    top: 1rem;
+    left: 1rem;
+    
+    .logo-image {
+      height: 18px;
+    }
   }
 } 
