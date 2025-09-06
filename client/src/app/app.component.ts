@@ -142,12 +142,24 @@ export class AppComponent implements OnInit, OnDestroy {
     private updatePageTitle(url: string): void {
         let route = url.substring(1);
         
-        // Remove query parameters if present
+        // remove query parameters if present
         if (route.includes('?')) {
             route = route.split('?')[0];
         }
-        // Get the page name from the route map
-        const pageName = this.routeTitleMap[route] || 'Verbatim';
+        
+        // get the page name from the route map
+        let pageName = this.routeTitleMap[route];
+        
+        // if no exact match, try to find a partial match for nested routes
+        if (!pageName) {
+            // For auth routes, check if it starts with 'auth/'
+            if (route.startsWith('auth/')) {
+                const authSubRoute = route.substring(5); // Remove 'auth/' prefix
+                pageName = this.routeTitleMap[`auth/${authSubRoute}`] || this.routeTitleMap['auth'] || 'Login';
+            } else {
+                pageName = 'Verbatim';
+            }
+        }
         
         // Update the document title
         document.title = `Verbatim | ${pageName}`;
