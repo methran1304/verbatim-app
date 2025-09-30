@@ -64,7 +64,7 @@ dotnet run
 ```
 
 ### Start the Client
-```
+```bash
 cd client
 npm install
 npm start
@@ -72,7 +72,7 @@ npm start
 ```
 
 ### Run Fuzzy Search Microservice
-```
+```bash
 cd server/MicroServices/FuzzySearch
 pip install --no-cache-dir -r requirements.txt
 uvicorn FuzzySearch:app --host 0.0.0.0 --port 8080
@@ -116,9 +116,11 @@ Client → client/src/environments/
 Controllers include: Auth, Drill, Competitive, Book, Profile, AIInsight.
 
 ## 🤝 Contributing
+```
   1. Fork and create a feature branch
 	2. Add tests where possible
 	3. Open a pull request with a clear title and description
+```
 
 ## 📜 License
 Yet to be Licensed
