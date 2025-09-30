@@ -1,21 +1,39 @@
-Before running the project, ensure you have the following installed:
-	•	Node.js (v18+) & npm
-	•	Angular CLI (npm install -g @angular/cli)
-	•	.NET SDK (v9.0 or later)
-	•	Python 3.10+ & pip
-	•	MongoDB (local or cloud instance, e.g., MongoDB Atlas)
+# Verbatim — Touch Typing Reinvented
 
-1. Frontend
-cd frontend
-npm install
-ng serve
+A modern full-stack typing platform with real-time drills, AI insights, and competitive modes.  
+Built with **Angular 20**, **.NET 9 Web API**, **MongoDB**, and **SignalR**.
 
-2. Backend
-cd backend
-dotnet build
-dotnet run
+---
 
-3. Microservice
-cd microservice
-pip install fastapi uvicorn
-uvicorn main:app --reload
+## Features
+
+- Live stats: real-time WPM, accuracy, error maps, corrections counter  
+- Competitive drills: create/join rooms & race friends live with SignalR  
+- Classics mode: type passages from real books (seeded via EPUBs)  
+- Leaderboards: track rankings & compare progress  
+- Dark/Light themes with smooth switching  
+- AI Insights: adaptive drills & feedback from error patterns  
+- Secure authentication with JWT (login, register, forgot/reset password)  
+
+---
+
+## Tech Stack
+
+**Frontend**  
+- Angular 20  
+- ng-zorro (UI components)  
+- RxJS  
+
+**Backend**  
+- .NET 9 Web API  
+- MongoDB  
+- SignalR (real-time communication)  
+- Scalar/Swagger for API docs  
+
+**Utilities**  
+- BookSeeder: console tool for EPUB → MongoDB ingestion  
+- External fuzzy search microservice  
+
+---
+
+## Repository Structure
