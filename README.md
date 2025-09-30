@@ -38,10 +38,12 @@ Built with **Angular 20**, **.NET 9 Web API**, **MongoDB**, and **SignalR**.
 ---
 
 ## 📂 Repository Structure
+```
 verbatim-app/
 ├─ client/         # Angular SPA
 ├─ server/         # .NET 9 Web API + SignalR
 └─ BookSeeder/     # Console tool for EPUB ingestion
+```
 
 ---
 
