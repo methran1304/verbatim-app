@@ -95,8 +95,26 @@ Server → server/appsettings.Development.json
 ```
 
 Client → client/src/environments/
+```
 	•	environment.ts (development)
 	•	environment.prod.ts (production)
+```
+
+## API & Hub
+  •	REST API: /api
+  •	SignalR Hub: /competitive-hub
+  •	Scalar/Swagger UI: /scalar
+
+Controllers include: Auth, Drill, Competitive, Book, Profile, AIInsight.
+
+## Contributing
+  1. Fork and create a feature branch
+	2. Add tests where possible
+	3. Open a pull request with a clear title and description
+
+## License
+Yet to be Licensed
+
 
 
 
