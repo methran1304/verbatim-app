@@ -51,6 +51,7 @@ verbatim-app/
 - Node.js 18+ and Angular CLI  
 - .NET 9 SDK  
 - MongoDB (local or Atlas)
+- Python 3.10+ with PIP
 
 ### Start the API
 ```bash
@@ -66,6 +67,13 @@ cd client
 npm install
 npm start
 # runs at http://localhost:4200
+```
+
+### Run Fuzzy Search Microservice
+```
+cd server/MicroServices/FuzzySearch
+pip install --no-cache-dir -r requirements.txt
+uvicorn FuzzySearch:app --host 0.0.0.0 --port 8080
 ```
 
 By default, the client expects:
@@ -95,10 +103,8 @@ Server → server/appsettings.Development.json
 ```
 
 Client → client/src/environments/
-```
 	•	environment.ts (development)
 	•	environment.prod.ts (production)
-```
 
 ## API & Hub
   •	REST API: /api
