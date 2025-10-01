@@ -20,7 +20,7 @@ namespace server.Services
     private readonly IMongoCollection<User> _users;
 
     const string GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
-    const string GEMINI_API_KEY = "AIzaSyCDPf8O4kkrlO0yKBDrymibceBAkdK0oxA";
+    const string GEMINI_API_KEY = "_GOOGLE_API_KEY";
 
     const string prompt = @"
 You are an expert typing coach analyzing detailed performance data for adaptive drill generation.
